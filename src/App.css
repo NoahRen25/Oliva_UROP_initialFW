@@ -1,0 +1,11 @@
+/* App.css — keep minimal, avoid layout rules */
+
+/* Example utility classes (optional) */
+
+.page-title {
+  margin-bottom: 24px;
+}
+
+.center-text {
+  text-align: center;
+}
