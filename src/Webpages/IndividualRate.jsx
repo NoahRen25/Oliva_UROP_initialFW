@@ -1,4 +1,3 @@
-// src/Webpages/IndividualRate.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useResults } from "../Results";
@@ -40,8 +39,16 @@ export default function IndividualRate() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentRating, setCurrentRating] = useState(3);
   const [scores, setScores] = useState([]);
-
+  const [startTime, setStartTime] = useState(null);
+  const [interactionCount, setInteractionCount] = useState(0);
+  const startTimer = () => setStartTime(performance.now());
+  const handleStart = () => {
+    setActiveStep(1);
+    startTimer();
+  };
   const handleNext = (isBenchmark = false) => {
+    const endTime = performance.now();
+    const timeSpent = (endTime - startTime) / 1000 // /1000 is ms -> s
     const img = isBenchmark
       ? BENCHMARK_IMAGE
       : IMAGES_TO_RATE[currentImageIndex];
@@ -49,10 +56,13 @@ export default function IndividualRate() {
       imageId: img.id,
       imageName: img.alt,
       score: currentRating,
+      timeSpent: timeSpent.toFixed(2),
+      interactionCount: interactionCount
     };
     const updatedScores = [...scores, newScore];
     setScores(updatedScores);
-    setCurrentRating(3); 
+    setCurrentRating(3);
+    setInteractionCount(0); 
     //move between the states
     if (isBenchmark) {
       setActiveStep(2); 
@@ -62,6 +72,7 @@ export default function IndividualRate() {
       addIndividualSession(username, updatedScores);
       setActiveStep(3); 
     }
+    startTimer();
   };
 
   return (
@@ -79,7 +90,7 @@ export default function IndividualRate() {
             onChange={(e) => setUsername(e.target.value)}
             sx={{ mb: 3 }}
           />
-          <Button variant="contained" onClick={() => setActiveStep(1)}>
+          <Button variant="contained" onClick={() => handleStart()}>
             Start
           </Button>
         </Paper>
@@ -99,7 +110,11 @@ export default function IndividualRate() {
             <Typography align="center">Rating: {currentRating}</Typography>
             <Slider
               value={currentRating}
-              onChange={(e, v) => setCurrentRating(v)}
+              onChange={(e, v) => {
+                setCurrentRating(v);
+                // --- NEW: Increment count on change ---
+                setInteractionCount(prev => prev + 1);
+              }}
               step={1}
               marks
               min={1}
@@ -135,7 +150,9 @@ export default function IndividualRate() {
             <Typography>Rating: {currentRating} </Typography>
             <Slider
               value={currentRating}
-              onChange={(e, v) => setCurrentRating(v)}
+              onChange={(e, v) => {setCurrentRating(v);
+                setInteractionCount(prev => prev+1);
+              }}
               step={1}
               marks
               min={1}

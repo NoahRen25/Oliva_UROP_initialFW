@@ -36,8 +36,20 @@ export default function GroupRate() {
   const [username, setUsername] = useState("");
   const [benchmarkRating, setBenchmarkRating] = useState(3);
   const [ratings, setRatings] = useState({ g1: 3, g2: 3, g3: 3, g4: 3 });
-
+  const [startTime, setStartTime] = useState(null);
+  const startTimer = () => setStartTime(performance.now())
+  const handleStart = () => {
+    setStep(1)
+    startTimer()
+  }
+  const handleBenchmark = () => {
+    const timeSpent = (performance.now() - startTime) / 1000 //ms -> s again
+    setBenchmarkTime(timeSpent);
+    setStep(2)
+    startTimer();
+  }
   const handleSubmit = () => {
+    const gridTimeSpent = (performance.now() - startTime) / 1000 //ms -> s again
     const formattedScores = [
       {
         imageId: BENCHMARK_IMAGE.id,
@@ -48,6 +60,7 @@ export default function GroupRate() {
         imageId: img.id,
         imageName: img.alt,
         score: ratings[img.id],
+        timeSpent: (gridTimeSpent / 4).toFixed(2)
       })),
     ];
 
@@ -67,7 +80,7 @@ export default function GroupRate() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
-          <Button variant="contained" onClick={() => setStep(1)}>
+          <Button variant="contained" onClick={() => handleStart()}>
             Start
           </Button>
         </Paper>
