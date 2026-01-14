@@ -37,6 +37,7 @@ export default function GroupRate() {
   const [benchmarkRating, setBenchmarkRating] = useState(3);
   const [ratings, setRatings] = useState({ g1: 3, g2: 3, g3: 3, g4: 3 });
   const [startTime, setStartTime] = useState(null);
+  const [sliderMoves, setSliderMoves] = useState({ b1: 0, g1: 0, g2: 0, g3: 0, g4: 0 });
   const startTimer = () => setStartTime(performance.now())
   const handleStart = () => {
     setStep(1)
@@ -55,12 +56,14 @@ export default function GroupRate() {
         imageId: BENCHMARK_IMAGE.id,
         imageName: "Benchmark",
         score: benchmarkRating,
+        interactionCount: sliderMoves["b1"]
       },
       ...GROUP_IMAGES.map((img) => ({
         imageId: img.id,
         imageName: img.alt,
         score: ratings[img.id],
-        timeSpent: (gridTimeSpent / 4).toFixed(2)
+        timeSpent: (gridTimeSpent / 4).toFixed(2),
+        interactionCount: sliderMoves[img.id]
       })),
     ];
 
@@ -101,7 +104,10 @@ export default function GroupRate() {
             <Typography align="center">Score: {benchmarkRating}</Typography>
               <Slider
                 value={benchmarkRating}
-                onChange={(e, v) => setBenchmarkRating(v)}
+                onChange={(e, v) => {
+                  setBenchmarkRating(v);
+                  setSliderMoves(prev => ({...prev, b1: prev.b1 + 1}));
+              }}
                 step={1}
                 marks
                 min={1}
@@ -136,9 +142,10 @@ export default function GroupRate() {
                     <Slider
                       size="small"
                       value={ratings[img.id]}
-                      onChange={(e, v) =>
-                        setRatings({ ...ratings, [img.id]: v })
-                      }
+                      onChange={(e, v) => {
+                        setRatings({ ...ratings, [img.id]: v });
+                        setSliderMoves(prev => ({...prev, [img.id]: prev[img.id] + 1}));
+                      }}
                       step={1}
                       min={1}
                       max={5}

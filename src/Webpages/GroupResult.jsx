@@ -31,6 +31,9 @@ export default function GroupResult() {
           const avgTime = hasScores 
             ? (mainScores.reduce((sum, s) => sum + (parseFloat(s.timeSpent) || 0), 0) / mainScores.length).toFixed(2) 
             : "N/A";
+            const avgMoves = hasScores
+            ? (mainScores.reduce((sum, s) => sum + (s.interactionCount || 0), 0) / mainScores.length).toFixed(1)
+            : "N/A";
           return (
             <Box key={i} sx={{ mb: 4, border: '1px solid #ddd', p: 2, borderRadius: 2 }}>
               <Typography variant="h6" color="primary" gutterBottom>
@@ -42,6 +45,7 @@ export default function GroupResult() {
                   <TableRow sx={{ bgcolor: '#f5f5f5' }}>
                     <TableCell><strong>Image</strong></TableCell>
                     <TableCell align="right"><strong>Score</strong></TableCell>
+                    <TableCell align="right"><strong>Moves</strong></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -51,6 +55,7 @@ export default function GroupResult() {
                         {s.imageName} {s.imageId === 0 && <small>(Benchmark)</small>}
                       </TableCell>
                       <TableCell align="right">{s.score}</TableCell>
+                      <TableCell align="right">{s.interactionCount || 0}</TableCell>
                       {/* Time Cell removed from here */}
                     </TableRow>
                   ))}
@@ -60,10 +65,13 @@ export default function GroupResult() {
                   {/* Row 1: Score Average */}
                   <TableRow sx={{ bgcolor: '#fafafa' }}>
                     <TableCell sx={{ fontWeight: 'bold', fontStyle: 'italic' }}>
-                      Average Score (Excl. Benchmark)
+                      Average Score/Moves (Excl. Benchmark)
                     </TableCell>
                     <TableCell align="right" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                       {avgScore}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                      {avgMoves}
                     </TableCell>
                   </TableRow>
 
@@ -75,6 +83,7 @@ export default function GroupResult() {
                     <TableCell align="right" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                       {avgTime}s
                     </TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
                 </TableFooter>
               </Table>

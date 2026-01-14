@@ -9,14 +9,16 @@ export default function CombinedResult() {
     // Filter out benchmarks (handles both ID: 0 and ID: "b1")
     const mainImages = scores.filter(s => s.imageId !== 0 && s.imageId !== "b1");
     
-    if (mainImages.length === 0) return { avgScore: "N/A", avgTime: "N/A" };
+    if (mainImages.length === 0) return { avgScore: "N/A", avgTime: "N/A", avgMoves: "N/A" };
 
     const totalScore = mainImages.reduce((a, b) => a + b.score, 0);
     const totalTime = mainImages.reduce((a, b) => a + (parseFloat(b.timeSpent) || 0), 0);
+    const totalMoves = mainImages.reduce((a, b) => a + (b.interactionCount || 0), 0);
 
     return {
       avgScore: (totalScore / mainImages.length).toFixed(1),
-      avgTime: (totalTime / mainImages.length).toFixed(2)
+      avgTime: (totalTime / mainImages.length).toFixed(2),
+      avgMoves: (totalMoves / mainImages.length).toFixed(1)
     };
   };
 
@@ -44,6 +46,9 @@ export default function CombinedResult() {
                           <Typography component="span" variant="body2" display="block">
                             Avg Time: <strong>{stats.avgTime}s</strong>
                           </Typography>
+                          <Typography component="span" variant="body2" display="block">
+                    Avg Moves: <strong>{stats.avgMoves}</strong>
+                  </Typography>
                         </>
                       } 
                     />
@@ -73,6 +78,9 @@ export default function CombinedResult() {
                           <Typography component="span" variant="body2" display="block">
                             Avg Time: <strong>{stats.avgTime}s</strong>
                           </Typography>
+                          <Typography component="span" variant="body2" display="block">
+                    Avg Moves: <strong>{stats.avgMoves}</strong>
+                  </Typography>
                         </>
                       } 
                     />
