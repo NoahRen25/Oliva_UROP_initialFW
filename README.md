@@ -14,7 +14,9 @@ npm install @mui/material @emotion/react @emotion/styled @mui/icons-material rea
 
 Note: If you have some installed already, e.g react-router-dom, then just remove that from the install
 
+In order to run the project now, open a terminal, and run the command: npm run dev
 
+Then, go to localhost:5173, or whichever is given by the terminal if you've opened multiple
 
 Next: If we end up using Google API:
 
