@@ -53,7 +53,7 @@ export default function IndividualResult() {
                   (s) => s.imageId !== 0
                 );
 
-                // 2. Calculate averages only if there are main images rated
+                // calcs avgs only if there are main images rated
                 const hasScores = nonBenchmarkScores.length > 0;
                 const avgScore = hasScores
                   ? (
@@ -78,7 +78,7 @@ export default function IndividualResult() {
                       ) / nonBenchmarkScores.length
                     ).toFixed(1)
                   : "N/A";
-                // Determine how many rows this user spans
+                // see how many rows this user spans
                 return (
                   <React.Fragment key={sessionIdx}>
                     {session.scores.map((score, scoreIdx) => (

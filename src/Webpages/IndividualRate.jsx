@@ -48,7 +48,7 @@ export default function IndividualRate() {
   };
   const handleNext = (isBenchmark = false) => {
     const endTime = performance.now();
-    const timeSpent = (endTime - startTime) / 1000 // /1000 is ms -> s
+    const timeSpent = (endTime - startTime) / 1000 // 1000 is ms -> s
     const img = isBenchmark
       ? BENCHMARK_IMAGE
       : IMAGES_TO_RATE[currentImageIndex];
@@ -112,7 +112,6 @@ export default function IndividualRate() {
               value={currentRating}
               onChange={(e, v) => {
                 setCurrentRating(v);
-                // --- NEW: Increment count on change ---
                 setInteractionCount(prev => prev + 1);
               }}
               step={1}

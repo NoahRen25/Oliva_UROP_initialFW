@@ -56,13 +56,12 @@ export default function GroupResult() {
                       </TableCell>
                       <TableCell align="right">{s.score}</TableCell>
                       <TableCell align="right">{s.interactionCount || 0}</TableCell>
-                      {/* Time Cell removed from here */}
                     </TableRow>
                   ))}
                 </TableBody>
                 
                 <TableFooter>
-                  {/* Row 1: Score Average */}
+                  {/* Row 1: score avg */}
                   <TableRow sx={{ bgcolor: '#fafafa' }}>
                     <TableCell sx={{ fontWeight: 'bold', fontStyle: 'italic' }}>
                       Average Score/Moves (Excl. Benchmark)
@@ -75,7 +74,7 @@ export default function GroupResult() {
                     </TableCell>
                   </TableRow>
 
-                  {/* Row 2: Total/Avg Time Only */}
+                  {/* Row 2: total/avg time */}
                   <TableRow sx={{ bgcolor: '#fafafa' }}>
                     <TableCell sx={{ fontWeight: 'bold', fontStyle: "italic" }}>
                       Average Time per Image (s)

@@ -6,7 +6,7 @@ export default function CombinedResult() {
   const { individualSessions, groupSessions } = useResults();
 
   const getStats = (scores) => {
-    // Filter out benchmarks (handles both ID: 0 and ID: "b1")
+    // filter out benchmarks (handles both ID: 0 and ID: "b1")
     const mainImages = scores.filter(s => s.imageId !== 0 && s.imageId !== "b1");
     
     if (mainImages.length === 0) return { avgScore: "N/A", avgTime: "N/A", avgMoves: "N/A" };
@@ -27,13 +27,13 @@ export default function CombinedResult() {
       <Typography variant="h3" align="center" gutterBottom>Combined Analytics</Typography>
       
       <Grid container spacing={4}>
-        {/* Individual Column */}
+        {/* individual col */}
         <Grid item xs={12} md={6}>
           <Paper elevation={3} sx={{ p: 2, bgcolor: '#e3f2fd' }}>
             <Typography variant="h5" gutterBottom>Individual Sessions ({individualSessions.length})</Typography>
             <List>
               {individualSessions.map((s, i) => {
-                const stats = getStats(s.scores); // Calculate once per user
+                const stats = getStats(s.scores); // calc once per user
                 return (
                   <ListItem key={i} sx={{ bgcolor: 'white', mb: 1, borderRadius: 1 }}>
                     <ListItemText 
@@ -59,13 +59,13 @@ export default function CombinedResult() {
           </Paper>
         </Grid>
 
-        {/* Group Column */}
+        {/* group col */}
         <Grid item xs={12} md={6}>
           <Paper elevation={3} sx={{ p: 2, bgcolor: '#f3e5f5' }}>
             <Typography variant="h5" gutterBottom>Group Sessions ({groupSessions.length})</Typography>
             <List>
               {groupSessions.map((s, i) => {
-                const stats = getStats(s.scores); // Calculate once per user
+                const stats = getStats(s.scores); // calc once per user
                 return (
                   <ListItem key={i} sx={{ bgcolor: 'white', mb: 1, borderRadius: 1 }}>
                     <ListItemText 
