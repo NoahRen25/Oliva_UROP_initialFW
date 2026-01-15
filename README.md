@@ -1,16 +1,28 @@
-# React + Vite
+Current without any API, in order to run react and everything, including MUI, need to install some stuff
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Check for node first:
+Run the following in terminal
+node -v
 
-Currently, two official plugins are available:
+If error, then you don't have node installed
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+If you don't go to nodejs.org and install the corresponding version to your computer. If you already have it, skip this step (gives you version)
 
-## React Compiler
+Assuming you don't already have MUI components installed yet (If you've used before, you might have), run the following command in terminal:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+npm install @mui/material @emotion/react @emotion/styled @mui/icons-material react-router-dom
 
-## Expanding the ESLint configuration
+Note: If you have some installed already, e.g react-router-dom, then just remove that from the install
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+
+Next: If we end up using Google API:
+
+Create a new .env folder that's on the SAME LEVEL as src (outside src in other words, create off proj folder)
+
+VITE_GOOGLE_API_KEY={API_KEY}
+
+To generate the API Key, go to console.cloud.google.com
+
+Then, create a new project, download Google Drive and Google Sheets for the project, and create the API key. Copy the API Key into {API_KEY} without the {} and everything should work!
+
