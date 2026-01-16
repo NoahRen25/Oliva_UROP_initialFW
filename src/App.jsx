@@ -13,6 +13,7 @@ import PairwiseRate from "./Webpages/PairwiseRate";
 import RankedRate from "./Webpages/RankedRate";
 import PairwiseResult from "./Webpages/PairwiseResult";
 import RankedResult from "./Webpages/RankedResult";
+import PressureCooker from "./Webpages/PressureCooker";
 
 const lightTheme = createTheme({
   palette: {
@@ -52,6 +53,7 @@ function App() {
               <Route path="/ranked-rate" element={<RankedRate />} />
               <Route path="/pairwise-result" element={<PairwiseResult />} />
               <Route path="/ranked-result" element={<RankedResult />} />
+              <Route path="/pressure-cooker" element={<PressureCooker />} />
 
             </Routes>
           </div>

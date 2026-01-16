@@ -9,6 +9,7 @@ export const ResultsProvider = ({ children }) => {
   const [groupSessions, setGroupSessions] = useState([]);
   const [pairwiseSessions, setPairwiseSessions] = useState([]);
   const [rankedSessions, setRankedSessions] = useState([]);
+  const [pressureCookerSessions, setPressureCookerSessions] = useState([]);
 
 
   const addIndividualSession = (username, scores) => {
@@ -39,6 +40,18 @@ export const ResultsProvider = ({ children }) => {
     ]);
   };
 
+  const addPressureCookerSession = (username, choices, bestStreak) => {
+    setPressureCookerSessions((prev) => [
+      ...prev,
+      { username, choices, bestStreak, timestamp: new Date() },
+    ]);
+    // Also add to pairwise sessions for combined results
+    setPairwiseSessions((prev) => [
+      ...prev,
+      { username, choices, timestamp: new Date(), mode: "pressure-cooker" },
+    ]);
+  };
+
   return (
     <Results.Provider
       value={{
@@ -51,6 +64,8 @@ export const ResultsProvider = ({ children }) => {
         addPairwiseSession,
         rankedSessions,
         addRankedSession,
+        pressureCookerSessions,
+        addPressureCookerSession,
       }}
     >
       {children}

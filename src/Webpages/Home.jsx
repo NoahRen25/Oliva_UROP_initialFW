@@ -18,6 +18,7 @@ import InsightsIcon from "@mui/icons-material/Insights";
 import HotelClassIcon from '@mui/icons-material/HotelClass';
 import AssistantIcon from '@mui/icons-material/Assistant';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 
 export default function Home() {
   const menuItems = [
@@ -38,6 +39,12 @@ export default function Home() {
       path: "/ranked-rate",
       icon: <HotelClassIcon fontSize="large" />,
       color: "#FC46AA",
+    },
+    {
+      title: "Pressure Cooker",
+      path: "/pressure-cooker",
+      icon: <LocalFireDepartmentIcon fontSize="large" />,
+      color: "#d32f2f",
     },
     {
       title: "Group Rate",
