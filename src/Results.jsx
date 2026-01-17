@@ -26,7 +26,7 @@ export const ResultsProvider = ({ children }) => {
     JSON.parse(localStorage.getItem("app_transcripts")) || []
   );
 
-  // --- 2. Save to Local Storage whenever data changes ---
+  // --- 2. Sync to Local Storage ---
   useEffect(() => localStorage.setItem("app_individual", JSON.stringify(individualSessions)), [individualSessions]);
   useEffect(() => localStorage.setItem("app_group", JSON.stringify(groupSessions)), [groupSessions]);
   useEffect(() => localStorage.setItem("app_pairwise", JSON.stringify(pairwiseSessions)), [pairwiseSessions]);
@@ -35,21 +35,17 @@ export const ResultsProvider = ({ children }) => {
 
   // --- 3. Add Data Functions ---
   const addIndividualSession = (username, scores) => {
-    setIndividualSessions((prev) => [...prev, { username, scores, timestamp: new Date() }]);
+    setIndividualSessions((prev) => [...prev, { id: Date.now(), username, scores, timestamp: new Date() }]);
   };
-
   const addGroupSession = (username, scores) => {
-    setGroupSessions((prev) => [...prev, { username, scores, timestamp: new Date() }]);
+    setGroupSessions((prev) => [...prev, { id: Date.now(), username, scores, timestamp: new Date() }]);
   };
-  
   const addPairwiseSession = (username, choices) => {
-    setPairwiseSessions((prev) => [...prev, { username, choices, timestamp: new Date() }]);
+    setPairwiseSessions((prev) => [...prev, { id: Date.now(), username, choices, timestamp: new Date() }]);
   };
-
   const addRankedSession = (username, rankings) => {
-    setRankedSessions((prev) => [...prev, { username, rankings, timestamp: new Date() }]);
+    setRankedSessions((prev) => [...prev, { id: Date.now(), username, rankings, timestamp: new Date() }]);
   };
-
   const addTranscript = (text, duration) => {
     if (!text.trim()) return;
     const newEntry = { 
@@ -62,33 +58,58 @@ export const ResultsProvider = ({ children }) => {
     setTranscripts(prev => [newEntry, ...prev]);
   };
 
-  // --- 4. Clearing Functions ---
-  const clearTranscripts = () => {
-    if (window.confirm("Delete all recording history?")) {
-      setTranscripts([]);
+  // --- 4. Delete Functions (Individual) ---
+  const deleteIndividualSession = (index) => {
+    if(window.confirm("Delete this individual session?")) {
+      setIndividualSessions(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+  const deleteGroupSession = (index) => {
+    if(window.confirm("Delete this group session?")) {
+      setGroupSessions(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+  const deletePairwiseSession = (index) => {
+    if(window.confirm("Delete this pairwise session?")) {
+      setPairwiseSessions(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+  const deleteRankedSession = (index) => {
+    if(window.confirm("Delete this ranked session?")) {
+      setRankedSessions(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+  const delTranscript = (id) => {
+    if (window.confirm("Delete this transcript?")) {
+      setTranscripts(prev => prev.filter(t => t.id !== id));
     }
   };
 
-  const clearAllData = () => {
-    if (window.confirm("CRITICAL: This will delete ALL session data and transcripts. Are you sure?")) {
-      setIndividualSessions([]);
-      setGroupSessions([]);
-      setPairwiseSessions([]);
-      setRankedSessions([]);
-      setTranscripts([]);
-      localStorage.clear();
-    }
+  // --- 5. Clear All Functions ---
+  const clearIndividual = () => {
+    if(window.confirm("Delete ALL Individual sessions?")) setIndividualSessions([]);
+  };
+  const clearGroup = () => {
+    if(window.confirm("Delete ALL Group sessions?")) setGroupSessions([]);
+  };
+  const clearPairwise = () => {
+    if(window.confirm("Delete ALL Pairwise sessions?")) setPairwiseSessions([]);
+  };
+  const clearRanked = () => {
+    if(window.confirm("Delete ALL Ranked sessions?")) setRankedSessions([]);
+  };
+  const clearTranscripts = () => {
+    if (window.confirm("Delete all transcripts?")) setTranscripts([]);
   };
 
   return (
     <Results.Provider
       value={{
-        transcripts, addTranscript, clearTranscripts,
-        individualSessions, addIndividualSession,
-        groupSessions, addGroupSession,
-        pairwiseSessions, addPairwiseSession,
-        rankedSessions, addRankedSession,
-        clearAllData // Helper to wipe everything if needed
+        transcripts, addTranscript, delTranscript, clearTranscripts,
+        individualSessions, addIndividualSession, deleteIndividualSession, clearIndividual,
+        groupSessions, addGroupSession, deleteGroupSession, clearGroup,
+        pairwiseSessions, addPairwiseSession, deletePairwiseSession, clearPairwise,
+        rankedSessions, addRankedSession, deleteRankedSession, clearRanked,
       }}
     >
       {children}
