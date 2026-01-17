@@ -121,11 +121,24 @@ export default function RankedRate() {
             Prompt: {activeGroup.prompt}
           </Typography>
 
-          <Grid container spacing={3} ml={9}>
+          <Box
+        sx={{
+          display: "grid",
+          justifyContent: "center",
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(2, 1fr)",
+            md: "repeat(3, 1fr)",
+            lg: "repeat(4, 1fr)",
+            xl: "repeat(5, 1fr)",
+          },
+          gap: 3,
+        }}
+      >
             {activeGroup.images.map((img, index) => (
               <Grid item xs={12} md={4} key={img.id}>
                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <CardMedia component="img" height="250" image={img.src} alt={img.alt} />
+                  <CardMedia component="img" image={img.src} alt={img.alt} sx={{objectFit: "contain", height: "30vh"}}/>
                   <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
                     <Typography variant="subtitle1" gutterBottom>{img.alt}</Typography>
                     <FormControl fullWidth sx={{ mt: 2 }}>
@@ -144,7 +157,7 @@ export default function RankedRate() {
                 </Card>
               </Grid>
             ))}
-          </Grid>
+          </Box>
           
           <Box sx={{ maxWidth: 400, mx: 'auto', mt: 4, pb: 5 }}>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

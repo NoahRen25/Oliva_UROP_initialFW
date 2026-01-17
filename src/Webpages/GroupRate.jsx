@@ -5,10 +5,10 @@ import { Container, Typography, Box, TextField, Button, Grid, Card, CardMedia, C
 
 const BENCHMARK_IMAGE = { id: "b1", src: "/src/images/GPTShip.png", alt: "Benchmark" };
 const GROUP_IMAGES = [
-  { id: "g1", src: "/src/images/Flux2.png", alt: "Flux2" },
-  { id: "g2", src: "/src/images/GPT-Image15.png", alt: "Gpt-15" },
-  { id: "g3", src: "/src/images/GPT5.2.png", alt: "GPT5.2" },
-  { id: "g4", src: "/src/images/NanoBananaPro.png", alt: "Nano" },
+  { id: "g1", src: "/src/images/FluxShip.png", alt: "Flux2" },
+  { id: "g2", src: "/src/images/GPTShip.png", alt: "Gpt-15" },
+  { id: "g3", src: "/src/images/NanoShip.png", alt: "GPT5.2" },
+  { id: "g4", src: "/src/images/NanoFlag.png", alt: "Nano" },
 ];
 
 export default function GroupRate() {
@@ -50,7 +50,7 @@ export default function GroupRate() {
         <Box sx={{ maxWidth: 600, mx: "auto" }}>
           <Typography variant="h5" align="center" gutterBottom>Step 1: Rate Benchmark</Typography>
           <Card>
-            <CardMedia component="img" height="350" image={BENCHMARK_IMAGE.src} />
+            <CardMedia component="img" height="350" image={BENCHMARK_IMAGE.src} sx={{objectFit:"contain"}}/>
             <CardContent>
               <Typography align="center">Score: {benchmarkRating}</Typography>
               <Slider value={benchmarkRating} step={1} marks min={1} max={5} onChange={(e, v) => { setBenchmarkRating(v); setSliderMoves(prev => ({...prev, b1: prev.b1 + 1})); }} />
@@ -62,11 +62,24 @@ export default function GroupRate() {
       {step === 2 && (
         <>
           <Typography variant="h5" align="center" gutterBottom>Step 2: Rate Image Grid</Typography>
-          <Grid container spacing={2}>
+          <Box
+        sx={{
+          display: "grid",
+          justifyContent: "center",
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(2, 1fr)",
+            md: "repeat(2, 1fr)",
+            lg: "repeat(4, 1fr)",
+            xl: "repeat(4, 1fr)",
+          },
+          gap: 3,
+        }}
+      >
             {GROUP_IMAGES.map((img) => (
               <Grid item xs={6} key={img.id}>
                 <Card>
-                  <CardMedia component="img" height="200" image={img.src} />
+                  <CardMedia component="img" image={img.src} sx={{objectFit: "contain", height: "30vh", width: "100%"}}/>
                   <CardContent sx={{ p: 1 }}>
                     <Typography align="center">Score: {ratings[img.id]}</Typography>
                     <Slider size="small" value={ratings[img.id]} step={1} min={1} max={5} onChange={(e, v) => { setRatings({ ...ratings, [img.id]: v }); setSliderMoves(prev => ({...prev, [img.id]: prev[img.id] + 1})); }} />
@@ -74,7 +87,7 @@ export default function GroupRate() {
                 </Card>
               </Grid>
             ))}
-          </Grid>
+          </Box>
           <Button sx={{ mt: 4 }} variant="contained" size="large" fullWidth onClick={handleSubmit}>Submit All Results</Button>
         </>
       )}
