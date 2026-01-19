@@ -38,7 +38,7 @@ export default function GroupRate() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 2 }}>
       {step === 0 && (
         <Paper sx={{ p: 4, maxWidth: 500, mx: "auto", textAlign: "center" }}>
           <Typography variant="h4">Group Evaluation</Typography>
@@ -79,6 +79,7 @@ export default function GroupRate() {
             {GROUP_IMAGES.map((img) => (
               <Grid item xs={6} key={img.id}>
                 <Card>
+                  {/*Note for below: 30vh is if the dimensions on images aren't guaranteed same dimensions -- if they are, change to height: "auto" */}
                   <CardMedia component="img" image={img.src} sx={{objectFit: "contain", height: "30vh", width: "100%"}}/>
                   <CardContent sx={{ p: 1 }}>
                     <Typography align="center">Score: {ratings[img.id]}</Typography>

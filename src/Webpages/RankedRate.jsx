@@ -96,7 +96,7 @@ export default function RankedRate() {
   const activeGroup = RANK_GROUPS[currentGroupIndex];
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 2 }}>
       {step === 0 ? (
         <Paper sx={{ p: 4, maxWidth: 500, mx: "auto", textAlign: "center" }}>
           <Typography variant="h4" gutterBottom>Ranked Evaluation</Typography>

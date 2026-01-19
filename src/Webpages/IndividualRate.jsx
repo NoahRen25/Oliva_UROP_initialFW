@@ -5,11 +5,11 @@ import { Typography, Container, TextField, Button, Slider, Card, CardContent, Ca
 
 const BENCHMARK_IMAGE = { id: 0, src: "/src/images/GPTShip.png", alt: "Benchmark Calibration" };
 const IMAGES_TO_RATE = [
-  { id: 1, src: "/src/images/Flux2.png", alt: "Flux2" },
-  { id: 2, src: "/src/images/GPT-Image15.png", alt: "GPT-15" },
-  { id: 3, src: "/src/images/GPT5.2_diff_viewpoint.png", alt: "GPT5.2_diff" },
-  { id: 4, src: "/src/images/GPT5.2.png", alt: "GPT5.2" },
-  { id: 5, src: "/src/images/NanoBananaPro.png", alt: "Nano" },
+  { id: 1, src: "/src/images/FluxFlag.png", alt: "Flux2" },
+  { id: 2, src: "/src/images/FluxMoonFlags.png", alt: "GPT-15" },
+  { id: 3, src: "/src/images/FluxShip.png", alt: "GPT5.2_diff" },
+  { id: 4, src: "/src/images/flux/generated_0184.png", alt: "GPT5.2" },
+  { id: 5, src: "/src/images/flux/generated_0183.png", alt: "Nano" },
 ];
 
 export default function IndividualRate() {
@@ -52,9 +52,9 @@ export default function IndividualRate() {
       {(activeStep === 1 || activeStep === 2) && (
         <Card>
           <Typography variant="h6" sx={{ p: 2, textAlign: "center", bgcolor: "#fff3e0" }}>
-             {activeStep === 1 ? "Benchmark" : `Image ${currentImageIndex + 1}/${IMAGES_TO_RATE.length}`}: Rate 1-5
+             {activeStep === 1 ? "Benchmark" : `Image ${currentImageIndex + 1} of ${IMAGES_TO_RATE.length}`}: Rate 1-5
           </Typography>
-          <CardMedia component="img" height="300" image={activeStep === 1 ? BENCHMARK_IMAGE.src : IMAGES_TO_RATE[currentImageIndex].src} />
+          <CardMedia component="img" image={activeStep === 1 ? BENCHMARK_IMAGE.src : IMAGES_TO_RATE[currentImageIndex].src} sx={{objectFit: "contain", height: "auto"}}/>
           <CardContent sx={{ textAlign: "center" }}>
             <Typography>Rating: {currentRating}</Typography>
             <Slider value={currentRating} onChange={(e, v) => { setCurrentRating(v); setInteractionCount(prev => prev + 1); }} step={1} marks min={1} max={5} />

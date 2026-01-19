@@ -8,7 +8,7 @@ export default function IndividualResult() {
   const { individualSessions, deleteIndividualSession, clearIndividual } = useResults();
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4 }}>
+    <Container maxWidth="md" sx={{ mt: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Individual Results</Typography>
         {individualSessions.length > 0 && (

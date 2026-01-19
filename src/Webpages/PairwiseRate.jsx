@@ -73,7 +73,7 @@ export default function PairwiseRate() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 2 }}>
       {step === 0 ? (
         <Paper sx={{ p: 4, maxWidth: 500, mx: "auto", textAlign: "center" }}>
           <Typography variant="h4" gutterBottom>
@@ -105,8 +105,10 @@ export default function PairwiseRate() {
           </Typography>
           <Box
         sx={{
+          mt: 2,
           display: "grid",
           justifyContent: "center",
+          height: "65vh",
           gridTemplateColumns: {
             xs: "1fr",
             sm: "repeat(2, 1fr)",
@@ -133,7 +135,7 @@ export default function PairwiseRate() {
                   <CardMedia
                     component="img"
                     image={PAIRS[currentPairIndex].left.src}
-                    sx={{objectFit: "contain", height: "70vh"}}
+                    sx={{objectFit: "contain", height: "55vh"}}
                   />
                   <CardContent>
                     <Typography align="center">
@@ -157,7 +159,7 @@ export default function PairwiseRate() {
                   <CardMedia
                     component="img"
                     image={PAIRS[currentPairIndex].right.src}
-                    sx={{objectFit: "contain", padding: 0, margin: 0, height: "70vh"}}
+                    sx={{objectFit: "contain", padding: 0, margin: 0, height: "55vh"}}
                   />
                   <CardContent>
                     <Typography align="center">

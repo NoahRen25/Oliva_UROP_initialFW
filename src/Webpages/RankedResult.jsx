@@ -8,7 +8,7 @@ export default function RankedResult() {
   const { rankedSessions, deleteRankedSession, clearRanked } = useResults();
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Ranked Results</Typography>
         {rankedSessions.length > 0 && (
