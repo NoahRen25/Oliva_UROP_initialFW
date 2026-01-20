@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
 
 const Results = createContext({});
 
@@ -25,6 +25,9 @@ export const ResultsProvider = ({ children }) => {
   const [transcripts, setTranscripts] = useState(() => 
     JSON.parse(localStorage.getItem("app_transcripts")) || []
   );
+  const [isAnnouncing, setIsAnnouncing] = useState(() => 
+    JSON.parse(localStorage.getItem("app_announcing")) || false
+  );
 
   // --- 2. Sync to Local Storage ---
   useEffect(() => localStorage.setItem("app_individual", JSON.stringify(individualSessions)), [individualSessions]);
@@ -32,7 +35,46 @@ export const ResultsProvider = ({ children }) => {
   useEffect(() => localStorage.setItem("app_pairwise", JSON.stringify(pairwiseSessions)), [pairwiseSessions]);
   useEffect(() => localStorage.setItem("app_ranked", JSON.stringify(rankedSessions)), [rankedSessions]);
   useEffect(() => localStorage.setItem("app_transcripts", JSON.stringify(transcripts)), [transcripts]);
+  useEffect(() => localStorage.setItem("app_announcing", JSON.stringify(isAnnouncing)), [isAnnouncing]);
 
+  const toggleAnnouncing = () => {
+    // If turning off, immediately silence any current speech
+    if (isAnnouncing) {
+      window.speechSynthesis.cancel();
+    }
+    setIsAnnouncing(prev => !prev);
+  };
+
+  const announce = useCallback((text) => {
+    if (!isAnnouncing || !text) return;
+    
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+  
+    // Get all available voices
+    const voices = window.speechSynthesis.getVoices();
+    console.log(voices)
+  
+    /** * CHANGE VOICE HERE:
+     * You can look for "Google", "Female", or specific language codes like "en-GB".
+     * This logic tries to find a 'Google' voice (usually higher quality), 
+     * otherwise it falls back to the first available voice.
+     */
+    const preferredVoice = voices.find(v => v.name.includes("Karen") && v.lang.startsWith("en")) 
+                           || voices.find(v => v.lang.startsWith("en"))
+                           || voices[0];
+  
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+  
+    // Optional: Adjust the characteristics
+    utterance.rate = 3.0;  // Speed (0.1 to 10)
+    utterance.pitch = 1.0; // Pitch (0 to 2)
+  
+    window.speechSynthesis.speak(utterance);
+  },[[isAnnouncing]]);
   // --- 3. Add Data Functions ---
   const addIndividualSession = (username, scores) => {
     setIndividualSessions((prev) => [...prev, { id: Date.now(), username, scores, timestamp: new Date() }]);
@@ -69,9 +111,9 @@ export const ResultsProvider = ({ children }) => {
       setGroupSessions(prev => prev.filter((_, i) => i !== index));
     }
   };
-  const deletePairwiseSession = (index) => {
-    if(window.confirm("Delete this pairwise session?")) {
-      setPairwiseSessions(prev => prev.filter((_, i) => i !== index));
+  const deletePairwiseSession = (id, username) => {
+    if(window.confirm(`Delete session by user #${username} ?`)) {
+      setPairwiseSessions(prev => prev.filter(session => session.id!= id));
     }
   };
   const deleteRankedSession = (index) => {
@@ -110,6 +152,7 @@ export const ResultsProvider = ({ children }) => {
         groupSessions, addGroupSession, deleteGroupSession, clearGroup,
         pairwiseSessions, addPairwiseSession, deletePairwiseSession, clearPairwise,
         rankedSessions, addRankedSession, deleteRankedSession, clearRanked,
+        isAnnouncing, toggleAnnouncing, announce,
       }}
     >
       {children}

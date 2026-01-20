@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useResults } from "../Results";
 import {
@@ -41,14 +41,30 @@ const PAIRS = [
 
 export default function PairwiseRate() {
   const navigate = useNavigate();
-  const { addPairwiseSession } = useResults();
+  const { addPairwiseSession, announce, isAnnouncing } = useResults();
 
   const [step, setStep] = useState(0); // States: Username, rating
   const [username, setUsername] = useState("");
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const [selectedSide, setSelectedSide] = useState(null); // 'left' or 'right'
   const [choices, setChoices] = useState([]); // Stores { pairId, winner: 'left'|'right', winnerName }
+  const [isFinished, setIsFinished] = useState(false);
+  const hasAnnouncedWelcome = useRef(false);
 
+  useEffect(() => {
+    if(isFinished) return;
+    if (step === 0) {
+      if (!hasAnnouncedWelcome.current) {
+        announce("Welcome to Pairwise Comparison. Please enter your User ID to begin.");
+        hasAnnouncedWelcome.current = true;
+      } else {
+        hasAnnouncedWelcome.current = false;
+      }
+    } else if (step === 1) {
+      const currentPrompt = PAIRS[currentPairIndex].prompt;
+      announce(`Pair ${currentPairIndex + 1}. Which image is better given the prompt: ${currentPrompt}`);
+    }
+  }, [step, currentPairIndex, announce, isFinished, isAnnouncing]);
   const handleNext = () => {
     const currentPair = PAIRS[currentPairIndex];
     const choiceData = {
@@ -67,6 +83,8 @@ export default function PairwiseRate() {
     if (currentPairIndex < PAIRS.length - 1) {
       setCurrentPairIndex(currentPairIndex + 1);
     } else {
+    setIsFinished(true); 
+    window.speechSynthesis.cancel();
       addPairwiseSession(username, newChoices);
       navigate("/pairwise-result");
     }

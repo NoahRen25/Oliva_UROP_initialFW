@@ -1,8 +1,11 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import { AppBar, Toolbar, Button, Typography, ThemeProvider, createTheme, CssBaseline, Box } from "@mui/material";
+import { AppBar, Toolbar, Button, Typography, ThemeProvider, createTheme, CssBaseline, Box, Tooltip, IconButton } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 import HistoryEduIcon from "@mui/icons-material/HistoryEdu";
+import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
+import VoiceOverOffIcon from '@mui/icons-material/VoiceOverOff';
+
 
 import { ResultsProvider, useResults } from "./Results"; 
 import VoiceRecorder from "./components/VoiceRecorder"; 
@@ -24,7 +27,7 @@ const lightTheme = createTheme({
 });
 
 function NavigationWrapper() {
-  const { addTranscript } = useResults();
+  const { addTranscript, isAnnouncing, toggleAnnouncing } = useResults();
 
   return (
     <Router>
@@ -33,7 +36,11 @@ function NavigationWrapper() {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
             OlivaGroupFW
           </Typography>
-
+          <Tooltip title={isAnnouncing ? "Turn Announcer Off" : "Turn Announcer On"}>
+            <IconButton onClick={toggleAnnouncing} color={isAnnouncing ? "primary" : "default"} sx={{ mr: 2 }}>
+              {isAnnouncing ? <RecordVoiceOverIcon /> : <VoiceOverOffIcon />}
+            </IconButton>
+          </Tooltip>
           <VoiceRecorder onSave={(text, duration) => addTranscript(text, duration)} />
 
           <Button startIcon={<HistoryEduIcon />} component={Link} to="/transcripts" color="inherit" sx={{ mr: 1 }}>

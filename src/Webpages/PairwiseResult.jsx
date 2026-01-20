@@ -33,9 +33,9 @@ export default function PairwiseResult() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {pairwiseSessions.map((session, i) => (
+              {pairwiseSessions.map((session) => (
                 session.choices.map((choice, j) => (
-                  <TableRow key={`${i}-${j}`}>
+                  <TableRow key={`${session.id}-${j}`}>
                     {j === 0 && (
                       <TableCell rowSpan={session.choices.length} sx={{ fontWeight: 'bold', verticalAlign: 'top' }}>
                         {session.username}
@@ -47,7 +47,7 @@ export default function PairwiseResult() {
                     
                     {j === 0 && (
                       <TableCell rowSpan={session.choices.length} align="center" sx={{ verticalAlign: 'top' }}>
-                        <IconButton color="error" onClick={() => deletePairwiseSession(i)}>
+                        <IconButton color="error" onClick={() => deletePairwiseSession(session.id, session.username)}>
                           <DeleteIcon />
                         </IconButton>
                       </TableCell>
