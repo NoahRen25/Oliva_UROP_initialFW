@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useResults } from "../Results";
 import { Typography, Container, TextField, Button, Slider, Card, CardContent, CardMedia, Paper } from "@mui/material";
 
-const BENCHMARK_IMAGE = { id: 0, src: "/src/images/GPTShip.png", alt: "Benchmark Calibration" };
+const BENCHMARK_IMAGE = { id: 0, src: "/src/images/flux/generated_0182.png", alt: "Benchmark Calibration" };
 const IMAGES_TO_RATE = [
   { id: 1, src: "/src/images/FluxFlag.png", alt: "Flux2" },
   { id: 2, src: "/src/images/FluxMoonFlags.png", alt: "GPT-15" },

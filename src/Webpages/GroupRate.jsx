@@ -20,10 +20,34 @@ export default function GroupRate() {
   const [ratings, setRatings] = useState({ g1: 3, g2: 3, g3: 3, g4: 3 });
   const [startTime, setStartTime] = useState(null);
   const [sliderMoves, setSliderMoves] = useState({ b1: 0, g1: 0, g2: 0, g3: 0, g4: 0 });
-
+  const [isFinished, setIsFinished] = useState(false);
+  const hasAnnouncedWelcome = useRef(false);
   const startTimer = () => setStartTime(performance.now());
   const handleStart = () => { setStep(1); startTimer(); };
-  
+
+
+  //ends speech when navigating off page
+  useEffect(() => {
+   
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+  //actual tts
+  useEffect(() => {
+    if(isFinished) return;
+    if (step === 0) {
+      if (!hasAnnouncedWelcome.current) {
+        announce("Welcome to Pairwise Comparison. Please enter your User ID to begin.");
+        hasAnnouncedWelcome.current = true;
+      } else {
+        hasAnnouncedWelcome.current = false;
+      }
+    } else if (step === 1) {
+      const currentPrompt = PAIRS[currentPairIndex].prompt;
+      announce(`Pair ${currentPairIndex + 1}. Which image is better given the prompt: ${currentPrompt}`);
+    }
+  }, [step, currentPairIndex, announce, isFinished, isAnnouncing]);
   const handleSubmit = () => {
     const totalTime = (performance.now() - startTime) / 1000;
     const formattedScores = [
@@ -70,8 +94,8 @@ export default function GroupRate() {
             xs: "1fr",
             sm: "repeat(2, 1fr)",
             md: "repeat(2, 1fr)",
-            lg: "repeat(4, 1fr)",
-            xl: "repeat(4, 1fr)",
+            lg: "repeat(2, 1fr)",
+            xl: "repeat(2, 1fr)",
           },
           gap: 3,
         }}

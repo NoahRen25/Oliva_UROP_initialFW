@@ -34,7 +34,7 @@ export default function IndividualResult() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {individualSessions.map((session, sessionIdx) => {
+              {individualSessions.map((session) => {
                 const nonBenchmark = session.scores.filter((s) => s.imageId !== 0);
                 const hasScores = nonBenchmark.length > 0;
                 
@@ -43,9 +43,9 @@ export default function IndividualResult() {
                 const avgMoves = hasScores ? (nonBenchmark.reduce((a, b) => a + (b.interactionCount || 0), 0) / nonBenchmark.length).toFixed(1) : "N/A";
 
                 return (
-                  <React.Fragment key={sessionIdx}>
+                  <>
                     {session.scores.map((score, scoreIdx) => (
-                      <TableRow key={`${sessionIdx}-${scoreIdx}`}>
+                      <TableRow key={`${session.id}-${scoreIdx}`}>
                         {scoreIdx === 0 && (
                           <TableCell rowSpan={session.scores.length} sx={{ verticalAlign: "top", fontWeight: "bold" }}>
                             {session.username}
@@ -57,7 +57,7 @@ export default function IndividualResult() {
                         <TableCell align="right">{score.interactionCount || 0}</TableCell>
                         {scoreIdx === 0 && (
                           <TableCell rowSpan={session.scores.length} align="center">
-                             <IconButton color="error" onClick={() => deleteIndividualSession(sessionIdx)}>
+                             <IconButton color="error" onClick={() => deleteIndividualSession(session.id, session.username)}>
                                 <DeleteIcon />
                              </IconButton>
                           </TableCell>
@@ -72,7 +72,7 @@ export default function IndividualResult() {
                       <TableCell />
                     </TableRow>
                     <TableRow><TableCell colSpan={6} sx={{ bgcolor: "#f1f1f1", height: "8px", p: 0 }}/></TableRow>
-                  </React.Fragment>
+                    </>
                 );
               })}
             </TableBody>

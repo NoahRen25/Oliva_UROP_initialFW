@@ -20,7 +20,7 @@ export default function GroupResult() {
 
       <Paper sx={{ p: 2 }}>
         {groupSessions.length === 0 ? <Typography>No group ratings yet.</Typography> : 
-          groupSessions.map((session, i) => {
+          groupSessions.map((session) => {
             const mainScores = session.scores.filter(s => s.imageId !== "b1");
             const hasScores = mainScores.length > 0;
             const avgScore = hasScores ? (mainScores.reduce((sum, s) => sum + s.score, 0) / mainScores.length).toFixed(2) : "N/A";
@@ -28,10 +28,10 @@ export default function GroupResult() {
             const avgMoves = hasScores ? (mainScores.reduce((sum, s) => sum + (s.interactionCount || 0), 0) / mainScores.length).toFixed(1) : "N/A";
 
             return (
-              <Box key={i} sx={{ mb: 4, border: '1px solid #ddd', p: 2, borderRadius: 2 }}>
+              <Box key={session.id} sx={{ mb: 4, border: '1px solid #ddd', p: 2, borderRadius: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="h6" color="primary" gutterBottom>User ID: {session.username}</Typography>
-                  <IconButton color="error" onClick={() => deleteGroupSession(i)}><DeleteIcon /></IconButton>
+                  <IconButton color="error" onClick={() => deleteGroupSession(session.id, session.username)}><DeleteIcon /></IconButton>
                 </Box>
                 
                 <Table size="small">

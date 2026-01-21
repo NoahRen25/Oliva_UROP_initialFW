@@ -22,7 +22,7 @@ const TranscriptHistory = () => {
   );
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold' }}>Recording History</Typography>
         {transcripts.length > 0 && (
@@ -60,14 +60,14 @@ const TranscriptHistory = () => {
       ) : (
         <Grid container spacing={2}>
           {filteredTranscripts.map((item) => (
-            <Grid item xs={12} key={item.id}>
+            <Grid item xs={12} key={item.id} sx={{width: "100%"}}>
               <Paper elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
                 <Box sx={{ bgcolor: '#e3f2fd', p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>{item.timestamp}</Typography>
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <Chip icon={<TimerIcon />} label={formatDuration(item.duration)} size="small" color="secondary" variant="outlined" />
                     <Chip label={`${item.length} chars`} size="small" color="primary" variant="outlined" />
-                    <Chip label="Delete" icon={<DeleteIcon />} color="error" onClick={() => delTranscript(item.id)}/>
+                    <Chip label="Delete" icon={<DeleteIcon />} color="error" onClick={() => delTranscript(item.id, item.timestamp)}/>
                   </Box>
                 </Box>
                 <Box sx={{ p: 3, maxHeight: '200px', overflowY: 'auto' }}>

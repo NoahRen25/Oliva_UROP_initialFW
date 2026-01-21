@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useResults } from "../Results";
 import { 
@@ -41,7 +41,7 @@ const RANK_GROUPS = [
 
 export default function RankedRate() {
   const navigate = useNavigate();
-  const { addRankedSession } = useResults();
+  const { addRankedSession, announce, isAnnouncing } = useResults();
 
   const [step, setStep] = useState(0); // 0: User, 1: Ranking Loop
   const [username, setUsername] = useState("");
@@ -52,10 +52,29 @@ export default function RankedRate() {
   const [currentRanks, setCurrentRanks] = useState({ img0: '', img1: '', img2: '' });
   const [allRankings, setAllRankings] = useState([]);
 
+  const [isFinished, setIsFinished] = useState(false);
+  const hasAnnouncedWelcome = useRef(false);
   const handleChange = (key) => (e) => {
     setCurrentRanks({ ...currentRanks, [key]: e.target.value });
     setError("");
   };
+  useEffect(() => {
+   
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+  //actual tts
+  useEffect(() => {
+    if(isFinished) return;
+    if (step === 0) {
+      
+        announce("Welcome to Ranked Comparison. Please enter your User ID to begin.");
+    } else if (step === 1) {
+      const currentPrompt = RANK_GROUPS[currentGroupIndex].prompt;
+      announce(`Ranking ${currentGroupIndex + 1}. Rank these images in terms of quality, given the prompt: ${currentPrompt}`);
+    }
+  }, [step, currentGroupIndex, announce, isFinished, isAnnouncing]);
 
   const handleNextGroup = () => {
     const values = Object.values(currentRanks);
@@ -88,6 +107,8 @@ export default function RankedRate() {
       setCurrentGroupIndex(currentGroupIndex + 1);
       setCurrentRanks({ img0: '', img1: '', img2: '' }); // Reset for next page
     } else {
+      setIsFinished(true); 
+      window.speechSynthesis.cancel();
       addRankedSession(username, updatedTotalRankings);
       navigate('/ranked-result');
     }

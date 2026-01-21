@@ -7,7 +7,6 @@ import {
   Box,
   TextField,
   Button,
-  Grid,
   Card,
   CardMedia,
   CardContent,
@@ -51,15 +50,19 @@ export default function PairwiseRate() {
   const [isFinished, setIsFinished] = useState(false);
   const hasAnnouncedWelcome = useRef(false);
 
+  //ends speech when navigating off page
+  useEffect(() => {
+   
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+  //actual tts
   useEffect(() => {
     if(isFinished) return;
     if (step === 0) {
-      if (!hasAnnouncedWelcome.current) {
+      
         announce("Welcome to Pairwise Comparison. Please enter your User ID to begin.");
-        hasAnnouncedWelcome.current = true;
-      } else {
-        hasAnnouncedWelcome.current = false;
-      }
     } else if (step === 1) {
       const currentPrompt = PAIRS[currentPairIndex].prompt;
       announce(`Pair ${currentPairIndex + 1}. Which image is better given the prompt: ${currentPrompt}`);

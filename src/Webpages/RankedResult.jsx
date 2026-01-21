@@ -31,7 +31,7 @@ export default function RankedResult() {
             <Paper key={i} sx={{ p: 3, mb: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6" color="primary">User ID: {session.username}</Typography>
-                <IconButton color="error" onClick={() => deleteRankedSession(i)}><DeleteIcon /></IconButton>
+                <IconButton color="error" onClick={() => deleteRankedSession(session.id, session.username)}><DeleteIcon /></IconButton>
               </Box>
               
               <Table size="small">

@@ -56,11 +56,7 @@ export const ResultsProvider = ({ children }) => {
     const voices = window.speechSynthesis.getVoices();
     console.log(voices)
   
-    /** * CHANGE VOICE HERE:
-     * You can look for "Google", "Female", or specific language codes like "en-GB".
-     * This logic tries to find a 'Google' voice (usually higher quality), 
-     * otherwise it falls back to the first available voice.
-     */
+
     const preferredVoice = voices.find(v => v.name.includes("Karen") && v.lang.startsWith("en")) 
                            || voices.find(v => v.lang.startsWith("en"))
                            || voices[0];
@@ -70,7 +66,7 @@ export const ResultsProvider = ({ children }) => {
     }
   
     // Optional: Adjust the characteristics
-    utterance.rate = 3.0;  // Speed (0.1 to 10)
+    utterance.rate = 1.05;  // Speed (0.1 to 10)
     utterance.pitch = 1.0; // Pitch (0 to 2)
   
     window.speechSynthesis.speak(utterance);
@@ -101,14 +97,14 @@ export const ResultsProvider = ({ children }) => {
   };
 
   // --- 4. Delete Functions (Individual) ---
-  const deleteIndividualSession = (index) => {
-    if(window.confirm("Delete this individual session?")) {
-      setIndividualSessions(prev => prev.filter((_, i) => i !== index));
+  const deleteIndividualSession = (id, username) => {
+    if(window.confirm(`Delete individual session by user ${username}?`)) {
+      setIndividualSessions(prev => prev.filter(session => session.id != id));
     }
   };
-  const deleteGroupSession = (index) => {
-    if(window.confirm("Delete this group session?")) {
-      setGroupSessions(prev => prev.filter((_, i) => i !== index));
+  const deleteGroupSession = (id, username) => {
+    if(window.confirm(`Delete group session by user ${username}?`)) {
+      setGroupSessions(prev => prev.filter(session => session.id != id));
     }
   };
   const deletePairwiseSession = (id, username) => {
@@ -116,13 +112,13 @@ export const ResultsProvider = ({ children }) => {
       setPairwiseSessions(prev => prev.filter(session => session.id!= id));
     }
   };
-  const deleteRankedSession = (index) => {
-    if(window.confirm("Delete this ranked session?")) {
-      setRankedSessions(prev => prev.filter((_, i) => i !== index));
+  const deleteRankedSession = (id, username) => {
+    if(window.confirm(`Delete this ranked session by user ${username}?`)) {
+      setRankedSessions(prev => prev.filter(session => session.id!= id));
     }
   };
-  const delTranscript = (id) => {
-    if (window.confirm("Delete this transcript?")) {
+  const delTranscript = (id, timestamp) => {
+    if (window.confirm(`Delete this transcript from ${timestamp}?`)) {
       setTranscripts(prev => prev.filter(t => t.id !== id));
     }
   };
