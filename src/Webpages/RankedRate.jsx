@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useResults } from "../Results";
 import { 
@@ -41,7 +41,7 @@ const RANK_GROUPS = [
 
 export default function RankedRate() {
   const navigate = useNavigate();
-  const { addRankedSession } = useResults();
+  const { addRankedSession, announce, isAnnouncing } = useResults();
 
   const [step, setStep] = useState(0); // 0: User, 1: Ranking Loop
   const [username, setUsername] = useState("");
@@ -52,10 +52,29 @@ export default function RankedRate() {
   const [currentRanks, setCurrentRanks] = useState({ img0: '', img1: '', img2: '' });
   const [allRankings, setAllRankings] = useState([]);
 
+  const [isFinished, setIsFinished] = useState(false);
+  const hasAnnouncedWelcome = useRef(false);
   const handleChange = (key) => (e) => {
     setCurrentRanks({ ...currentRanks, [key]: e.target.value });
     setError("");
   };
+  useEffect(() => {
+   
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+  //actual tts
+  useEffect(() => {
+    if(isFinished) return;
+    if (step === 0) {
+      
+        announce("Welcome to Ranked Comparison. Please enter your User ID to begin.");
+    } else if (step === 1) {
+      const currentPrompt = RANK_GROUPS[currentGroupIndex].prompt;
+      announce(`Ranking ${currentGroupIndex + 1}. Rank these images in terms of quality, given the prompt: ${currentPrompt}`);
+    }
+  }, [step, currentGroupIndex, announce, isFinished, isAnnouncing]);
 
   const handleNextGroup = () => {
     const values = Object.values(currentRanks);
@@ -88,6 +107,8 @@ export default function RankedRate() {
       setCurrentGroupIndex(currentGroupIndex + 1);
       setCurrentRanks({ img0: '', img1: '', img2: '' }); // Reset for next page
     } else {
+      setIsFinished(true); 
+      window.speechSynthesis.cancel();
       addRankedSession(username, updatedTotalRankings);
       navigate('/ranked-result');
     }
@@ -96,7 +117,7 @@ export default function RankedRate() {
   const activeGroup = RANK_GROUPS[currentGroupIndex];
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 2 }}>
       {step === 0 ? (
         <Paper sx={{ p: 4, maxWidth: 500, mx: "auto", textAlign: "center" }}>
           <Typography variant="h4" gutterBottom>Ranked Evaluation</Typography>
@@ -121,11 +142,24 @@ export default function RankedRate() {
             Prompt: {activeGroup.prompt}
           </Typography>
 
-          <Grid container spacing={3} ml={9}>
+          <Box
+        sx={{
+          display: "grid",
+          justifyContent: "center",
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(2, 1fr)",
+            md: "repeat(3, 1fr)",
+            lg: "repeat(3, 1fr)",
+            xl: "repeat(4s, 1fr)",
+          },
+          gap: 3,
+        }}
+      >
             {activeGroup.images.map((img, index) => (
               <Grid item xs={12} md={4} key={img.id}>
                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <CardMedia component="img" height="250" image={img.src} alt={img.alt} />
+                  <CardMedia component="img" image={img.src} alt={img.alt} sx={{objectFit: "contain", height: "30vh"}}/>
                   <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
                     <Typography variant="subtitle1" gutterBottom>{img.alt}</Typography>
                     <FormControl fullWidth sx={{ mt: 2 }}>
@@ -144,7 +178,7 @@ export default function RankedRate() {
                 </Card>
               </Grid>
             ))}
-          </Grid>
+          </Box>
           
           <Box sx={{ maxWidth: 400, mx: 'auto', mt: 4, pb: 5 }}>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

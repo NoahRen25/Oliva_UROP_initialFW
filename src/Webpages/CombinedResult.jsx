@@ -23,7 +23,7 @@ export default function CombinedResult() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 2 }}>
       <Typography variant="h3" align="center" gutterBottom>Combined Analytics</Typography>
       
       <Grid container spacing={4}>
