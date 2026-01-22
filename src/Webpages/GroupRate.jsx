@@ -1,7 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useResults } from "../Results";
 import { useNavigate } from "react-router-dom";
 import { Container, Typography, Box, TextField, Button, Grid, Card, CardMedia, CardContent, Slider, Paper } from "@mui/material";
+import ScoreSlider from "../components/ScoreSlider";
+import UsernameEntry from "../components/UsernameEntry";
+import ProgressBar from "../components/ProgressBar";
 
 const BENCHMARK_IMAGE = { id: "b1", src: "/src/images/GPTShip.png", alt: "Benchmark" };
 const GROUP_IMAGES = [
@@ -20,34 +23,10 @@ export default function GroupRate() {
   const [ratings, setRatings] = useState({ g1: 3, g2: 3, g3: 3, g4: 3 });
   const [startTime, setStartTime] = useState(null);
   const [sliderMoves, setSliderMoves] = useState({ b1: 0, g1: 0, g2: 0, g3: 0, g4: 0 });
-  const [isFinished, setIsFinished] = useState(false);
-  const hasAnnouncedWelcome = useRef(false);
+
   const startTimer = () => setStartTime(performance.now());
   const handleStart = () => { setStep(1); startTimer(); };
-
-
-  //ends speech when navigating off page
-  useEffect(() => {
-   
-    return () => {
-      window.speechSynthesis.cancel();
-    };
-  }, []);
-  //actual tts
-  useEffect(() => {
-    if(isFinished) return;
-    if (step === 0) {
-      if (!hasAnnouncedWelcome.current) {
-        announce("Welcome to Pairwise Comparison. Please enter your User ID to begin.");
-        hasAnnouncedWelcome.current = true;
-      } else {
-        hasAnnouncedWelcome.current = false;
-      }
-    } else if (step === 1) {
-      const currentPrompt = PAIRS[currentPairIndex].prompt;
-      announce(`Pair ${currentPairIndex + 1}. Which image is better given the prompt: ${currentPrompt}`);
-    }
-  }, [step, currentPairIndex, announce, isFinished, isAnnouncing]);
+  
   const handleSubmit = () => {
     const totalTime = (performance.now() - startTime) / 1000;
     const formattedScores = [
@@ -60,15 +39,16 @@ export default function GroupRate() {
     addGroupSession(username, formattedScores);
     navigate("/group-result");
   };
-
+  const trackMove = (id) => setSliderMoves(prev => ({...prev, [id]: prev[id] + 1}));
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
       {step === 0 && (
-        <Paper sx={{ p: 4, maxWidth: 500, mx: "auto", textAlign: "center" }}>
-          <Typography variant="h4">Group Evaluation</Typography>
-          <TextField fullWidth sx={{ my: 3 }} label="User ID" value={username} onChange={(e) => setUsername(e.target.value)} />
-          <Button variant="contained" onClick={handleStart}>Start</Button>
-        </Paper>
+       <UsernameEntry
+       title = "Group Image Rating"
+       username={username}
+       setUsername={setUsername}
+       onStart={handleStart}
+     /> 
       )}
       {step === 1 && (
         <Box sx={{ maxWidth: 600, mx: "auto" }}>
@@ -94,7 +74,7 @@ export default function GroupRate() {
             xs: "1fr",
             sm: "repeat(2, 1fr)",
             md: "repeat(2, 1fr)",
-            lg: "repeat(2, 1fr)",
+            lg: "repeat(4, 1fr)",
             xl: "repeat(2, 1fr)",
           },
           gap: 3,
@@ -107,7 +87,12 @@ export default function GroupRate() {
                   <CardMedia component="img" image={img.src} sx={{objectFit: "contain", height: "30vh", width: "100%"}}/>
                   <CardContent sx={{ p: 1 }}>
                     <Typography align="center">Score: {ratings[img.id]}</Typography>
-                    <Slider size="small" value={ratings[img.id]} step={1} min={1} max={5} onChange={(e, v) => { setRatings({ ...ratings, [img.id]: v }); setSliderMoves(prev => ({...prev, [img.id]: prev[img.id] + 1})); }} />
+                    <ScoreSlider 
+                    size="small"
+              value={ratings[img.id]} 
+              setValue={(v) => setRatings(prev => ({ ...prev, [img.id]: v }))} 
+              onInteraction={() => trackMove(img.id)}
+            />
                   </CardContent>
                 </Card>
               </Grid>

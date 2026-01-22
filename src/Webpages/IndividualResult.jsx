@@ -3,20 +3,25 @@ import { useResults } from "../Results";
 import { Container, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableFooter, Button, Box, IconButton } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import ResultsHeader from "../components/ResultsHeader";
+import StatsSummary from "../components/StatsSummary";
 
 export default function IndividualResult() {
   const { individualSessions, deleteIndividualSession, clearIndividual } = useResults();
 
+  const extractData = (session) => {
+    return session.scores.map(s => ({
+        name: s.imageName,
+        value: s.score
+    }));
+  };
   return (
     <Container maxWidth="md" sx={{ mt: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Individual Results</Typography>
-        {individualSessions.length > 0 && (
-          <Button variant="outlined" color="error" startIcon={<DeleteSweepIcon />} onClick={clearIndividual}>
-            Clear History
-          </Button>
-        )}
-      </Box>
+<ResultsHeader
+title="Individual Results"
+hasData={individualSessions.length > 0} 
+        onClear={clearIndividual}
+/>
 
       {individualSessions.length === 0 ? (
         <Typography>No ratings submitted yet.</Typography>
@@ -79,6 +84,10 @@ export default function IndividualResult() {
           </Table>
         </TableContainer>
       )}
+      <StatsSummary 
+        sessions={individualSessions} 
+        dataExtractor={extractData} 
+      />
     </Container>
   );
 }

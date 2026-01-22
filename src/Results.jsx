@@ -8,34 +8,23 @@ export const useResults = () => {
   return context;
 };
 
+const useLocalStorage = (key, initialValue) => {
+  const [state, setState] = useState(() => 
+    JSON.parse(localStorage.getItem(key)) || initialValue
+  );
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(state));
+  }, [key, state]);
+  return [state, setState];
+};
 export const ResultsProvider = ({ children }) => {
   // --- 1. Load Initial State from Local Storage ---
-  const [individualSessions, setIndividualSessions] = useState(() => 
-    JSON.parse(localStorage.getItem("app_individual")) || []
-  );
-  const [groupSessions, setGroupSessions] = useState(() => 
-    JSON.parse(localStorage.getItem("app_group")) || []
-  );
-  const [pairwiseSessions, setPairwiseSessions] = useState(() => 
-    JSON.parse(localStorage.getItem("app_pairwise")) || []
-  );
-  const [rankedSessions, setRankedSessions] = useState(() => 
-    JSON.parse(localStorage.getItem("app_ranked")) || []
-  );
-  const [transcripts, setTranscripts] = useState(() => 
-    JSON.parse(localStorage.getItem("app_transcripts")) || []
-  );
-  const [isAnnouncing, setIsAnnouncing] = useState(() => 
-    JSON.parse(localStorage.getItem("app_announcing")) || false
-  );
-
-  // --- 2. Sync to Local Storage ---
-  useEffect(() => localStorage.setItem("app_individual", JSON.stringify(individualSessions)), [individualSessions]);
-  useEffect(() => localStorage.setItem("app_group", JSON.stringify(groupSessions)), [groupSessions]);
-  useEffect(() => localStorage.setItem("app_pairwise", JSON.stringify(pairwiseSessions)), [pairwiseSessions]);
-  useEffect(() => localStorage.setItem("app_ranked", JSON.stringify(rankedSessions)), [rankedSessions]);
-  useEffect(() => localStorage.setItem("app_transcripts", JSON.stringify(transcripts)), [transcripts]);
-  useEffect(() => localStorage.setItem("app_announcing", JSON.stringify(isAnnouncing)), [isAnnouncing]);
+  const [individualSessions, setIndividualSessions] = useLocalStorage("app_individual", []);
+  const [groupSessions, setGroupSessions] = useLocalStorage("app_group", []);
+  const [pairwiseSessions, setPairwiseSessions] = useLocalStorage("app_pairwise", []);
+  const [rankedSessions, setRankedSessions] = useLocalStorage("app_ranked", []);
+  const [transcripts, setTranscripts] = useLocalStorage("app_transcripts", []);
+  const [isAnnouncing, setIsAnnouncing] = useLocalStorage("app_announcing", false);
 
   const toggleAnnouncing = () => {
     // If turning off, immediately silence any current speech

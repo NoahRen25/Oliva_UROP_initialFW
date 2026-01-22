@@ -3,20 +3,24 @@ import { useResults } from "../Results";
 import { Container, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, Box, TableFooter, Button, IconButton } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import ResultsHeader from "../components/ResultsHeader";
+import StatsSummary from "../components/StatsSummary";
 
 export default function GroupResult() {
   const { groupSessions, deleteGroupSession, clearGroup } = useResults();
-  
+  const extractData = (session) => {
+    return session.scores.map(s => ({
+        name: s.imageName,
+        value: s.score
+    }));
+  };
   return (
     <Container maxWidth="md" sx={{ mt: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Group Grid Results</Typography>
-        {groupSessions.length > 0 && (
-          <Button variant="outlined" color="error" startIcon={<DeleteSweepIcon />} onClick={clearGroup}>
-            Clear History
-          </Button>
-        )}
-      </Box>
+      <ResultsHeader 
+        title="Group Results" 
+        hasData={groupSessions.length > 0} 
+        onClear={clearGroup} 
+      />
 
       <Paper sx={{ p: 2 }}>
         {groupSessions.length === 0 ? <Typography>No group ratings yet.</Typography> : 
@@ -68,6 +72,10 @@ export default function GroupResult() {
             );
           })}
       </Paper>
+      <StatsSummary 
+        sessions={groupSessions} 
+        dataExtractor={extractData} 
+      />
     </Container>
   );
 }

@@ -5,6 +5,8 @@ import TimerIcon from '@mui/icons-material/Timer';
 import SearchIcon from '@mui/icons-material/Search';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useResults } from '../Results';
+import ResultsHeader from '../components/ResultsHeader';
+import ExportCSVButton from '../components/ExportCSVButton';
 
 const TranscriptHistory = () => {
   const { transcripts = [], clearTranscripts, delTranscript } = useResults();
@@ -23,15 +25,17 @@ const TranscriptHistory = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>Recording History</Typography>
-        {transcripts.length > 0 && (
-          <Button variant="outlined" color="error" startIcon={<DeleteSweepIcon />} onClick={clearTranscripts}>
-            Delete All
-          </Button>
-        )}
-      </Box>
-
+<ResultsHeader 
+        title="Recording History" 
+        hasData={transcripts.length > 0} 
+        onClear={clearTranscripts} 
+        clearLabel="Clear History"
+      />
+<ExportCSVButton 
+                    data={transcripts}
+                    filename={`Transcripts_${new Date().toISOString().split('T')[0]}.csv`}
+                    label="Export CSV"
+                />
       {/* Search Bar */}
       {transcripts.length > 0 && (
         <TextField

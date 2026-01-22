@@ -13,6 +13,8 @@ import {
   Paper,
   CardActionArea,
 } from "@mui/material";
+import UsernameEntry from "../components/UsernameEntry";
+import ProgressBar from "../components/ProgressBar";
 
 const PAIRS = [
   {
@@ -65,7 +67,7 @@ export default function PairwiseRate() {
         announce("Welcome to Pairwise Comparison. Please enter your User ID to begin.");
     } else if (step === 1) {
       const currentPrompt = PAIRS[currentPairIndex].prompt;
-      announce(`Pair ${currentPairIndex + 1}. Which image is better given the prompt: ${currentPrompt}`);
+      announce(`Pair ${currentPairIndex}. Which image is better given the prompt: ${currentPrompt}`);
     }
   }, [step, currentPairIndex, announce, isFinished, isAnnouncing]);
   const handleNext = () => {
@@ -95,26 +97,21 @@ export default function PairwiseRate() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
+      {step === 1 && (
+                <ProgressBar 
+                    current={currentPairIndex} 
+                    total={PAIRS.length} 
+                    label={`Pair ${currentPairIndex + 1} of ${PAIRS.length}`} 
+                />
+            )}
       {step === 0 ? (
-        <Paper sx={{ p: 4, maxWidth: 500, mx: "auto", textAlign: "center" }}>
-          <Typography variant="h4" gutterBottom>
-            Pairwise Comparison
-          </Typography>
-          <TextField
-            label="User ID (Numeric)"
-            fullWidth
-            sx={{ mb: 3 }}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <Button
-            variant="contained"
-            onClick={() => setStep(1)}
-            disabled={!/^\d+$/.test(username)}
-          >
-            Start Comparison
-          </Button>
-        </Paper>
+        <UsernameEntry
+        title = "Pairwise Image Rating"
+        username={username}
+        setUsername={setUsername}
+        onStart={() => setStep(1)} 
+          validationRegex={/^\d+$/}
+      /> 
       ) : (
         <Box>
           <Typography variant="h5" align="center" gutterBottom>

@@ -2,14 +2,17 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useResults } from "../Results";
 import { Typography, Container, TextField, Button, Slider, Card, CardContent, CardMedia, Paper } from "@mui/material";
+import ScoreSlider from "../components/ScoreSlider";
+import UsernameEntry from "../components/UsernameEntry";
+import ProgressBar from "../components/ProgressBar";
 
 const BENCHMARK_IMAGE = { id: 0, src: "/src/images/flux/generated_0182.png", alt: "Benchmark Calibration" };
 const IMAGES_TO_RATE = [
-  { id: 1, src: "/src/images/FluxFlag.png", alt: "Flux2" },
-  { id: 2, src: "/src/images/FluxMoonFlags.png", alt: "GPT-15" },
-  { id: 3, src: "/src/images/FluxShip.png", alt: "GPT5.2_diff" },
-  { id: 4, src: "/src/images/flux/generated_0184.png", alt: "GPT5.2" },
-  { id: 5, src: "/src/images/flux/generated_0183.png", alt: "Nano" },
+  { id: 1, src: "/src/images/FluxFlag.png", alt: "Flux_0187" },
+  { id: 2, src: "/src/images/FluxMoonFlags.png", alt: "Flux_0186" },
+  { id: 3, src: "/src/images/FluxShip.png", alt: "Flux_0185" },
+  { id: 4, src: "/src/images/flux/generated_0184.png", alt: "Flux_0184" },
+  { id: 5, src: "/src/images/flux/generated_0183.png", alt: "Flux_0183" },
 ];
 
 export default function IndividualRate() {
@@ -25,7 +28,8 @@ export default function IndividualRate() {
 
   const startTimer = () => { setStartTime(performance.now()); setInteractionCount(0); };
   const handleStart = () => { setActiveStep(1); startTimer(); };
-
+  const totalImages = IMAGES_TO_RATE.length + 1; //+1 is bc of benchmark
+  const progressValue = activeStep === 1 ? 0 : activeStep === 2 ? currentImageIndex + 1 : totalImages;
   const handleNext = (isBenchmark = false) => {
     const timeSpent = (performance.now() - startTime) / 1000;
     const img = isBenchmark ? BENCHMARK_IMAGE : IMAGES_TO_RATE[currentImageIndex];
@@ -39,15 +43,23 @@ export default function IndividualRate() {
     else { addIndividualSession(username, updatedScores); setActiveStep(3); }
     startTimer();
   };
-
+  const incrementMoves = () => setInteractionCount(prev => prev + 1);
   return (
     <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
+      {activeStep > 0 && activeStep < 3 && (
+        <ProgressBar 
+            current={progressValue} 
+            total={totalImages} 
+            label={`Progress: ${progressValue} / ${totalImages}`} 
+        />
+      )}
       {activeStep === 0 && (
-        <Paper sx={{ p: 4, textAlign: "center" }}>
-          <Typography variant="h5" gutterBottom>Individual Evaluation</Typography>
-          <TextField fullWidth label="User ID" value={username} onChange={(e) => setUsername(e.target.value)} sx={{ mb: 3 }} />
-          <Button variant="contained" onClick={handleStart} disabled={!username}>Start</Button>
-        </Paper>
+<UsernameEntry
+  title = "Individual Image Rating"
+  username={username}
+  setUsername={setUsername}
+  onStart={handleStart}
+/> 
       )}
       {(activeStep === 1 || activeStep === 2) && (
         <Card>
@@ -57,7 +69,11 @@ export default function IndividualRate() {
           <CardMedia component="img" image={activeStep === 1 ? BENCHMARK_IMAGE.src : IMAGES_TO_RATE[currentImageIndex].src} sx={{objectFit: "contain", height: "auto"}}/>
           <CardContent sx={{ textAlign: "center" }}>
             <Typography>Rating: {currentRating}</Typography>
-            <Slider value={currentRating} onChange={(e, v) => { setCurrentRating(v); setInteractionCount(prev => prev + 1); }} step={1} marks min={1} max={5} />
+            <ScoreSlider 
+              value={currentRating} 
+              setValue={setCurrentRating} 
+              onInteraction={incrementMoves} 
+            />
             <Button variant="contained" fullWidth onClick={() => handleNext(activeStep === 1)}>
               {activeStep === 2 && currentImageIndex === 4 ? "Finish" : "Next"}
             </Button>

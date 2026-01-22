@@ -5,6 +5,8 @@ import {
   Container, Typography, Box, TextField, Button, Grid, Card, 
   CardMedia, CardContent, Paper, MenuItem, Select, FormControl, InputLabel, Alert 
 } from "@mui/material";
+import UsernameEntry from "../components/UsernameEntry";
+import ProgressBar from "../components/ProgressBar";
 
 // Organized into 3 distinct groups
 const RANK_GROUPS = [
@@ -36,6 +38,16 @@ const RANK_GROUPS = [
     ],
     prompt:
       "Photorealistic image of a row of ten world flags waving in the wind, including the flags of Canada, Japan, Brazil, Germany, India, South Africa, Australia, Russia, and Italy, clear blue sky, accurate flag colors and patterns, 8k.",
+  },
+  {
+    groupId: 4,
+    images: [
+      { id: 'r3a', src: "/src/images/GPTFlag.png", alt: "GPT Flag" },
+      { id: 'r3b', src: "/src/images/FluxFlag.png", alt: "Flux Flag" },
+      { id: 'r3c', src: "/src/images/NanoFlag.png", alt: "Nano Flag" }
+    ],
+    prompt:
+      "Bad prompt!!! repeat image!! rate 3,2,1!!!",
   }
 ];
 
@@ -118,21 +130,22 @@ export default function RankedRate() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
+      {step === 1 && (
+                <ProgressBar 
+                    current={currentGroupIndex} 
+                    total={RANK_GROUPS.length} 
+                    label={`Group ${currentGroupIndex + 1} of ${RANK_GROUPS.length}`} 
+                />
+             )}
       {step === 0 ? (
-        <Paper sx={{ p: 4, maxWidth: 500, mx: "auto", textAlign: "center" }}>
-          <Typography variant="h4" gutterBottom>Ranked Evaluation</Typography>
-          <TextField 
-            label="User ID (Numeric)" fullWidth sx={{ mb: 3 }}
-            value={username} onChange={(e) => setUsername(e.target.value)}
-          />
-          <Button 
-            variant="contained" 
-            onClick={() => setStep(1)}
-            disabled={!/^\d+$/.test(username)}
-          >
-            Start Ranking
-          </Button>
-        </Paper>
+        
+         <UsernameEntry
+         title = "Ranked Image Rating"
+         username={username}
+         setUsername={setUsername}
+         onStart={() => setStep(1)} 
+           validationRegex={/^\d+$/}
+       /> 
       ) : (
         <>
           <Typography variant="h4" align="center" gutterBottom>
