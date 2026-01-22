@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import {
   Container,
   Typography,
-  Grid,
   Card,
   CardActionArea,
   CardContent,
@@ -12,12 +11,13 @@ import {
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import GroupsIcon from "@mui/icons-material/Groups";
 import PersonIcon from "@mui/icons-material/Person";
-import PeopleIcon from '@mui/icons-material/People';
+import PeopleIcon from "@mui/icons-material/People";
 import CalculateIcon from "@mui/icons-material/Calculate";
 import InsightsIcon from "@mui/icons-material/Insights";
-import HotelClassIcon from '@mui/icons-material/HotelClass';
-import AssistantIcon from '@mui/icons-material/Assistant';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import HotelClassIcon from "@mui/icons-material/HotelClass";
+import AssistantIcon from "@mui/icons-material/Assistant";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 
 export default function Home() {
   const menuItems = [
@@ -74,80 +74,88 @@ export default function Home() {
       path: "/combined-result",
       icon: <AssessmentIcon fontSize="large" />,
       color: "#1976d2",
-    }, 
+    },
+    {
+      title: "Pressure Cooker",
+      path: "/pressure-cooker",
+      icon: <LocalFireDepartmentIcon fontSize="large" />,
+      color: "#d32f2f",
+    },
   ];
 
   return (
-    <Box 
-    justifyContent="center">
-    <Container maxWidth="lg" sx={{ mt: {xs: 6, sm: 8, md:12, lg: 18, xl:24 }}}>
-      <Box sx={{ textAlign: "center", mb: 6 }}>
-        <Typography variant="h3" fontWeight="bold" gutterBottom>
-          Home
-        </Typography>
-        <Typography variant="h6" color="text.secondary">
-          Select Page
-        </Typography>
-      </Box>
-
-      <Box
-        sx={{
-          display: "grid",
-          justifyContent: "center",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, 1fr)",
-            md: "repeat(3, 1fr)",
-            lg: "repeat(4, 1fr)",
-            xl: "repeat(5, 1fr)",
-          },
-          gap: 3,
-        }}
+    <Box justifyContent="center">
+      <Container
+        maxWidth="lg"
+        sx={{ mt: { xs: 6, sm: 8, md: 12, lg: 18, xl: 24 } }}
       >
-        {menuItems.map((item) => (
-          <Card
-            key={item.path}
-            sx={{
-              height: '100%',
-              borderRadius: 3,
-              transition: "0.2s",
-              "&:hover": {
-                boxShadow: 10,
-                transform: "translateY(-5px)",
-              },
-            }}
-          >
-            <CardActionArea
-              component={Link}
-              to={item.path}
+        <Box sx={{ textAlign: "center", mb: 6 }}>
+          <Typography variant="h3" fontWeight="bold" gutterBottom>
+            Home
+          </Typography>
+          <Typography variant="h6" color="text.secondary">
+            Select Page
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: "grid",
+            justifyContent: "center",
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2, 1fr)",
+              md: "repeat(3, 1fr)",
+              lg: "repeat(4, 1fr)",
+              xl: "repeat(5, 1fr)",
+            },
+            gap: 3,
+          }}
+        >
+          {menuItems.map((item) => (
+            <Card
+              key={item.path}
               sx={{
                 height: "100%",
-                p: 4,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
+                borderRadius: 3,
+                transition: "0.2s",
+                "&:hover": {
+                  boxShadow: 10,
+                  transform: "translateY(-5px)",
+                },
               }}
             >
-              <Box
+              <CardActionArea
+                component={Link}
+                to={item.path}
                 sx={{
+                  height: "100%",
+                  p: 4,
                   display: "flex",
                   flexDirection: "column",
-                  alignItems: "center",
-                  color: item.color,
+                  justifyContent: "center",
                 }}
               >
-                {item.icon}
-                <CardContent>
-                  <Typography variant="h6" textAlign="center">
-                    {item.title}
-                  </Typography>
-                </CardContent>
-              </Box>
-            </CardActionArea>
-          </Card>
-        ))}
-      </Box>
-    </Container>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    color: item.color,
+                  }}
+                >
+                  {item.icon}
+                  <CardContent>
+                    <Typography variant="h6" textAlign="center">
+                      {item.title}
+                    </Typography>
+                  </CardContent>
+                </Box>
+              </CardActionArea>
+            </Card>
+          ))}
+        </Box>
+      </Container>
     </Box>
   );
 }

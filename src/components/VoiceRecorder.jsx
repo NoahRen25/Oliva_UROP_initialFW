@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { IconButton, Tooltip, Badge, Typography, Box } from '@mui/material';
-import MicIcon from '@mui/icons-material/Mic';
-import StopIcon from '@mui/icons-material/Stop';
+import React, { useState, useEffect, useRef } from "react";
+import { IconButton, Tooltip, Badge, Typography, Box } from "@mui/material";
+import MicIcon from "@mui/icons-material/Mic";
+import StopIcon from "@mui/icons-material/Stop";
 
 const VoiceRecorder = ({ onSave }) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -13,11 +13,14 @@ const VoiceRecorder = ({ onSave }) => {
   const formatTime = (totalSeconds) => {
     const minutes = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${minutes.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
     recognitionRef.current = new SpeechRecognition();
@@ -25,7 +28,7 @@ const VoiceRecorder = ({ onSave }) => {
     recognitionRef.current.interimResults = true;
 
     recognitionRef.current.onresult = (event) => {
-      let currentText = '';
+      let currentText = "";
       for (let i = 0; i < event.results.length; i++) {
         currentText += event.results[i][0].transcript;
       }
@@ -60,22 +63,25 @@ const VoiceRecorder = ({ onSave }) => {
   };
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
       {isRecording && (
-        <Typography 
-          variant="body2" 
-          sx={{ 
-            fontFamily: 'monospace', 
-            color: 'error.main', 
-            fontWeight: 'bold',
-            animation: 'pulse 1.5s infinite' 
+        <Typography
+          variant="body2"
+          sx={{
+            fontFamily: "monospace",
+            color: "error.main",
+            fontWeight: "bold",
+            animation: "pulse 1.5s infinite",
           }}
         >
           {formatTime(seconds)}
         </Typography>
       )}
       <Tooltip title={isRecording ? "Stop & Save" : "Start Recording"}>
-        <IconButton color={isRecording ? "error" : "inherit"} onClick={handleToggleRecord}>
+        <IconButton
+          color={isRecording ? "error" : "inherit"}
+          onClick={handleToggleRecord}
+        >
           <Badge variant="dot" color="error" invisible={!isRecording}>
             {isRecording ? <StopIcon /> : <MicIcon />}
           </Badge>

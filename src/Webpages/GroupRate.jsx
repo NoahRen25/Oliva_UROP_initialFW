@@ -1,12 +1,26 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useResults } from "../Results";
 import { useNavigate } from "react-router-dom";
-import { Container, Typography, Box, TextField, Button, Grid, Card, CardMedia, CardContent, Slider, Paper } from "@mui/material";
+import {
+  Container,
+  Typography,
+  Box,
+  Button,
+  Grid,
+  Card,
+  CardMedia,
+  CardContent,
+  Slider,
+} from "@mui/material";
 import ScoreSlider from "../components/ScoreSlider";
 import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
 
-const BENCHMARK_IMAGE = { id: "b1", src: "/src/images/GPTShip.png", alt: "Benchmark" };
+const BENCHMARK_IMAGE = {
+  id: "b1",
+  src: "/src/images/GPTShip.png",
+  alt: "Benchmark",
+};
 const GROUP_IMAGES = [
   { id: "g1", src: "/src/images/FluxShip.png", alt: "Flux2" },
   { id: "g2", src: "/src/images/GPTShip.png", alt: "Gpt-15" },
@@ -22,83 +36,143 @@ export default function GroupRate() {
   const [benchmarkRating, setBenchmarkRating] = useState(3);
   const [ratings, setRatings] = useState({ g1: 3, g2: 3, g3: 3, g4: 3 });
   const [startTime, setStartTime] = useState(null);
-  const [sliderMoves, setSliderMoves] = useState({ b1: 0, g1: 0, g2: 0, g3: 0, g4: 0 });
+  const [sliderMoves, setSliderMoves] = useState({
+    b1: 0,
+    g1: 0,
+    g2: 0,
+    g3: 0,
+    g4: 0,
+  });
 
   const startTimer = () => setStartTime(performance.now());
-  const handleStart = () => { setStep(1); startTimer(); };
-  
+  const handleStart = () => {
+    setStep(1);
+    startTimer();
+  };
+
   const handleSubmit = () => {
     const totalTime = (performance.now() - startTime) / 1000;
     const formattedScores = [
-      { imageId: BENCHMARK_IMAGE.id, imageName: "Benchmark", score: benchmarkRating, interactionCount: sliderMoves["b1"] },
+      {
+        imageId: BENCHMARK_IMAGE.id,
+        imageName: "Benchmark",
+        score: benchmarkRating,
+        interactionCount: sliderMoves["b1"],
+      },
       ...GROUP_IMAGES.map((img) => ({
-        imageId: img.id, imageName: img.alt, score: ratings[img.id],
-        timeSpent: (totalTime / 5).toFixed(2), interactionCount: sliderMoves[img.id]
+        imageId: img.id,
+        imageName: img.alt,
+        score: ratings[img.id],
+        timeSpent: (totalTime / 5).toFixed(2),
+        interactionCount: sliderMoves[img.id],
       })),
     ];
     addGroupSession(username, formattedScores);
     navigate("/group-result");
   };
-  const trackMove = (id) => setSliderMoves(prev => ({...prev, [id]: prev[id] + 1}));
+  const trackMove = (id) =>
+    setSliderMoves((prev) => ({ ...prev, [id]: prev[id] + 1 }));
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
       {step === 0 && (
-       <UsernameEntry
-       title = "Group Image Rating"
-       username={username}
-       setUsername={setUsername}
-       onStart={handleStart}
-     /> 
+        <UsernameEntry
+          title="Group Image Rating"
+          username={username}
+          setUsername={setUsername}
+          onStart={handleStart}
+        />
       )}
       {step === 1 && (
         <Box sx={{ maxWidth: 600, mx: "auto" }}>
-          <Typography variant="h5" align="center" gutterBottom>Step 1: Rate Benchmark</Typography>
+          <Typography variant="h5" align="center" gutterBottom>
+            Step 1: Rate Benchmark
+          </Typography>
           <Card>
-            <CardMedia component="img" height="350" image={BENCHMARK_IMAGE.src} sx={{objectFit:"contain"}}/>
+            <CardMedia
+              component="img"
+              height="350"
+              image={BENCHMARK_IMAGE.src}
+              sx={{ objectFit: "contain" }}
+            />
             <CardContent>
               <Typography align="center">Score: {benchmarkRating}</Typography>
-              <Slider value={benchmarkRating} step={1} marks min={1} max={5} onChange={(e, v) => { setBenchmarkRating(v); setSliderMoves(prev => ({...prev, b1: prev.b1 + 1})); }} />
-              <Button variant="contained" color="warning" fullWidth onClick={() => setStep(2)}>Next</Button>
+              <Slider
+                value={benchmarkRating}
+                step={1}
+                marks
+                min={1}
+                max={5}
+                onChange={(e, v) => {
+                  setBenchmarkRating(v);
+                  setSliderMoves((prev) => ({ ...prev, b1: prev.b1 + 1 }));
+                }}
+              />
+              <Button
+                variant="contained"
+                color="warning"
+                fullWidth
+                onClick={() => setStep(2)}
+              >
+                Next
+              </Button>
             </CardContent>
           </Card>
         </Box>
       )}
       {step === 2 && (
         <>
-          <Typography variant="h5" align="center" gutterBottom>Step 2: Rate Image Grid</Typography>
+          <Typography variant="h5" align="center" gutterBottom>
+            Step 2: Rate Image Grid
+          </Typography>
           <Box
-        sx={{
-          display: "grid",
-          justifyContent: "center",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, 1fr)",
-            md: "repeat(2, 1fr)",
-            lg: "repeat(4, 1fr)",
-            xl: "repeat(2, 1fr)",
-          },
-          gap: 3,
-        }}
-      >
+            sx={{
+              display: "grid",
+              justifyContent: "center",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, 1fr)",
+                md: "repeat(2, 1fr)",
+                lg: "repeat(4, 1fr)",
+                xl: "repeat(2, 1fr)",
+              },
+              gap: 3,
+            }}
+          >
             {GROUP_IMAGES.map((img) => (
               <Grid item xs={6} key={img.id}>
                 <Card>
                   {/*Note for below: 30vh is if the dimensions on images aren't guaranteed same dimensions -- if they are, change to height: "auto" */}
-                  <CardMedia component="img" image={img.src} sx={{objectFit: "contain", height: "30vh", width: "100%"}}/>
+                  <CardMedia
+                    component="img"
+                    image={img.src}
+                    sx={{ objectFit: "contain", height: "30vh", width: "100%" }}
+                  />
                   <CardContent sx={{ p: 1 }}>
-                    <Typography align="center">Score: {ratings[img.id]}</Typography>
-                    <ScoreSlider 
-                    size="small"
-              value={ratings[img.id]} 
-              setValue={(v) => setRatings(prev => ({ ...prev, [img.id]: v }))} 
-              onInteraction={() => trackMove(img.id)}
-            />
+                    <Typography align="center">
+                      Score: {ratings[img.id]}
+                    </Typography>
+                    <ScoreSlider
+                      size="small"
+                      value={ratings[img.id]}
+                      setValue={(v) =>
+                        setRatings((prev) => ({ ...prev, [img.id]: v }))
+                      }
+                      onInteraction={() => trackMove(img.id)}
+                    />
                   </CardContent>
                 </Card>
               </Grid>
             ))}
           </Box>
-          <Button sx={{ mt: 4 }} variant="contained" size="large" fullWidth onClick={handleSubmit}>Submit All Results</Button>
+          <Button
+            sx={{ mt: 4 }}
+            variant="contained"
+            size="large"
+            fullWidth
+            onClick={handleSubmit}
+          >
+            Submit All Results
+          </Button>
         </>
       )}
     </Container>
