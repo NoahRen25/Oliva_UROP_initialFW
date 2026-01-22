@@ -1,56 +1,143 @@
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
 
-const Results = createContext();
+const Results = createContext({});
 
-export const useResults = () => useContext(Results);
+export const useResults = () => {
+  const context = useContext(Results);
+  if (!context) return { transcripts: [] };
+  return context;
+};
 
+const useLocalStorage = (key, initialValue) => {
+  const [state, setState] = useState(() => 
+    JSON.parse(localStorage.getItem(key)) || initialValue
+  );
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(state));
+  }, [key, state]);
+  return [state, setState];
+};
 export const ResultsProvider = ({ children }) => {
-  const [individualSessions, setIndividualSessions] = useState([]);
-  const [groupSessions, setGroupSessions] = useState([]);
-  const [pairwiseSessions, setPairwiseSessions] = useState([]);
-  const [rankedSessions, setRankedSessions] = useState([]);
+  // --- 1. Load Initial State from Local Storage ---
+  const [individualSessions, setIndividualSessions] = useLocalStorage("app_individual", []);
+  const [groupSessions, setGroupSessions] = useLocalStorage("app_group", []);
+  const [pairwiseSessions, setPairwiseSessions] = useLocalStorage("app_pairwise", []);
+  const [rankedSessions, setRankedSessions] = useLocalStorage("app_ranked", []);
+  const [transcripts, setTranscripts] = useLocalStorage("app_transcripts", []);
+  const [isAnnouncing, setIsAnnouncing] = useLocalStorage("app_announcing", false);
 
-
-  const addIndividualSession = (username, scores) => {
-    setIndividualSessions((prev) => [
-      ...prev,
-      { username, scores, timestamp: new Date() },
-    ]);
+  const toggleAnnouncing = () => {
+    // If turning off, immediately silence any current speech
+    if (isAnnouncing) {
+      window.speechSynthesis.cancel();
+    }
+    setIsAnnouncing(prev => !prev);
   };
 
-  const addGroupSession = (username, scores) => {
-    setGroupSessions((prev) => [
-      ...prev,
-      { username, scores, timestamp: new Date() },
-    ]);
-  };
+  const announce = useCallback((text) => {
+    if (!isAnnouncing || !text) return;
+    
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
   
+    // Get all available voices
+    const voices = window.speechSynthesis.getVoices();
+    console.log(voices)
+  
+
+    const preferredVoice = voices.find(v => v.name.includes("Karen") && v.lang.startsWith("en")) 
+                           || voices.find(v => v.lang.startsWith("en"))
+                           || voices[0];
+  
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+  
+    // Optional: Adjust the characteristics
+    utterance.rate = 1.05;  // Speed (0.1 to 10)
+    utterance.pitch = 1.0; // Pitch (0 to 2)
+  
+    window.speechSynthesis.speak(utterance);
+  },[[isAnnouncing]]);
+  // --- 3. Add Data Functions ---
+  const addIndividualSession = (username, scores) => {
+    setIndividualSessions((prev) => [...prev, { id: Date.now(), username, scores, timestamp: new Date() }]);
+  };
+  const addGroupSession = (username, scores) => {
+    setGroupSessions((prev) => [...prev, { id: Date.now(), username, scores, timestamp: new Date() }]);
+  };
   const addPairwiseSession = (username, choices) => {
-    setPairwiseSessions((prev) => [
-      ...prev,
-      { username, choices, timestamp: new Date() },
-    ]);
+    setPairwiseSessions((prev) => [...prev, { id: Date.now(), username, choices, timestamp: new Date() }]);
+  };
+  const addRankedSession = (username, rankings) => {
+    setRankedSessions((prev) => [...prev, { id: Date.now(), username, rankings, timestamp: new Date() }]);
+  };
+  const addTranscript = (text, duration) => {
+    if (!text.trim()) return;
+    const newEntry = { 
+      id: Date.now(), 
+      text: text.trim(), 
+      duration: duration, 
+      timestamp: new Date().toLocaleString(),
+      length: text.trim().length 
+    };
+    setTranscripts(prev => [newEntry, ...prev]);
   };
 
-  const addRankedSession = (username, rankings) => {
-    setRankedSessions((prev) => [
-      ...prev,
-      { username, rankings, timestamp: new Date() },
-    ]);
+  // --- 4. Delete Functions (Individual) ---
+  const deleteIndividualSession = (id, username) => {
+    if(window.confirm(`Delete individual session by user ${username}?`)) {
+      setIndividualSessions(prev => prev.filter(session => session.id != id));
+    }
+  };
+  const deleteGroupSession = (id, username) => {
+    if(window.confirm(`Delete group session by user ${username}?`)) {
+      setGroupSessions(prev => prev.filter(session => session.id != id));
+    }
+  };
+  const deletePairwiseSession = (id, username) => {
+    if(window.confirm(`Delete session by user #${username} ?`)) {
+      setPairwiseSessions(prev => prev.filter(session => session.id!= id));
+    }
+  };
+  const deleteRankedSession = (id, username) => {
+    if(window.confirm(`Delete this ranked session by user ${username}?`)) {
+      setRankedSessions(prev => prev.filter(session => session.id!= id));
+    }
+  };
+  const delTranscript = (id, timestamp) => {
+    if (window.confirm(`Delete this transcript from ${timestamp}?`)) {
+      setTranscripts(prev => prev.filter(t => t.id !== id));
+    }
+  };
+
+  // --- 5. Clear All Functions ---
+  const clearIndividual = () => {
+    if(window.confirm("Delete ALL Individual sessions?")) setIndividualSessions([]);
+  };
+  const clearGroup = () => {
+    if(window.confirm("Delete ALL Group sessions?")) setGroupSessions([]);
+  };
+  const clearPairwise = () => {
+    if(window.confirm("Delete ALL Pairwise sessions?")) setPairwiseSessions([]);
+  };
+  const clearRanked = () => {
+    if(window.confirm("Delete ALL Ranked sessions?")) setRankedSessions([]);
+  };
+  const clearTranscripts = () => {
+    if (window.confirm("Delete all transcripts?")) setTranscripts([]);
   };
 
   return (
     <Results.Provider
       value={{
-        individualSessions,
-        addIndividualSession,
-        groupSessions,
-        addGroupSession,
-        // Export new ones
-        pairwiseSessions,
-        addPairwiseSession,
-        rankedSessions,
-        addRankedSession,
+        transcripts, addTranscript, delTranscript, clearTranscripts,
+        individualSessions, addIndividualSession, deleteIndividualSession, clearIndividual,
+        groupSessions, addGroupSession, deleteGroupSession, clearGroup,
+        pairwiseSessions, addPairwiseSession, deletePairwiseSession, clearPairwise,
+        rankedSessions, addRankedSession, deleteRankedSession, clearRanked,
+        isAnnouncing, toggleAnnouncing, announce,
       }}
     >
       {children}

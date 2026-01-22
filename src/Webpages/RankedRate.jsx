@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useResults } from "../Results";
 import { 
   Container, Typography, Box, TextField, Button, Grid, Card, 
   CardMedia, CardContent, Paper, MenuItem, Select, FormControl, InputLabel, Alert 
 } from "@mui/material";
+import UsernameEntry from "../components/UsernameEntry";
+import ProgressBar from "../components/ProgressBar";
 
 // Organized into 3 distinct groups
 const RANK_GROUPS = [
@@ -36,12 +38,22 @@ const RANK_GROUPS = [
     ],
     prompt:
       "Photorealistic image of a row of ten world flags waving in the wind, including the flags of Canada, Japan, Brazil, Germany, India, South Africa, Australia, Russia, and Italy, clear blue sky, accurate flag colors and patterns, 8k.",
+  },
+  {
+    groupId: 4,
+    images: [
+      { id: 'r3a', src: "/src/images/GPTFlag.png", alt: "GPT Flag" },
+      { id: 'r3b', src: "/src/images/FluxFlag.png", alt: "Flux Flag" },
+      { id: 'r3c', src: "/src/images/NanoFlag.png", alt: "Nano Flag" }
+    ],
+    prompt:
+      "Bad prompt!!! repeat image!! rate 3,2,1!!!",
   }
 ];
 
 export default function RankedRate() {
   const navigate = useNavigate();
-  const { addRankedSession } = useResults();
+  const { addRankedSession, announce, isAnnouncing } = useResults();
 
   const [step, setStep] = useState(0); // 0: User, 1: Ranking Loop
   const [username, setUsername] = useState("");
@@ -52,10 +64,29 @@ export default function RankedRate() {
   const [currentRanks, setCurrentRanks] = useState({ img0: '', img1: '', img2: '' });
   const [allRankings, setAllRankings] = useState([]);
 
+  const [isFinished, setIsFinished] = useState(false);
+  const hasAnnouncedWelcome = useRef(false);
   const handleChange = (key) => (e) => {
     setCurrentRanks({ ...currentRanks, [key]: e.target.value });
     setError("");
   };
+  useEffect(() => {
+   
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+  //actual tts
+  useEffect(() => {
+    if(isFinished) return;
+    if (step === 0) {
+      
+        announce("Welcome to Ranked Comparison. Please enter your User ID to begin.");
+    } else if (step === 1) {
+      const currentPrompt = RANK_GROUPS[currentGroupIndex].prompt;
+      announce(`Ranking ${currentGroupIndex + 1}. Rank these images in terms of quality, given the prompt: ${currentPrompt}`);
+    }
+  }, [step, currentGroupIndex, announce, isFinished, isAnnouncing]);
 
   const handleNextGroup = () => {
     const values = Object.values(currentRanks);
@@ -88,6 +119,8 @@ export default function RankedRate() {
       setCurrentGroupIndex(currentGroupIndex + 1);
       setCurrentRanks({ img0: '', img1: '', img2: '' }); // Reset for next page
     } else {
+      setIsFinished(true); 
+      window.speechSynthesis.cancel();
       addRankedSession(username, updatedTotalRankings);
       navigate('/ranked-result');
     }
@@ -96,22 +129,23 @@ export default function RankedRate() {
   const activeGroup = RANK_GROUPS[currentGroupIndex];
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 2 }}>
+      {step === 1 && (
+                <ProgressBar 
+                    current={currentGroupIndex} 
+                    total={RANK_GROUPS.length} 
+                    label={`Group ${currentGroupIndex + 1} of ${RANK_GROUPS.length}`} 
+                />
+             )}
       {step === 0 ? (
-        <Paper sx={{ p: 4, maxWidth: 500, mx: "auto", textAlign: "center" }}>
-          <Typography variant="h4" gutterBottom>Ranked Evaluation</Typography>
-          <TextField 
-            label="User ID (Numeric)" fullWidth sx={{ mb: 3 }}
-            value={username} onChange={(e) => setUsername(e.target.value)}
-          />
-          <Button 
-            variant="contained" 
-            onClick={() => setStep(1)}
-            disabled={!/^\d+$/.test(username)}
-          >
-            Start Ranking
-          </Button>
-        </Paper>
+        
+         <UsernameEntry
+         title = "Ranked Image Rating"
+         username={username}
+         setUsername={setUsername}
+         onStart={() => setStep(1)} 
+           validationRegex={/^\d+$/}
+       /> 
       ) : (
         <>
           <Typography variant="h4" align="center" gutterBottom>
@@ -121,11 +155,24 @@ export default function RankedRate() {
             Prompt: {activeGroup.prompt}
           </Typography>
 
-          <Grid container spacing={3} ml={9}>
+          <Box
+        sx={{
+          display: "grid",
+          justifyContent: "center",
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(2, 1fr)",
+            md: "repeat(3, 1fr)",
+            lg: "repeat(3, 1fr)",
+            xl: "repeat(4s, 1fr)",
+          },
+          gap: 3,
+        }}
+      >
             {activeGroup.images.map((img, index) => (
               <Grid item xs={12} md={4} key={img.id}>
                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <CardMedia component="img" height="250" image={img.src} alt={img.alt} />
+                  <CardMedia component="img" image={img.src} alt={img.alt} sx={{objectFit: "contain", height: "30vh"}}/>
                   <CardContent sx={{ textAlign: 'center', flexGrow: 1 }}>
                     <Typography variant="subtitle1" gutterBottom>{img.alt}</Typography>
                     <FormControl fullWidth sx={{ mt: 2 }}>
@@ -144,7 +191,7 @@ export default function RankedRate() {
                 </Card>
               </Grid>
             ))}
-          </Grid>
+          </Box>
           
           <Box sx={{ maxWidth: 400, mx: 'auto', mt: 4, pb: 5 }}>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
