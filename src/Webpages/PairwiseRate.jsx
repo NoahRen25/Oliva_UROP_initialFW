@@ -13,79 +13,52 @@ import {
 } from "@mui/material";
 import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
-
-const PAIRS = [
-  {
-    id: 1,
-    left: { src: "/src/images/GPTMoonFlags.png", alt: "GPT Moon" },
-    right: { src: "/src/images/NanoMoonFlags.png", alt: "Flux Moon" },
-    prompt:
-      "Surreal image of the United States flag and the flags of the five permanent members of the UN Security Council (China, France, United Kingdom, Russia) planted on the surface of the moon, low gravity environment, Earth visible in the distance, accurate flag representations, dramatic lighting.",
-  },
-  {
-    id: 2,
-    left: { src: "/src/images/GPTShip.png", alt: "GPT Ship" },
-    right: { src: "/src/images/NanoShip.png", alt: "Flux Ship" },
-    prompt:
-      "Image of a cargo ship sailing at sea, various nautical flags displayed along with the national flag of Panama, realistic ocean waves, clear sky, accurate flag designs and arrangements, ship details.",
-  },
-  {
-    id: 3,
-    left: { src: "/src/images/GPTFlag.png", alt: "GPT Flag" },
-    right: { src: "/src/images/NanoFlag.png", alt: "Flux Flag" },
-    prompt:
-      "Photorealistic image of a row of ten world flags waving in the wind, including the flags of Canada, Japan, Brazil, Germany, India, South Africa, Australia, Russia, and Italy, clear blue sky, accurate flag colors and patterns, 8k.",
-  },
-];
+import { getPairwiseBatch } from "../utils/ImageLoader";
 
 export default function PairwiseRate() {
   const navigate = useNavigate();
   const { addPairwiseSession, announce, isAnnouncing } = useResults();
 
-  const [step, setStep] = useState(0); // states: Username, rating
+  const [pairs, setPairs] = useState([]);
+  const [step, setStep] = useState(0); 
   const [username, setUsername] = useState("");
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
-  const [selectedSide, setSelectedSide] = useState(null); // 'left' or 'right'
-  const [choices, setChoices] = useState([]); // stores { pairId, winner: 'left'|'right', winnerName }
+  const [selectedSide, setSelectedSide] = useState(null); 
+  const [choices, setChoices] = useState([]); 
   const [isFinished, setIsFinished] = useState(false);
-  const hasAnnouncedWelcome = useRef(false);
 
-  //ends speech when navigating off page
   useEffect(() => {
-    return () => {
-      window.speechSynthesis.cancel();
-    };
+    setPairs(getPairwiseBatch(5));
   }, []);
-  //actual tts
+
   useEffect(() => {
-    if (isFinished) return;
+    return () => { window.speechSynthesis.cancel(); };
+  }, []);
+
+  useEffect(() => {
+    if (isFinished || pairs.length === 0) return;
     if (step === 0) {
-      announce(
-        "Welcome to Pairwise Comparison. Please enter your User ID to begin."
-      );
+      announce("Welcome to Pairwise Comparison. Please enter your User ID to begin.");
     } else if (step === 1) {
-      const currentPrompt = PAIRS[currentPairIndex].prompt;
-      announce(
-        `Pair ${currentPairIndex}. Which image is better given the prompt: ${currentPrompt}`
-      );
+      const currentPrompt = pairs[currentPairIndex].prompt;
+      announce(`Pair ${currentPairIndex + 1}. Which image is better given the prompt: ${currentPrompt}`);
     }
-  }, [step, currentPairIndex, announce, isFinished, isAnnouncing]);
+  }, [step, currentPairIndex, announce, isFinished, pairs]);
+
   const handleNext = () => {
-    const currentPair = PAIRS[currentPairIndex];
+    const currentPair = pairs[currentPairIndex];
     const choiceData = {
-      pairId: currentPair.id,
+      pairId: currentPairIndex + 1,
       winnerSide: selectedSide,
-      winnerName:
-        selectedSide === "left" ? currentPair.left.alt : currentPair.right.alt,
-      loserName:
-        selectedSide === "left" ? currentPair.right.alt : currentPair.left.alt,
+      winnerName: selectedSide === "left" ? currentPair.left.filename : currentPair.right.filename,
+      loserName: selectedSide === "left" ? currentPair.right.filename : currentPair.left.filename,
     };
 
     const newChoices = [...choices, choiceData];
     setChoices(newChoices);
     setSelectedSide(null);
 
-    if (currentPairIndex < PAIRS.length - 1) {
+    if (currentPairIndex < pairs.length - 1) {
       setCurrentPairIndex(currentPairIndex + 1);
     } else {
       setIsFinished(true);
@@ -95,13 +68,15 @@ export default function PairwiseRate() {
     }
   };
 
+  if (pairs.length === 0) return null;
+
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
       {step === 1 && (
         <ProgressBar
           current={currentPairIndex}
-          total={PAIRS.length}
-          label={`Pair ${currentPairIndex + 1} of ${PAIRS.length}`}
+          total={pairs.length}
+          label={`Pair ${currentPairIndex + 1} of ${pairs.length}`}
         />
       )}
       {step === 0 ? (
@@ -115,11 +90,10 @@ export default function PairwiseRate() {
       ) : (
         <Box>
           <Typography variant="h5" align="center" gutterBottom>
-            Pair {currentPairIndex + 1} of {PAIRS.length}: Which image is better
-            given the prompt:
+            Pair {currentPairIndex + 1} of {pairs.length}: Which image is better given the prompt:
           </Typography>
           <Typography align="center">
-            {PAIRS[currentPairIndex].prompt}
+            {pairs[currentPairIndex].prompt}
           </Typography>
           <Box
             sx={{
@@ -130,60 +104,29 @@ export default function PairwiseRate() {
               gridTemplateColumns: {
                 xs: "1fr",
                 sm: "repeat(2, 1fr)",
-                md: "repeat(2, 1fr)",
-                lg: "repeat(2, 1fr)",
-                xl: "repeat(2, 1fr)",
               },
               gap: 3,
             }}
           >
             {/* LEFT IMAGE */}
-
-            <Card
-              sx={{
-                border: selectedSide === "left" ? "4px solid #1976d2" : "none",
-                transform: selectedSide === "left" ? "scale(1)" : "scale(1)",
-                transition: "0.2s",
-              }}
-            >
+            <Card sx={{ border: selectedSide === "left" ? "4px solid #1976d2" : "none", transition: "0.2s" }}>
               <CardActionArea onClick={() => setSelectedSide("left")}>
                 <CardMedia
                   component="img"
-                  image={PAIRS[currentPairIndex].left.src}
+                  image={pairs[currentPairIndex].left.src}
                   sx={{ objectFit: "contain", height: "55vh" }}
                 />
-                <CardContent>
-                  <Typography align="center">
-                    {PAIRS[currentPairIndex].left.alt}
-                  </Typography>
-                </CardContent>
               </CardActionArea>
             </Card>
 
             {/* RIGHT IMAGE */}
-            <Card
-              sx={{
-                border: selectedSide === "right" ? "4px solid #1976d2" : "none",
-                transform: selectedSide === "right" ? "scale(1)" : "scale(1)",
-                transition: "0.2s",
-              }}
-            >
+            <Card sx={{ border: selectedSide === "right" ? "4px solid #1976d2" : "none", transition: "0.2s" }}>
               <CardActionArea onClick={() => setSelectedSide("right")}>
                 <CardMedia
                   component="img"
-                  image={PAIRS[currentPairIndex].right.src}
-                  sx={{
-                    objectFit: "contain",
-                    padding: 0,
-                    margin: 0,
-                    height: "55vh",
-                  }}
+                  image={pairs[currentPairIndex].right.src}
+                  sx={{ objectFit: "contain", height: "55vh" }}
                 />
-                <CardContent>
-                  <Typography align="center">
-                    {PAIRS[currentPairIndex].right.alt}
-                  </Typography>
-                </CardContent>
               </CardActionArea>
             </Card>
           </Box>
@@ -195,9 +138,7 @@ export default function PairwiseRate() {
               disabled={!selectedSide}
               onClick={handleNext}
             >
-              {currentPairIndex === PAIRS.length - 1
-                ? "Submit All"
-                : "Next Pair"}
+              {currentPairIndex === pairs.length - 1 ? "Submit All" : "Next Pair"}
             </Button>
           </Box>
         </Box>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useResults } from "../Results";
 import { useNavigate } from "react-router-dom";
 import {
@@ -14,54 +14,58 @@ import {
 } from "@mui/material";
 import ScoreSlider from "../components/ScoreSlider";
 import UsernameEntry from "../components/UsernameEntry";
-import ProgressBar from "../components/ProgressBar";
-
-const BENCHMARK_IMAGE = {
-  id: "b1",
-  src: "/src/images/GPTShip.png",
-  alt: "Benchmark",
-};
-const GROUP_IMAGES = [
-  { id: "g1", src: "/src/images/FluxShip.png", alt: "Flux2" },
-  { id: "g2", src: "/src/images/GPTShip.png", alt: "Gpt-15" },
-  { id: "g3", src: "/src/images/NanoShip.png", alt: "GPT5.2" },
-  { id: "g4", src: "/src/images/NanoFlag.png", alt: "Nano" },
-];
+import { getGroupBatch, getIndividualBatch } from "../utils/ImageLoader";
 
 export default function GroupRate() {
   const navigate = useNavigate();
   const { addGroupSession } = useResults();
   const [step, setStep] = useState(0);
   const [username, setUsername] = useState("");
+  
+  const [benchmarkImage, setBenchmarkImage] = useState(null);
+  const [groupData, setGroupData] = useState(null);
+  
   const [benchmarkRating, setBenchmarkRating] = useState(3);
-  const [ratings, setRatings] = useState({ g1: 3, g2: 3, g3: 3, g4: 3 });
+  const [ratings, setRatings] = useState({});
   const [startTime, setStartTime] = useState(null);
-  const [sliderMoves, setSliderMoves] = useState({
-    b1: 0,
-    g1: 0,
-    g2: 0,
-    g3: 0,
-    g4: 0,
-  });
+  const [sliderMoves, setSliderMoves] = useState({});
 
-  const startTimer = () => setStartTime(performance.now());
+  useEffect(() => {
+    //1 benchmark + 4 for group
+    const bench = getIndividualBatch(1)[0];
+    const group = getGroupBatch(1)[0];
+    
+    setBenchmarkImage(bench);
+    setGroupData(group);
+
+    // Initialize ratings and moves
+    const initialRanks = {};
+    const initialMoves = { b1: 0 };
+    group.images.forEach((img) => {
+      initialRanks[img.id] = 3;
+      initialMoves[img.id] = 0;
+    });
+    setRatings(initialRanks);
+    setSliderMoves(initialMoves);
+  }, []);
+
   const handleStart = () => {
     setStep(1);
-    startTimer();
+    setStartTime(performance.now());
   };
 
   const handleSubmit = () => {
     const totalTime = (performance.now() - startTime) / 1000;
     const formattedScores = [
       {
-        imageId: BENCHMARK_IMAGE.id,
-        imageName: "Benchmark",
+        imageId: "benchmark",
+        imageName: benchmarkImage.filename,
         score: benchmarkRating,
         interactionCount: sliderMoves["b1"],
       },
-      ...GROUP_IMAGES.map((img) => ({
+      ...groupData.images.map((img) => ({
         imageId: img.id,
-        imageName: img.alt,
+        imageName: img.filename,
         score: ratings[img.id],
         timeSpent: (totalTime / 5).toFixed(2),
         interactionCount: sliderMoves[img.id],
@@ -70,8 +74,12 @@ export default function GroupRate() {
     addGroupSession(username, formattedScores);
     navigate("/group-result");
   };
+
   const trackMove = (id) =>
     setSliderMoves((prev) => ({ ...prev, [id]: prev[id] + 1 }));
+
+  if (!benchmarkImage || !groupData) return null;
+
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
       {step === 0 && (
@@ -87,11 +95,14 @@ export default function GroupRate() {
           <Typography variant="h5" align="center" gutterBottom>
             Step 1: Rate Benchmark
           </Typography>
+          <Typography variant="h5" align="center" gutterBottom>
+            Category: {benchmarkImage.category}
+          </Typography>
           <Card>
             <CardMedia
               component="img"
               height="350"
-              image={BENCHMARK_IMAGE.src}
+              image={benchmarkImage.src}
               sx={{ objectFit: "contain" }}
             />
             <CardContent>
@@ -122,7 +133,10 @@ export default function GroupRate() {
       {step === 2 && (
         <>
           <Typography variant="h5" align="center" gutterBottom>
-            Step 2: Rate Image Grid
+            Step 2: Rate Image Grid (Category: {groupData.category})
+          </Typography>
+          <Typography variant="h5" align="center" gutterBottom fontWeight="fontWeightBold">
+          Category: {benchmarkImage.category}
           </Typography>
           <Box
             sx={{
@@ -138,10 +152,9 @@ export default function GroupRate() {
               gap: 3,
             }}
           >
-            {GROUP_IMAGES.map((img) => (
+            {groupData.images.map((img) => (
               <Grid item xs={6} key={img.id}>
                 <Card>
-                  {/*Note for below: 30vh is if the dimensions on images aren't guaranteed same dimensions -- if they are, change to height: "auto" */}
                   <CardMedia
                     component="img"
                     image={img.src}
