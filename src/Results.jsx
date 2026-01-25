@@ -32,6 +32,14 @@ export const ResultsProvider = ({ children }) => {
     JSON.parse(localStorage.getItem("app_announcing")) || false
   );
 
+  // --- Consent State ---
+  const [consentGiven, setConsentGiven] = useState(() =>
+    JSON.parse(localStorage.getItem("app_consent_given")) || false
+  );
+  const [consentTimestamp, setConsentTimestamp] = useState(() =>
+    localStorage.getItem("app_consent_timestamp") || null
+  );
+
   // --- 2. Sync to Local Storage ---
   useEffect(() => localStorage.setItem("app_individual", JSON.stringify(individualSessions)), [individualSessions]);
   useEffect(() => localStorage.setItem("app_group", JSON.stringify(groupSessions)), [groupSessions]);
@@ -40,6 +48,33 @@ export const ResultsProvider = ({ children }) => {
   useEffect(() => localStorage.setItem("app_pressure_cooker", JSON.stringify(pressureCookerSessions)), [pressureCookerSessions]);
   useEffect(() => localStorage.setItem("app_transcripts", JSON.stringify(transcripts)), [transcripts]);
   useEffect(() => localStorage.setItem("app_announcing", JSON.stringify(isAnnouncing)), [isAnnouncing]);
+  useEffect(() => localStorage.setItem("app_consent_given", JSON.stringify(consentGiven)), [consentGiven]);
+  useEffect(() => { if (consentTimestamp) localStorage.setItem("app_consent_timestamp", consentTimestamp); }, [consentTimestamp]);
+
+  // --- Consent Functions ---
+  const acceptConsent = () => {
+    const timestamp = new Date().toISOString();
+    setConsentGiven(true);
+    setConsentTimestamp(timestamp);
+  };
+
+  const revokeConsent = () => {
+    setConsentGiven(false);
+    setConsentTimestamp(null);
+    localStorage.removeItem("app_consent_timestamp");
+  };
+
+  const clearAllData = () => {
+    if (window.confirm("This will permanently delete ALL your data. Are you sure?")) {
+      setIndividualSessions([]);
+      setGroupSessions([]);
+      setPairwiseSessions([]);
+      setRankedSessions([]);
+      setPressureCookerSessions([]);
+      setTranscripts([]);
+      revokeConsent();
+    }
+  };
 
   const toggleAnnouncing = () => {
     // If turning off, immediately silence any current speech
@@ -174,6 +209,7 @@ export const ResultsProvider = ({ children }) => {
         rankedSessions, addRankedSession, deleteRankedSession, clearRanked,
         pressureCookerSessions, addPressureCookerSession, deletePressureCookerSession, clearPressureCooker,
         isAnnouncing, toggleAnnouncing, announce,
+        consentGiven, consentTimestamp, acceptConsent, revokeConsent, clearAllData,
       }}
     >
       {children}

@@ -5,9 +5,10 @@ import HomeIcon from "@mui/icons-material/Home";
 import HistoryEduIcon from "@mui/icons-material/HistoryEdu";
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import VoiceOverOffIcon from '@mui/icons-material/VoiceOverOff';
-
+import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 
 import { ResultsProvider, useResults } from "./Results";
+import ConsentModal from "./components/ConsentModal";
 import VoiceRecorder from "./components/VoiceRecorder";
 import TranscriptHistory from "./Webpages/TranscriptHistory";
 
@@ -22,16 +23,18 @@ import RankedRate from "./Webpages/RankedRate";
 import PairwiseResult from "./Webpages/PairwiseResult";
 import RankedResult from "./Webpages/RankedResult";
 import PressureCooker from "./Webpages/PressureCooker";
+import PrivacySettings from "./Webpages/PrivacySettings";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
 });
 
 function NavigationWrapper() {
-  const { addTranscript, isAnnouncing, toggleAnnouncing } = useResults();
+  const { addTranscript, isAnnouncing, toggleAnnouncing, consentGiven, acceptConsent } = useResults();
 
   return (
     <Router>
+      <ConsentModal open={!consentGiven} onAccept={acceptConsent} />
       <AppBar position="fixed" color="default" elevation={1}>
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
@@ -44,6 +47,11 @@ function NavigationWrapper() {
           </Tooltip>
           <VoiceRecorder onSave={(text, duration) => addTranscript(text, duration)} />
 
+          <Tooltip title="Privacy Settings">
+            <IconButton component={Link} to="/privacy" color="inherit" sx={{ mr: 1 }}>
+              <PrivacyTipIcon />
+            </IconButton>
+          </Tooltip>
           <Button startIcon={<HistoryEduIcon />} component={Link} to="/transcripts" color="inherit" sx={{ mr: 1 }}>
             History
           </Button>
@@ -67,6 +75,7 @@ function NavigationWrapper() {
           <Route path="/pairwise-result" element={<PairwiseResult />} />
           <Route path="/ranked-result" element={<RankedResult />} />
           <Route path="/pressure-cooker" element={<PressureCooker />} />
+          <Route path="/privacy" element={<PrivacySettings />} />
         </Routes>
       </Box>
     </Router>

@@ -19,6 +19,7 @@ import HotelClassIcon from '@mui/icons-material/HotelClass';
 import AssistantIcon from '@mui/icons-material/Assistant';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 
 export default function Home() {
   const menuItems = [
@@ -81,7 +82,13 @@ export default function Home() {
       path: "/combined-result",
       icon: <AssessmentIcon fontSize="large" />,
       color: "#1976d2",
-    }, 
+    },
+    {
+      title: "Privacy Settings",
+      path: "/privacy",
+      icon: <PrivacyTipIcon fontSize="large" />,
+      color: "#607d8b",
+    },
   ];
 
   return (
