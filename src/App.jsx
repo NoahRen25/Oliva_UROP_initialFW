@@ -32,6 +32,8 @@ import RankedRate from "./Webpages/RankedRate";
 import PairwiseResult from "./Webpages/PairwiseResult";
 import RankedResult from "./Webpages/RankedResult";
 import PressureCooker from "./Webpages/PressureCooker";
+import BestWorstRate from "./Webpages/BestWorstRate";
+import BestWorstResult from "./Webpages/BestWorstResult";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
@@ -93,8 +95,10 @@ function NavigationWrapper() {
           <Route path="/individual-rate" element={<IndividualRate />} />
           <Route path="/pairwise-rate" element={<PairwiseRate />} />
           <Route path="/ranked-rate" element={<RankedRate />} />
+          <Route path="/best-worst-rate" element={<BestWorstRate />} />
           <Route path="/pairwise-result" element={<PairwiseResult />} />
           <Route path="/ranked-result" element={<RankedResult />} />
+          <Route path="/best-worst-result" element={<BestWorstResult />} />
           <Route path="/pressure-cooker" element={<PressureCooker />} />
         </Routes>
       </Box>

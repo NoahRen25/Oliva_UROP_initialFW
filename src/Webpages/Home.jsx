@@ -18,6 +18,7 @@ import HotelClassIcon from "@mui/icons-material/HotelClass";
 import AssistantIcon from "@mui/icons-material/Assistant";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
+import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 
 export default function Home() {
   const menuItems = [
@@ -38,6 +39,12 @@ export default function Home() {
       path: "/ranked-rate",
       icon: <HotelClassIcon fontSize="large" />,
       color: "#FC46AA",
+    },
+    {
+      title: "Best-Worst Rate",
+      path: "/best-worst-rate",
+      icon: <CompareArrowsIcon fontSize="large" />,
+      color: "#00838f",
     },
     {
       title: "Group Rate",
@@ -62,6 +69,12 @@ export default function Home() {
       path: "/ranked-result",
       icon: <AutoAwesomeIcon fontSize="large" />,
       color: "#048c7f",
+    },
+    {
+      title: "Best-Worst Result",
+      path: "/best-worst-result",
+      icon: <CompareArrowsIcon fontSize="large" />,
+      color: "#006064",
     },
     {
       title: "Group Result",
