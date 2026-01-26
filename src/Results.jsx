@@ -35,10 +35,6 @@ export const ResultsProvider = ({ children }) => {
     []
   );
   const [rankedSessions, setRankedSessions] = useLocalStorage("app_ranked", []);
-  const [bestWorstSessions, setBestWorstSessions] = useLocalStorage(
-    "app_best_worst",
-    []
-  );
   const [transcripts, setTranscripts] = useLocalStorage("app_transcripts", []);
   const [isAnnouncing, setIsAnnouncing] = useLocalStorage(
     "app_announcing",
@@ -108,12 +104,6 @@ export const ResultsProvider = ({ children }) => {
       { id: Date.now(), username, rankings, timestamp: new Date() },
     ]);
   };
-  const addBestWorstSession = (username, trials) => {
-    setBestWorstSessions((prev) => [
-      ...prev,
-      { id: Date.now(), username, trials, timestamp: new Date() },
-    ]);
-  };
   const addTranscript = (text, duration) => {
     if (!text.trim()) return;
     const newEntry = {
@@ -149,13 +139,6 @@ export const ResultsProvider = ({ children }) => {
       setRankedSessions((prev) => prev.filter((session) => session.id != id));
     }
   };
-  const deleteBestWorstSession = (id, username) => {
-    if (window.confirm(`Delete this best-worst session by user ${username}?`)) {
-      setBestWorstSessions((prev) =>
-        prev.filter((session) => session.id != id)
-      );
-    }
-  };
   const delTranscript = (id, timestamp) => {
     if (window.confirm(`Delete this transcript from ${timestamp}?`)) {
       setTranscripts((prev) => prev.filter((t) => t.id !== id));
@@ -176,10 +159,6 @@ export const ResultsProvider = ({ children }) => {
   };
   const clearRanked = () => {
     if (window.confirm("Delete ALL Ranked sessions?")) setRankedSessions([]);
-  };
-  const clearBestWorst = () => {
-    if (window.confirm("Delete ALL Best-Worst sessions?"))
-      setBestWorstSessions([]);
   };
   const clearTranscripts = () => {
     if (window.confirm("Delete all transcripts?")) setTranscripts([]);
@@ -220,10 +199,6 @@ export const ResultsProvider = ({ children }) => {
         addRankedSession,
         deleteRankedSession,
         clearRanked,
-        bestWorstSessions,
-        addBestWorstSession,
-        deleteBestWorstSession,
-        clearBestWorst,
         isAnnouncing,
         toggleAnnouncing,
         announce,
