@@ -18,6 +18,8 @@ import HotelClassIcon from "@mui/icons-material/HotelClass";
 import AssistantIcon from "@mui/icons-material/Assistant";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
 
 export default function Home() {
   const menuItems = [
@@ -80,6 +82,18 @@ export default function Home() {
       path: "/pressure-cooker",
       icon: <LocalFireDepartmentIcon fontSize="large" />,
       color: "#d32f2f",
+    },
+    {
+      title: "Eye Calibration",
+      path: "/eye-calibration",
+      icon: <VisibilityIcon fontSize="large" />,
+      color: "#00bcd4",
+    },
+    {
+      title: "Gaze Test",
+      path: "/gaze-test",
+      icon: <RemoveRedEyeIcon fontSize="large" />,
+      color: "#7c4dff",
     },
   ];
 

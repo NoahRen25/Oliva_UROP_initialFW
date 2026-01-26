@@ -32,6 +32,8 @@ import RankedRate from "./Webpages/RankedRate";
 import PairwiseResult from "./Webpages/PairwiseResult";
 import RankedResult from "./Webpages/RankedResult";
 import PressureCooker from "./Webpages/PressureCooker";
+import EyeCalibration from "./Webpages/EyeCalibration";
+import GazeTest from "./Webpages/GazeTest";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
@@ -96,6 +98,8 @@ function NavigationWrapper() {
           <Route path="/pairwise-result" element={<PairwiseResult />} />
           <Route path="/ranked-result" element={<RankedResult />} />
           <Route path="/pressure-cooker" element={<PressureCooker />} />
+          <Route path="/eye-calibration" element={<EyeCalibration />} />
+          <Route path="/gaze-test" element={<GazeTest />} />
         </Routes>
       </Box>
     </Router>
