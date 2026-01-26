@@ -34,6 +34,7 @@ import RankedResult from "./Webpages/RankedResult";
 import PressureCooker from "./Webpages/PressureCooker";
 import BestWorstRate from "./Webpages/BestWorstRate";
 import BestWorstResult from "./Webpages/BestWorstResult";
+import DatasetManager from "./Webpages/DatasetManager";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
@@ -100,6 +101,7 @@ function NavigationWrapper() {
           <Route path="/ranked-result" element={<RankedResult />} />
           <Route path="/best-worst-result" element={<BestWorstResult />} />
           <Route path="/pressure-cooker" element={<PressureCooker />} />
+          <Route path="/dataset-manager" element={<DatasetManager />} />
         </Routes>
       </Box>
     </Router>

@@ -19,6 +19,7 @@ import AssistantIcon from "@mui/icons-material/Assistant";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 export default function Home() {
   const menuItems = [
@@ -93,6 +94,12 @@ export default function Home() {
       path: "/pressure-cooker",
       icon: <LocalFireDepartmentIcon fontSize="large" />,
       color: "#d32f2f",
+    },
+    {
+      title: "Dataset Manager",
+      path: "/dataset-manager",
+      icon: <CloudUploadIcon fontSize="large" />,
+      color: "#1565c0",
     },
   ];
 
