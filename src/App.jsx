@@ -18,6 +18,7 @@ import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
 import VoiceOverOffIcon from "@mui/icons-material/VoiceOverOff";
 
 import { ResultsProvider, useResults } from "./Results";
+import { WebGazerProvider } from "./utils/WebGazerContext";
 import VoiceRecorder from "./components/VoiceRecorder";
 import TranscriptHistory from "./Webpages/TranscriptHistory";
 
@@ -32,6 +33,8 @@ import RankedRate from "./Webpages/RankedRate";
 import PairwiseResult from "./Webpages/PairwiseResult";
 import RankedResult from "./Webpages/RankedResult";
 import PressureCooker from "./Webpages/PressureCooker";
+import WebGazerCalibration from "./Webpages/WebGazerCalibration";
+import WebGazerGazeTest from "./Webpages/WebGazerGazeTest";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
@@ -96,6 +99,8 @@ function NavigationWrapper() {
           <Route path="/pairwise-result" element={<PairwiseResult />} />
           <Route path="/ranked-result" element={<RankedResult />} />
           <Route path="/pressure-cooker" element={<PressureCooker />} />
+          <Route path="/webgazer-calibration" element={<WebGazerCalibration />} />
+          <Route path="/webgazer-gaze-test" element={<WebGazerGazeTest />} />
         </Routes>
       </Box>
     </Router>
@@ -107,7 +112,9 @@ export default function App() {
     <ThemeProvider theme={lightTheme}>
       <CssBaseline />
       <ResultsProvider>
-        <NavigationWrapper />
+        <WebGazerProvider>
+          <NavigationWrapper />
+        </WebGazerProvider>
       </ResultsProvider>
     </ThemeProvider>
   );
