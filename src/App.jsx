@@ -35,6 +35,9 @@ import RankedResult from "./Webpages/RankedResult";
 import PressureCooker from "./Webpages/PressureCooker";
 import WebGazerCalibration from "./Webpages/WebGazerCalibration";
 import WebGazerGazeTest from "./Webpages/WebGazerGazeTest";
+import BestWorstRate from "./Webpages/BestWorstRate";
+import BestWorstResult from "./Webpages/BestWorstResult";
+import DatasetManager from "./Webpages/DatasetManager";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
@@ -101,6 +104,9 @@ function NavigationWrapper() {
           <Route path="/pressure-cooker" element={<PressureCooker />} />
           <Route path="/webgazer-calibration" element={<WebGazerCalibration />} />
           <Route path="/webgazer-gaze-test" element={<WebGazerGazeTest />} />
+          <Route path="/best-worst-rate" element={<BestWorstRate />} />
+          <Route path="/best-worst-result" element={<BestWorstResult />} />
+          <Route path="/dataset-manager" element={<DatasetManager />} />
         </Routes>
       </Box>
     </Router>

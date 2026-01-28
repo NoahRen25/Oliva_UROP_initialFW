@@ -20,6 +20,8 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import CenterFocusStrongIcon from "@mui/icons-material/CenterFocusStrong";
+import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 export default function Home() {
   const menuItems = [
@@ -40,6 +42,12 @@ export default function Home() {
       path: "/ranked-rate",
       icon: <HotelClassIcon fontSize="large" />,
       color: "#FC46AA",
+    },
+    {
+      title: "Best-Worst Rate",
+      path: "/best-worst-rate",
+      icon: <CompareArrowsIcon fontSize="large" />,
+      color: "#00838f",
     },
     {
       title: "Group Rate",
@@ -64,6 +72,12 @@ export default function Home() {
       path: "/ranked-result",
       icon: <AutoAwesomeIcon fontSize="large" />,
       color: "#048c7f",
+    },
+    {
+      title: "Best-Worst Result",
+      path: "/best-worst-result",
+      icon: <CompareArrowsIcon fontSize="large" />,
+      color: "#006064",
     },
     {
       title: "Group Result",
@@ -94,6 +108,12 @@ export default function Home() {
       path: "/webgazer-gaze-test",
       icon: <CenterFocusStrongIcon fontSize="large" />,
       color: "#0288d1",
+    },
+    {
+      title: "Dataset Manager",
+      path: "/dataset-manager",
+      icon: <CloudUploadIcon fontSize="large" />,
+      color: "#1565c0",
     },
   ];
 
