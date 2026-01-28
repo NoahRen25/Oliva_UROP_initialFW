@@ -29,8 +29,10 @@ export function WebGazerProvider({ children }) {
     if (isInitialized) return;
     
     try {
-      // Dynamic import webgazer
-      const webgazer = (await import('webgazer')).default;
+      // Dynamic import webgazer (package has invalid module entry)
+      const mod = await import('webgazer/dist/webgazer.js');
+      const webgazer = mod?.default || mod?.webgazer || window.webgazer;
+      if (!webgazer) throw new Error('WebGazer failed to load.');
       webgazerRef.current = webgazer;
       
       // Configure webgazer with optimal settings
