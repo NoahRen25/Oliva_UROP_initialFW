@@ -118,8 +118,31 @@ export default function BestWorstRate() {
   const currentTrial = TRIALS[currentTrialIndex];
   const canContinue = bestId && worstId && bestId !== worstId;
 
+  const handleBack = () => {
+    if (currentTrialIndex === 0) return;
+    setTrialResults((prev) => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setBestId(last.bestId || null);
+      setWorstId(last.worstId || null);
+      return prev.slice(0, -1);
+    });
+    setCurrentTrialIndex((idx) => Math.max(0, idx - 1));
+    startTrialTimer();
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
+      {step === 1 && (
+        <Button
+          variant="outlined"
+          onClick={handleBack}
+          disabled={currentTrialIndex === 0}
+          sx={{ mb: 2 }}
+        >
+          Back
+        </Button>
+      )}
       {step === 1 && (
         <ProgressBar
           current={currentTrialIndex + 1}

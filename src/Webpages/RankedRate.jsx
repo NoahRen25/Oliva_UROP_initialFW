@@ -94,8 +94,38 @@ export default function RankedRate() {
   if (rankGroups.length === 0) return null;
   const activeGroup = rankGroups[currentGroupIndex];
 
+  const handleBackGroup = () => {
+    if (currentGroupIndex === 0) return;
+    const prevGroup = rankGroups[currentGroupIndex - 1];
+    const prevGroupResults = allRankings.filter(
+      (r) => r.groupId === prevGroup.groupId
+    );
+    const remaining = allRankings.filter(
+      (r) => r.groupId !== prevGroup.groupId
+    );
+    const rankMap = new Map(prevGroupResults.map((r) => [r.imageId, r.rank]));
+    setAllRankings(remaining);
+    setCurrentGroupIndex((idx) => Math.max(0, idx - 1));
+    setCurrentRanks({
+      img0: rankMap.get(prevGroup.images[0].id) ?? "",
+      img1: rankMap.get(prevGroup.images[1].id) ?? "",
+      img2: rankMap.get(prevGroup.images[2].id) ?? "",
+    });
+    setError("");
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
+      {step === 1 && (
+        <Button
+          variant="outlined"
+          onClick={handleBackGroup}
+          disabled={currentGroupIndex === 0}
+          sx={{ mb: 2 }}
+        >
+          Back
+        </Button>
+      )}
       {step === 1 && (
         <ProgressBar
           current={currentGroupIndex}

@@ -10,17 +10,12 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Button,
-  Box,
-  IconButton,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
 import ResultsHeader from "../components/ResultsHeader";
 import StatsSummary from "../components/StatsSummary";
 
 export default function IndividualResult() {
-  const { individualSessions, deleteIndividualSession, clearIndividual } =
-    useResults();
+  const { individualSessions } = useResults();
 
   const extractData = (session) => {
     if (!session || !session.scores) return [];
@@ -35,7 +30,6 @@ export default function IndividualResult() {
       <ResultsHeader
         title="Individual Results"
         hasData={individualSessions.length > 0}
-        onClear={clearIndividual}
       />
 
       {individualSessions.length === 0 ? (
@@ -50,7 +44,6 @@ export default function IndividualResult() {
                 <TableCell align="right"><strong>Score</strong></TableCell>
                 <TableCell align="right"><strong>Time (s)</strong></TableCell>
                 <TableCell align="right"><strong>Moves</strong></TableCell>
-                <TableCell align="center"><strong>Action</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -104,24 +97,6 @@ export default function IndividualResult() {
                         <TableCell align="right">
                           {score.interactionCount || 0}
                         </TableCell>
-                        {scoreIdx === 0 && (
-                          <TableCell
-                            rowSpan={session.scores.length}
-                            align="center"
-                          >
-                            <IconButton
-                              color="error"
-                              onClick={() =>
-                                deleteIndividualSession(
-                                  session.id,
-                                  session.username
-                                )
-                              }
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </TableCell>
-                        )}
                       </TableRow>
                     ))}
                     <TableRow sx={{ bgcolor: "#fafafa" }}>
@@ -140,11 +115,10 @@ export default function IndividualResult() {
                       <TableCell align="right" sx={{ fontWeight: "bold", color: "#1976d2" }}>
                         {avgMoves}
                       </TableCell>
-                      <TableCell />
                     </TableRow>
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={5}
                         sx={{ bgcolor: "#f1f1f1", height: "8px", p: 0 }}
                       />
                     </TableRow>

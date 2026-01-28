@@ -1,5 +1,11 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import React, { useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link,
+  useLocation,
+} from "react-router-dom";
 import {
   AppBar,
   Toolbar,
@@ -18,7 +24,7 @@ import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
 import VoiceOverOffIcon from "@mui/icons-material/VoiceOverOff";
 
 import { ResultsProvider, useResults } from "./Results";
-import { WebGazerProvider } from "./utils/WebGazerContext";
+import { WebGazerProvider, useWebGazer } from "./utils/WebGazerContext";
 import VoiceRecorder from "./components/VoiceRecorder";
 import TranscriptHistory from "./Webpages/TranscriptHistory";
 
@@ -48,6 +54,7 @@ function NavigationWrapper() {
 
   return (
     <Router>
+      <WebGazerAutoStop />
       <AppBar position="fixed" color="default" elevation={1}>
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
@@ -111,6 +118,19 @@ function NavigationWrapper() {
       </Box>
     </Router>
   );
+}
+
+function WebGazerAutoStop() {
+  const location = useLocation();
+  const { endWebGazer } = useWebGazer();
+
+  useEffect(() => {
+    if (!location.pathname.startsWith("/webgazer")) {
+      endWebGazer();
+    }
+  }, [location.pathname, endWebGazer]);
+
+  return null;
 }
 
 export default function App() {

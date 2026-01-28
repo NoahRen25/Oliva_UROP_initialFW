@@ -78,10 +78,22 @@ export default function GroupRate() {
   const trackMove = (id) =>
     setSliderMoves((prev) => ({ ...prev, [id]: prev[id] + 1 }));
 
+  const handleBack = () => {
+    if (step === 2) {
+      setStep(1);
+      setStartTime(performance.now());
+    }
+  };
+
   if (!benchmarkImage || !groupData) return null;
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
+      {step === 2 && (
+        <Button variant="outlined" onClick={handleBack} sx={{ mb: 2 }}>
+          Back
+        </Button>
+      )}
       {step === 0 && (
         <UsernameEntry
           title="Group Image Rating"

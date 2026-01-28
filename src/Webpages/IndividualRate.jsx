@@ -112,8 +112,32 @@ export default function IndividualRate() {
 
   const currentImg = activeStep === 1 ? benchmarkImage : imagesToRate[currentImageIndex];
 
+  const handleBack = () => {
+    if (activeStep !== 2) return;
+
+    setScores((prev) => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setCurrentRating(last.score ?? 3);
+      return prev.slice(0, -1);
+    });
+
+    if (currentImageIndex > 0) {
+      setCurrentImageIndex((idx) => Math.max(0, idx - 1));
+    } else {
+      setActiveStep(1);
+    }
+    setInteractionCount(0);
+    startTimer();
+  };
+
   return (
     <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
+      {activeStep === 2 && (
+        <Button variant="outlined" onClick={handleBack} sx={{ mb: 2 }}>
+          Back
+        </Button>
+      )}
       <SpeedWarning />
       {activeStep > 0 && activeStep < 3 && (
         <ProgressBar

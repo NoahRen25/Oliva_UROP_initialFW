@@ -10,17 +10,14 @@ import {
   TableHead,
   TableRow,
   Box,
-  IconButton,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
 import ResultsHeader from "../components/ResultsHeader";
 import ExportCSVButton from "../components/ExportCSVButton";
 import StatsSummary from "../components/StatsSummary";
 
 export default function BestWorstResult() {
   // # coded by denis comments, simdenis@mit.edu
-  const { bestWorstSessions, deleteBestWorstSession, clearBestWorst } =
-    useResults();
+  const { bestWorstSessions } = useResults();
 
   const extractStats = (session) => {
     const dataPoints = [];
@@ -54,7 +51,6 @@ export default function BestWorstResult() {
       <ResultsHeader
         title="Best-Worst Results"
         hasData={bestWorstSessions.length > 0}
-        onClear={clearBestWorst}
       />
 
       <Box sx={{ mb: 2 }}>
@@ -94,7 +90,7 @@ export default function BestWorstResult() {
                   <strong>Prompt</strong>
                 </TableCell>
                 <TableCell align="center">
-                  <strong>Action</strong>
+                  <strong>Export</strong>
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -132,14 +128,6 @@ export default function BestWorstResult() {
                           filename={`BestWorst_User_${session.username}.csv`}
                           label="Export Session"
                         />
-                        <IconButton
-                          color="error"
-                          onClick={() =>
-                            deleteBestWorstSession(session.id, session.username)
-                          }
-                        >
-                          <DeleteIcon />
-                        </IconButton>
                       </TableCell>
                     )}
                   </TableRow>

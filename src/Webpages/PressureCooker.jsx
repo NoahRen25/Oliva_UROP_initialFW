@@ -13,6 +13,7 @@ import {
   Paper,
   CardActionArea,
 } from "@mui/material";
+import BackButton from "../components/BackButton";
 
 const PAIRS = [
   {
@@ -208,6 +209,7 @@ export default function PressureCooker() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2, position: "relative" }}>
+      <BackButton />
       {step === 0 ? (
         <Paper sx={{ p: 4, maxWidth: 500, mx: "auto", textAlign: "center" }}>
           <Typography

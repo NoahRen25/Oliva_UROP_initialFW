@@ -11,14 +11,12 @@ import {
   TableRow,
   Box,
   TableFooter,
-  IconButton,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
 import ResultsHeader from "../components/ResultsHeader";
 import StatsSummary from "../components/StatsSummary";
 
 export default function GroupResult() {
-  const { groupSessions, deleteGroupSession, clearGroup } = useResults();
+  const { groupSessions } = useResults();
   const extractData = (session) => {
     return session.scores.map((s) => ({
       name: s.imageName,
@@ -30,7 +28,6 @@ export default function GroupResult() {
       <ResultsHeader
         title="Group Results"
         hasData={groupSessions.length > 0}
-        onClear={clearGroup}
       />
 
       <Paper sx={{ p: 2 }}>
@@ -72,14 +69,6 @@ export default function GroupResult() {
                   <Typography variant="h6" color="primary" gutterBottom>
                     User ID: {session.username}
                   </Typography>
-                  <IconButton
-                    color="error"
-                    onClick={() =>
-                      deleteGroupSession(session.id, session.username)
-                    }
-                  >
-                    <DeleteIcon />
-                  </IconButton>
                 </Box>
 
                 <Table size="small">

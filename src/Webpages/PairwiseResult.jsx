@@ -9,19 +9,14 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  Button,
   Box,
-  IconButton,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import ResultsHeader from "../components/ResultsHeader";
 import ExportCSVButton from "../components/ExportCSVButton";
 import StatsSummary from "../components/StatsSummary";
 
 export default function PairwiseResult() {
-  const { pairwiseSessions, deletePairwiseSession, clearPairwise } =
-    useResults();
+  const { pairwiseSessions } = useResults();
   const extractPairwiseStats = (session) => {
     const dataPoints = [];
 
@@ -59,7 +54,6 @@ export default function PairwiseResult() {
       <ResultsHeader
         title="Pairwise Results"
         hasData={pairwiseSessions.length > 0}
-        onClear={clearPairwise}
       />
       <Box>
         {pairwiseSessions.length > 0 && (
@@ -70,16 +64,6 @@ export default function PairwiseResult() {
             }.csv`}
             label="Export All"
           />
-        )}
-        {pairwiseSessions.length > 0 && (
-          <Button
-            variant="outlined"
-            color="error"
-            startIcon={<DeleteSweepIcon />}
-            onClick={clearPairwise}
-          >
-            Clear History
-          </Button>
         )}
       </Box>
       <Paper sx={{ p: 2 }}>
@@ -124,9 +108,9 @@ export default function PairwiseResult() {
                     <TableCell sx={{ color: "green", fontWeight: "bold" }}>
                       {choice.winnerName}
                     </TableCell>
-                    <TableCell sx={{ color: "text.secondary" }}>
-                      {choice.loserName}
-                    </TableCell>
+                <TableCell sx={{ color: "text.secondary" }}>
+                  {choice.loserName}
+                </TableCell>
 
                     {j === 0 && (
                       <TableCell
@@ -140,14 +124,6 @@ export default function PairwiseResult() {
                           filename={`Pairwise_User_${session.username}.csv`}
                           label="Export Session"
                         />
-                        <IconButton
-                          color="error"
-                          onClick={() =>
-                            deletePairwiseSession(session.id, session.username)
-                          }
-                        >
-                          <DeleteIcon />
-                        </IconButton>
                       </TableCell>
                     )}
                   </TableRow>

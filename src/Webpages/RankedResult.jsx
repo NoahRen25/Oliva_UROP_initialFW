@@ -11,16 +11,13 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  IconButton,
 } from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import ResultsHeader from "../components/ResultsHeader";
 import ExportCSVButton from "../components/ExportCSVButton";
 import StatsSummary from "../components/StatsSummary";
 
 export default function RankedResult() {
-  const { rankedSessions, deleteRankedSession, clearRanked } = useResults();
+  const { rankedSessions } = useResults();
   const extractData = (session) => {
     return session.rankings.map((r) => ({
       name: r.imageName,
@@ -55,7 +52,6 @@ export default function RankedResult() {
       <ResultsHeader
         title="Ranked Results"
         hasData={rankedSessions.length > 0}
-        onClear={clearRanked}
       />
 
       <Box sx={{ mb: 2 }}>
@@ -90,9 +86,6 @@ export default function RankedResult() {
                 </TableCell>
                 <TableCell>
                   <strong>Rank</strong>
-                </TableCell>
-                <TableCell align="center">
-                  <strong>Action</strong>
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -154,14 +147,6 @@ export default function RankedResult() {
                           filename={`Ranked_User_${session.username}.csv`}
                           label="Export Session"
                         />
-                        <IconButton
-                          color="error"
-                          onClick={() =>
-                            deleteRankedSession(session.id, session.username)
-                          }
-                        >
-                          <DeleteIcon />
-                        </IconButton>
                       </TableCell>
                     )}
                   </TableRow>

@@ -18,6 +18,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteIcon from '@mui/icons-material/Delete';
 import TuneIcon from '@mui/icons-material/Tune';
 import { useWebGazer } from '../utils/WebGazerContext';
+import BackButton from "../components/BackButton";
 
 export default function WebGazerGazeTest() {
   const navigate = useNavigate();
@@ -93,6 +94,7 @@ export default function WebGazerGazeTest() {
           gap: 3,
         }}
       >
+        <BackButton />
         <CircularProgress size={60} />
         <Typography variant="h6">Loading Eye Tracker...</Typography>
       </Box>
@@ -103,6 +105,7 @@ export default function WebGazerGazeTest() {
   if (error) {
     return (
       <Container maxWidth="sm" sx={{ mt: 8 }}>
+        <BackButton />
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
@@ -117,6 +120,7 @@ export default function WebGazerGazeTest() {
   if (!isCalibrated && isInitialized) {
     return (
       <Container maxWidth="sm" sx={{ mt: 8, textAlign: 'center' }}>
+        <BackButton />
         <Alert severity="warning" sx={{ mb: 3 }}>
           Eye tracker needs calibration for accurate results.
         </Alert>
@@ -134,6 +138,7 @@ export default function WebGazerGazeTest() {
 
   return (
     <Box sx={{ position: 'relative', minHeight: 'calc(100vh - 80px)' }}>
+      <BackButton />
       {/* Gaze Point Visualization */}
       {currentGaze.x !== null && currentGaze.y !== null && (
         <Box

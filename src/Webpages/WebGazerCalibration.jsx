@@ -14,6 +14,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useWebGazer } from '../utils/WebGazerContext';
+import BackButton from "../components/BackButton";
 
 // 9-point calibration grid positions (percentage-based)
 const CALIBRATION_POINTS = [
@@ -131,6 +132,7 @@ export default function WebGazerCalibration() {
   if (error) {
     return (
       <Container maxWidth="sm" sx={{ mt: 8 }}>
+        <BackButton />
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
@@ -143,6 +145,7 @@ export default function WebGazerCalibration() {
 
   return (
     <Box sx={{ position: 'relative', minHeight: 'calc(100vh - 80px)', p: 2 }}>
+      <BackButton />
       {/* Header with instructions and progress */}
       <Paper
         elevation={3}

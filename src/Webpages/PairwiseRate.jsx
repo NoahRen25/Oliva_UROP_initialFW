@@ -70,8 +70,29 @@ export default function PairwiseRate() {
 
   if (pairs.length === 0) return null;
 
+  const handleBack = () => {
+    if (currentPairIndex === 0) return;
+    setChoices((prev) => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setSelectedSide(last.winnerSide || null);
+      return prev.slice(0, -1);
+    });
+    setCurrentPairIndex((idx) => Math.max(0, idx - 1));
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
+      {step === 1 && (
+        <Button
+          variant="outlined"
+          onClick={handleBack}
+          disabled={currentPairIndex === 0}
+          sx={{ mb: 2 }}
+        >
+          Back
+        </Button>
+      )}
       {step === 1 && (
         <ProgressBar
           current={currentPairIndex}
