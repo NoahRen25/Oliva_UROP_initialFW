@@ -50,12 +50,23 @@ export const ResultsProvider = ({ children }) => {
   const [pressureCookerSessions, setPressureCookerSessions] = useState([]);
   const [showSpeedWarning, setShowSpeedWarning] = useState(false);
 
-  const checkEngagement = (timesArray) => {
-    if (timesArray.length < 3) return true;
+  const [lastWarnedIndex, setLastWarnedIndex] = useState(0);
+
+  const resetEngagement = () => {
+    setLastWarnedIndex(-2);
+    setShowSpeedWarning(false);
+  };
+  const checkEngagement = (timesArray, currentIndex) => {
+    //don't warn too often
+    if (currentIndex - lastWarnedIndex < 2) return true;
+    if (timesArray.length < 2) return true;
+  
     const total = timesArray.reduce((acc, curr) => acc + curr, 0);
     const average = total / timesArray.length;
-    if (average < 2.0) {
+  
+    if (average < 10.0) {
       setShowSpeedWarning(true);
+      setLastWarnedIndex(currentIndex);
       return false;
     }
     return true;
@@ -125,7 +136,7 @@ export const ResultsProvider = ({ children }) => {
         pairwiseSessions, addPairwiseSession, deletePairwiseSession, clearPairwise,
         rankedSessions, addRankedSession, deleteRankedSession, clearRanked,
         transcripts, isAnnouncing, toggleAnnouncing, announce,
-        showSpeedWarning, setShowSpeedWarning, checkEngagement
+        showSpeedWarning, setShowSpeedWarning, checkEngagement, resetEngagement,
       }}
     >
       {children}

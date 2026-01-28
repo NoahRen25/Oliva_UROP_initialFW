@@ -15,10 +15,11 @@ import ScoreSlider from "../components/ScoreSlider";
 import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
 import { getIndividualBatch } from "../utils/ImageLoader";
+import SpeedWarning from "../components/SpeedWarning";
 
 export default function IndividualRate() {
   const navigate = useNavigate();
-  const { addIndividualSession } = useResults();
+  const { addIndividualSession, checkEngagement, setShowSpeedWarning, resetEngagement } = useResults();
   
   const [activeStep, setActiveStep] = useState(0);
   const [username, setUsername] = useState("");
@@ -30,6 +31,7 @@ export default function IndividualRate() {
   const [scores, setScores] = useState([]);
   const [startTime, setStartTime] = useState(null);
   const [interactionCount, setInteractionCount] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
     const batch = getIndividualBatch(6); 
@@ -50,36 +52,59 @@ export default function IndividualRate() {
   const totalImages = 6; 
   const progressValue =
     activeStep === 1 ? 0 : activeStep === 2 ? currentImageIndex + 1 : totalImages;
-
-  const handleNext = (isBenchmark = false) => {
-    const timeSpent = (performance.now() - startTime) / 1000;
-    const img = isBenchmark ? benchmarkImage : imagesToRate[currentImageIndex];
-    console.log(img.prompt)
-    console.log(img.filename);
+    useEffect(() => {
+      const batch = getIndividualBatch(6); 
+      setBenchmarkImage(batch[0]);
+      setImagesToRate(batch.slice(1));
+      
+      resetEngagement(); 
+    }, []);
+    const handleNext = (isBenchmark = false) => {
+      if (isLocked) return;
+      
+      const timeSpent = (performance.now() - startTime) / 1000;
+      const img = isBenchmark ? benchmarkImage : imagesToRate[currentImageIndex];
+      
+      const newScore = {
+        imageId: img.id,
+        imageName: img.filename, 
+        prompt: img.prompt,
+        score: currentRating,
+        timeSpent: Number(timeSpent.toFixed(2)),
+        interactionCount,
+      };
+      
+      const updatedScores = [...scores, newScore];
+      setScores(updatedScores);
+      setCurrentRating(3);
+  
+      const stepIndex = isBenchmark ? 0 : currentImageIndex + 1;
+      const currentTimes = updatedScores.map(s => s.timeSpent);
+      
+      const isSafeToProceed = checkEngagement(currentTimes, stepIndex);
+      
+      if (!isSafeToProceed) {
+        setIsLocked(true);
     
-    const newScore = {
-      imageId: img.id,
-      imageName: img.filename, 
-      prompt: img.prompt,
-      score: currentRating,
-      timeSpent: timeSpent.toFixed(2),
-      interactionCount,
+        setTimeout(() => {
+          setIsLocked(false);
+          setShowSpeedWarning(false); 
+        }, 2000);
+  
+        return; 
+      }
+    
+      
+      if (isBenchmark) {
+        setActiveStep(2);
+      } else if (currentImageIndex < imagesToRate.length - 1) {
+        setCurrentImageIndex(currentImageIndex + 1);
+      } else {
+        addIndividualSession(username, updatedScores);
+        setActiveStep(3);
+      }
+      startTimer();
     };
-    
-    const updatedScores = [...scores, newScore];
-    setScores(updatedScores);
-    setCurrentRating(3);
-
-    if (isBenchmark) {
-      setActiveStep(2);
-    } else if (currentImageIndex < imagesToRate.length - 1) {
-      setCurrentImageIndex(currentImageIndex + 1);
-    } else {
-      addIndividualSession(username, updatedScores);
-      setActiveStep(3);
-    }
-    startTimer();
-  };
 
   const incrementMoves = () => setInteractionCount((prev) => prev + 1);
 
@@ -89,6 +114,7 @@ export default function IndividualRate() {
 
   return (
     <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
+      <SpeedWarning />
       {activeStep > 0 && activeStep < 3 && (
         <ProgressBar
           current={progressValue}
@@ -126,13 +152,24 @@ export default function IndividualRate() {
               setValue={setCurrentRating}
               onInteraction={incrementMoves}
             />
-            <Button
-              variant="contained"
-              fullWidth
-              onClick={() => handleNext(activeStep === 1)}
-            >
-              {activeStep === 2 && currentImageIndex === imagesToRate.length - 1 ? "Finish" : "Next"}
-            </Button>
+<Button
+  variant="contained"
+  fullWidth
+  
+  disabled={isLocked} 
+  onClick={() => handleNext(activeStep === 1)}
+
+  sx={{
+    "&.Mui-disabled": {
+      backgroundColor: "rgba(0, 0, 0, 0.12)", 
+      color: "rgba(0, 0, 0, 0.26)"
+    }
+  }}
+>
+  {isLocked 
+    ? "Please Slow Down..." 
+    : (activeStep === 2 && currentImageIndex === imagesToRate.length - 1 ? "Finish" : "Next")}
+</Button>
           </CardContent>
         </Card>
       )}
