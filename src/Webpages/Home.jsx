@@ -18,6 +18,8 @@ import HotelClassIcon from "@mui/icons-material/HotelClass";
 import AssistantIcon from "@mui/icons-material/Assistant";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import CenterFocusStrongIcon from "@mui/icons-material/CenterFocusStrong";
 
 export default function Home() {
   const menuItems = [
@@ -80,6 +82,18 @@ export default function Home() {
       path: "/pressure-cooker",
       icon: <LocalFireDepartmentIcon fontSize="large" />,
       color: "#d32f2f",
+    },
+    {
+      title: "Eye Tracking Calibration",
+      path: "/webgazer-calibration",
+      icon: <VisibilityIcon fontSize="large" />,
+      color: "#7b1fa2",
+    },
+    {
+      title: "Gaze Test",
+      path: "/webgazer-gaze-test",
+      icon: <CenterFocusStrongIcon fontSize="large" />,
+      color: "#0288d1",
     },
   ];
 
