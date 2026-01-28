@@ -1,89 +1,120 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useResults } from "../Results";
 import {
   Typography,
   Container,
-  TextField,
   Button,
-  Slider,
   Card,
   CardContent,
   CardMedia,
   Paper,
+  Box
 } from "@mui/material";
 import ScoreSlider from "../components/ScoreSlider";
 import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
-
-const BENCHMARK_IMAGE = {
-  id: 0,
-  src: "/src/images/flux/generated_0182.png",
-  alt: "Benchmark Calibration",
-};
-const IMAGES_TO_RATE = [
-  { id: 1, src: "/src/images/FluxFlag.png", alt: "Flux_0187" },
-  { id: 2, src: "/src/images/FluxMoonFlags.png", alt: "Flux_0186" },
-  { id: 3, src: "/src/images/FluxShip.png", alt: "Flux_0185" },
-  { id: 4, src: "/src/images/flux/generated_0184.png", alt: "Flux_0184" },
-  { id: 5, src: "/src/images/flux/generated_0183.png", alt: "Flux_0183" },
-];
+import { getIndividualBatch } from "../utils/ImageLoader";
+import SpeedWarning from "../components/SpeedWarning";
 
 export default function IndividualRate() {
   const navigate = useNavigate();
-  const { addIndividualSession } = useResults();
+  const { addIndividualSession, checkEngagement, setShowSpeedWarning, resetEngagement } = useResults();
+  
   const [activeStep, setActiveStep] = useState(0);
   const [username, setUsername] = useState("");
+  const [imagesToRate, setImagesToRate] = useState([]);
+  const [benchmarkImage, setBenchmarkImage] = useState(null);
+  
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentRating, setCurrentRating] = useState(3);
   const [scores, setScores] = useState([]);
   const [startTime, setStartTime] = useState(null);
   const [interactionCount, setInteractionCount] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
+
+  useEffect(() => {
+    const batch = getIndividualBatch(6); 
+    setBenchmarkImage(batch[0]);
+    setImagesToRate(batch.slice(1));
+  }, []);
 
   const startTimer = () => {
     setStartTime(performance.now());
     setInteractionCount(0);
   };
+  
   const handleStart = () => {
     setActiveStep(1);
     startTimer();
   };
-  const totalImages = IMAGES_TO_RATE.length + 1; //+1 is bc of benchmark
-  const progressValue =
-    activeStep === 1
-      ? 0
-      : activeStep === 2
-      ? currentImageIndex + 1
-      : totalImages;
-  const handleNext = (isBenchmark = false) => {
-    const timeSpent = (performance.now() - startTime) / 1000;
-    const img = isBenchmark
-      ? BENCHMARK_IMAGE
-      : IMAGES_TO_RATE[currentImageIndex];
-    const newScore = {
-      imageId: img.id,
-      imageName: img.alt,
-      score: currentRating,
-      timeSpent: timeSpent.toFixed(2),
-      interactionCount,
-    };
-    const updatedScores = [...scores, newScore];
-    setScores(updatedScores);
-    setCurrentRating(3);
 
-    if (isBenchmark) {
-      setActiveStep(2);
-    } else if (currentImageIndex < IMAGES_TO_RATE.length - 1) {
-      setCurrentImageIndex(currentImageIndex + 1);
-    } else {
-      addIndividualSession(username, updatedScores);
-      setActiveStep(3);
-    }
-    startTimer();
-  };
+  const totalImages = 6; 
+  const progressValue =
+    activeStep === 1 ? 0 : activeStep === 2 ? currentImageIndex + 1 : totalImages;
+    useEffect(() => {
+      const batch = getIndividualBatch(6); 
+      setBenchmarkImage(batch[0]);
+      setImagesToRate(batch.slice(1));
+      
+      resetEngagement(); 
+    }, []);
+    const handleNext = (isBenchmark = false) => {
+      if (isLocked) return;
+      
+      const timeSpent = (performance.now() - startTime) / 1000;
+      const img = isBenchmark ? benchmarkImage : imagesToRate[currentImageIndex];
+      
+      const newScore = {
+        imageId: img.id,
+        imageName: img.filename, 
+        prompt: img.prompt,
+        score: currentRating,
+        timeSpent: Number(timeSpent.toFixed(2)),
+        interactionCount,
+      };
+      
+      const updatedScores = [...scores, newScore];
+      setScores(updatedScores);
+      setCurrentRating(3);
+  
+      const stepIndex = isBenchmark ? 0 : currentImageIndex + 1;
+      const currentTimes = updatedScores.map(s => s.timeSpent);
+      
+      const isSafeToProceed = checkEngagement(currentTimes, stepIndex);
+      
+      if (!isSafeToProceed) {
+        setIsLocked(true);
+    
+        setTimeout(() => {
+          setIsLocked(false);
+          setShowSpeedWarning(false); 
+        }, 2000);
+  
+        return; 
+      }
+    
+      
+      if (isBenchmark) {
+        setActiveStep(2);
+      } else if (currentImageIndex < imagesToRate.length - 1) {
+        setCurrentImageIndex(currentImageIndex + 1);
+      } else {
+        addIndividualSession(username, updatedScores);
+        setActiveStep(3);
+      }
+      startTimer();
+    };
+
   const incrementMoves = () => setInteractionCount((prev) => prev + 1);
+
+  if (!benchmarkImage || imagesToRate.length === 0) return null;
+
+  const currentImg = activeStep === 1 ? benchmarkImage : imagesToRate[currentImageIndex];
+
   return (
     <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
+      <SpeedWarning />
       {activeStep > 0 && activeStep < 3 && (
         <ProgressBar
           current={progressValue}
@@ -101,23 +132,18 @@ export default function IndividualRate() {
       )}
       {(activeStep === 1 || activeStep === 2) && (
         <Card>
-          <Typography
-            variant="h6"
-            sx={{ p: 2, textAlign: "center", bgcolor: "#fff3e0" }}
-          >
-            {activeStep === 1
-              ? "Benchmark"
-              : `Image ${currentImageIndex + 1} of ${IMAGES_TO_RATE.length}`}
-            : Rate 1-5
-          </Typography>
+          <Box sx={{ p: 2, bgcolor: "#fff3e0", textAlign: "center" }}>
+            <Typography variant="h6">
+              {activeStep === 1 ? "Benchmark" : `Image ${currentImageIndex + 1} of 5`}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
+              "{currentImg.prompt}"
+            </Typography>
+          </Box>
           <CardMedia
             component="img"
-            image={
-              activeStep === 1
-                ? BENCHMARK_IMAGE.src
-                : IMAGES_TO_RATE[currentImageIndex].src
-            }
-            sx={{ objectFit: "contain", height: "auto" }}
+            image={currentImg.src}
+            sx={{ objectFit: "contain", height: "auto", maxHeight: "60vh" }}
           />
           <CardContent sx={{ textAlign: "center" }}>
             <Typography>Rating: {currentRating}</Typography>
@@ -126,13 +152,24 @@ export default function IndividualRate() {
               setValue={setCurrentRating}
               onInteraction={incrementMoves}
             />
-            <Button
-              variant="contained"
-              fullWidth
-              onClick={() => handleNext(activeStep === 1)}
-            >
-              {activeStep === 2 && currentImageIndex === 4 ? "Finish" : "Next"}
-            </Button>
+<Button
+  variant="contained"
+  fullWidth
+  
+  disabled={isLocked} 
+  onClick={() => handleNext(activeStep === 1)}
+
+  sx={{
+    "&.Mui-disabled": {
+      backgroundColor: "rgba(0, 0, 0, 0.12)", 
+      color: "rgba(0, 0, 0, 0.26)"
+    }
+  }}
+>
+  {isLocked 
+    ? "Please Slow Down..." 
+    : (activeStep === 2 && currentImageIndex === imagesToRate.length - 1 ? "Finish" : "Next")}
+</Button>
           </CardContent>
         </Card>
       )}

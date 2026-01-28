@@ -120,7 +120,7 @@ export default function PairwiseResult() {
                         {session.username}
                       </TableCell>
                     )}
-                    <TableCell>ID: {choice.pairId}</TableCell>
+                    <TableCell>{choice.pairId}</TableCell>
                     <TableCell sx={{ color: "green", fontWeight: "bold" }}>
                       {choice.winnerName}
                     </TableCell>

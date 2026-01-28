@@ -10,13 +10,11 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TableFooter,
   Button,
   Box,
   IconButton,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import ResultsHeader from "../components/ResultsHeader";
 import StatsSummary from "../components/StatsSummary";
 
@@ -25,11 +23,13 @@ export default function IndividualResult() {
     useResults();
 
   const extractData = (session) => {
+    if (!session || !session.scores) return [];
     return session.scores.map((s) => ({
-      name: s.imageName,
-      value: s.score,
+      name: s.imageName || "Unknown",
+      value: s.score || 0,
     }));
   };
+
   return (
     <Container maxWidth="md" sx={{ mt: 2 }}>
       <ResultsHeader
@@ -45,43 +45,32 @@ export default function IndividualResult() {
           <Table>
             <TableHead>
               <TableRow sx={{ bgcolor: "#eee" }}>
-                <TableCell>
-                  <strong>User ID</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Image</strong>
-                </TableCell>
-                <TableCell align="right">
-                  <strong>Score</strong>
-                </TableCell>
-                <TableCell align="right">
-                  <strong>Time (s)</strong>
-                </TableCell>
-                <TableCell align="right">
-                  <strong>Moves</strong>
-                </TableCell>
-                <TableCell align="center">
-                  <strong>Action</strong>
-                </TableCell>
+                <TableCell><strong>User ID</strong></TableCell>
+                <TableCell><strong>Image</strong></TableCell>
+                <TableCell align="right"><strong>Score</strong></TableCell>
+                <TableCell align="right"><strong>Time (s)</strong></TableCell>
+                <TableCell align="right"><strong>Moves</strong></TableCell>
+                <TableCell align="center"><strong>Action</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {individualSessions.map((session) => {
+                // imageId 0 is the benchmark
                 const nonBenchmark = session.scores.filter(
-                  (s) => s.imageId !== 0
+                  (s) => s.imageId !== 0 && s.imageId !== "0"
                 );
                 const hasScores = nonBenchmark.length > 0;
 
                 const avgScore = hasScores
                   ? (
-                      nonBenchmark.reduce((a, b) => a + b.score, 0) /
+                      nonBenchmark.reduce((a, b) => a + (b.score || 0), 0) /
                       nonBenchmark.length
                     ).toFixed(2)
                   : "N/A";
                 const avgTime = hasScores
                   ? (
                       nonBenchmark.reduce(
-                        (a, b) => a + parseFloat(b.timeSpent),
+                        (a, b) => a + parseFloat(b.timeSpent || 0),
                         0
                       ) / nonBenchmark.length
                     ).toFixed(2)
@@ -96,7 +85,7 @@ export default function IndividualResult() {
                   : "N/A";
 
                 return (
-                  <>
+                  <React.Fragment key={session.id}>
                     {session.scores.map((score, scoreIdx) => (
                       <TableRow key={`${session.id}-${scoreIdx}`}>
                         {scoreIdx === 0 && (
@@ -107,7 +96,9 @@ export default function IndividualResult() {
                             {session.username}
                           </TableCell>
                         )}
-                        <TableCell>{score.imageName}</TableCell>
+                        <TableCell sx={{ wordBreak: 'break-all', fontSize: '0.8rem' }}>
+                          {score.imageName}
+                        </TableCell>
                         <TableCell align="right">{score.score}</TableCell>
                         <TableCell align="right">{score.timeSpent}</TableCell>
                         <TableCell align="right">
@@ -140,22 +131,13 @@ export default function IndividualResult() {
                       >
                         Session Average (No BM)
                       </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ fontWeight: "bold", color: "#1976d2" }}
-                      >
+                      <TableCell align="right" sx={{ fontWeight: "bold", color: "#1976d2" }}>
                         {avgScore}
                       </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ fontWeight: "bold", color: "#1976d2" }}
-                      >
+                      <TableCell align="right" sx={{ fontWeight: "bold", color: "#1976d2" }}>
                         {avgTime}
                       </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ fontWeight: "bold", color: "#1976d2" }}
-                      >
+                      <TableCell align="right" sx={{ fontWeight: "bold", color: "#1976d2" }}>
                         {avgMoves}
                       </TableCell>
                       <TableCell />
@@ -166,7 +148,7 @@ export default function IndividualResult() {
                         sx={{ bgcolor: "#f1f1f1", height: "8px", p: 0 }}
                       />
                     </TableRow>
-                  </>
+                  </React.Fragment>
                 );
               })}
             </TableBody>

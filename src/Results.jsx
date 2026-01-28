@@ -6,112 +6,124 @@ import React, {
   useCallback,
 } from "react";
 
-const Results = createContext({});
+const Results = createContext(null);
 
 export const useResults = () => {
   const context = useContext(Results);
-  if (!context) return { transcripts: [] };
+  if (!context) {
+    return {
+      individualSessions: [],
+      groupSessions: [],
+      pairwiseSessions: [],
+      rankedSessions: [],
+      transcripts: [],
+    };
+  }
   return context;
 };
 
 const useLocalStorage = (key, initialValue) => {
-  const [state, setState] = useState(
-    () => JSON.parse(localStorage.getItem(key)) || initialValue
-  );
+  const [state, setState] = useState(() => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      return initialValue;
+    }
+  });
+
   useEffect(() => {
     localStorage.setItem(key, JSON.stringify(state));
   }, [key, state]);
+
   return [state, setState];
 };
+
 export const ResultsProvider = ({ children }) => {
-  // load initial state from local storage 
-  const [individualSessions, setIndividualSessions] = useLocalStorage(
-    "app_individual",
-    []
-  );
+  const [individualSessions, setIndividualSessions] = useLocalStorage("app_individual", []);
   const [groupSessions, setGroupSessions] = useLocalStorage("app_group", []);
-  const [pairwiseSessions, setPairwiseSessions] = useLocalStorage(
-    "app_pairwise",
-    []
-  );
+  const [pairwiseSessions, setPairwiseSessions] = useLocalStorage("app_pairwise", []);
   const [rankedSessions, setRankedSessions] = useLocalStorage("app_ranked", []);
   const [bestWorstSessions, setBestWorstSessions] = useLocalStorage(
     "app_best_worst",
     []
   );
   const [transcripts, setTranscripts] = useLocalStorage("app_transcripts", []);
-  const [isAnnouncing, setIsAnnouncing] = useLocalStorage(
-    "app_announcing",
-    false
-  );
+  
+  const [isAnnouncing, setIsAnnouncing] = useLocalStorage("app_announcing", false);
   const [pressureCookerSessions, setPressureCookerSessions] = useState([]);
+  const [showSpeedWarning, setShowSpeedWarning] = useState(false);
+
+  const [lastWarnedIndex, setLastWarnedIndex] = useState(0);
+
+  const resetEngagement = () => {
+    setLastWarnedIndex(-2);
+    setShowSpeedWarning(false);
+  };
+  const checkEngagement = (timesArray, currentIndex) => {
+    //don't warn too often
+    if (currentIndex - lastWarnedIndex < 2) return true;
+    if (timesArray.length < 2) return true;
+  
+    const total = timesArray.reduce((acc, curr) => acc + curr, 0);
+    const average = total / timesArray.length;
+  
+    if (average < 10.0) {
+      setShowSpeedWarning(true);
+      setLastWarnedIndex(currentIndex);
+      return false;
+    }
+    return true;
+  };
 
   const toggleAnnouncing = () => {
-    // if turning off, immediately silence any current speech
-    if (isAnnouncing) {
-      window.speechSynthesis.cancel();
-    }
+    if (isAnnouncing) window.speechSynthesis.cancel();
     setIsAnnouncing((prev) => !prev);
   };
 
-  const announce = useCallback(
-    (text) => {
-      if (!isAnnouncing || !text) return;
+  const announce = useCallback((text) => {
+    if (!isAnnouncing || !text) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => v.name.includes("Karen")) || voices.find(v => v.lang.startsWith("en")) || voices[0];
+    if (preferredVoice) utterance.voice = preferredVoice;
+    utterance.rate = 1.05;
+    window.speechSynthesis.speak(utterance);
+  }, [isAnnouncing]);
 
-      window.speechSynthesis.cancel();
-
-      const utterance = new SpeechSynthesisUtterance(text);
-
-      const voices = window.speechSynthesis.getVoices();
-      console.log(voices);
-
-      const preferredVoice =
-        voices.find(
-          (v) => v.name.includes("Karen") && v.lang.startsWith("en")
-        ) ||
-        voices.find((v) => v.lang.startsWith("en")) ||
-        voices[0];
-
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
-      }
-
-      utterance.rate = 1.05; // speed (0.1 to 10)
-      utterance.pitch = 1.0; // pitch (0 to 2)
-
-      window.speechSynthesis.speak(utterance);
-    },
-    [[isAnnouncing]]
-  );
-  //add data functions
+  // add functions
   const addIndividualSession = (username, scores) => {
     setIndividualSessions((prev) => [
       ...prev,
-      { id: Date.now(), username, scores, timestamp: new Date() },
+      { id: Date.now(), username, scores, timestamp: new Date().toISOString() },
     ]);
   };
+
   const addGroupSession = (username, scores) => {
     setGroupSessions((prev) => [
       ...prev,
-      { id: Date.now(), username, scores, timestamp: new Date() },
+      { id: Date.now(), username, scores, timestamp: new Date().toISOString() },
     ]);
   };
+
   const addPairwiseSession = (username, choices) => {
     setPairwiseSessions((prev) => [
       ...prev,
-      { id: Date.now(), username, choices, timestamp: new Date() },
+      { id: Date.now(), username, choices, timestamp: new Date().toISOString() },
     ]);
   };
+
   const addRankedSession = (username, rankings) => {
     setRankedSessions((prev) => [
       ...prev,
-      { id: Date.now(), username, rankings, timestamp: new Date() },
+      { id: Date.now(), username, rankings, timestamp: new Date().toISOString() },
     ]);
   };
   const addBestWorstSession = (username, trials) => {
     setBestWorstSessions((prev) => [
       ...prev,
-      { id: Date.now(), username, trials, timestamp: new Date() },
+      { id: Date.now(), username, trials, timestamp: new Date().toISOString() },
     ]);
   };
   const addTranscript = (text, duration) => {
@@ -126,7 +138,7 @@ export const ResultsProvider = ({ children }) => {
     setTranscripts((prev) => [newEntry, ...prev]);
   };
 
-  //delete functions (individual)
+  // delete functions
   const deleteIndividualSession = (id, username) => {
     if (window.confirm(`Delete individual session by user ${username}?`)) {
       setIndividualSessions((prev) =>
@@ -162,7 +174,7 @@ export const ResultsProvider = ({ children }) => {
     }
   };
 
-  //clear all functions
+  // clear functions
   const clearIndividual = () => {
     if (window.confirm("Delete ALL Individual sessions?"))
       setIndividualSessions([]);
@@ -188,12 +200,11 @@ export const ResultsProvider = ({ children }) => {
   const addPressureCookerSession = (username, choices, bestStreak) => {
     setPressureCookerSessions((prev) => [
       ...prev,
-      { username, choices, bestStreak, timestamp: new Date() },
+      { username, choices, bestStreak, timestamp: new Date().toISOString() },
     ]);
-    // also add to pairwise sessions for combined results
     setPairwiseSessions((prev) => [
       ...prev,
-      { username, choices, timestamp: new Date(), mode: "pressure-cooker" },
+      { username, choices, timestamp: new Date().toISOString(), mode: "pressure-cooker" },
     ]);
   };
 
@@ -229,6 +240,10 @@ export const ResultsProvider = ({ children }) => {
         announce,
         pressureCookerSessions,
         addPressureCookerSession,
+        showSpeedWarning,
+        setShowSpeedWarning,
+        checkEngagement,
+        resetEngagement,
       }}
     >
       {children}
