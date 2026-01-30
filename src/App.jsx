@@ -122,13 +122,14 @@ function NavigationWrapper() {
 
 function WebGazerAutoStop() {
   const location = useLocation();
-  const { endWebGazer } = useWebGazer();
+  const { endWebGazer, isInitialized } = useWebGazer();
 
   useEffect(() => {
-    if (!location.pathname.startsWith("/webgazer")) {
+    // Only cleanup if leaving a webgazer page AND WebGazer was actually initialized
+    if (!location.pathname.startsWith("/webgazer") && isInitialized) {
       endWebGazer();
     }
-  }, [location.pathname, endWebGazer]);
+  }, [location.pathname, endWebGazer, isInitialized]);
 
   return null;
 }

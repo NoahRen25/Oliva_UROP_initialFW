@@ -17,6 +17,8 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteIcon from '@mui/icons-material/Delete';
 import TuneIcon from '@mui/icons-material/Tune';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useWebGazer } from '../utils/WebGazerContext';
 import BackButton from "../components/BackButton";
 
@@ -84,19 +86,21 @@ export default function WebGazerGazeTest() {
   // Loading state
   if (isLoading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '80vh',
-          gap: 3,
-        }}
-      >
+      <Box sx={{ p: 2 }}>
         <BackButton />
-        <CircularProgress size={60} />
-        <Typography variant="h6">Loading Eye Tracker...</Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '70vh',
+            gap: 3,
+          }}
+        >
+          <CircularProgress size={60} />
+          <Typography variant="h6">Loading Eye Tracker...</Typography>
+        </Box>
       </Box>
     );
   }
@@ -120,7 +124,9 @@ export default function WebGazerGazeTest() {
   if (!isCalibrated && isInitialized) {
     return (
       <Container maxWidth="sm" sx={{ mt: 8, textAlign: 'center' }}>
-        <BackButton />
+        <Box sx={{ position: 'absolute', left: 20, top: 80 }}>
+          <BackButton />
+        </Box>
         <Alert severity="warning" sx={{ mb: 3 }}>
           Eye tracker needs calibration for accurate results.
         </Alert>
@@ -137,7 +143,7 @@ export default function WebGazerGazeTest() {
   }
 
   return (
-    <Box sx={{ position: 'relative', minHeight: 'calc(100vh - 80px)' }}>
+    <Box sx={{ position: 'relative', minHeight: 'calc(100vh - 80px)', p: 2 }}>
       <BackButton />
       {/* Gaze Point Visualization */}
       {currentGaze.x !== null && currentGaze.y !== null && (
@@ -243,6 +249,15 @@ export default function WebGazerGazeTest() {
             fullWidth
           >
             {isTracking ? 'Pause' : 'Resume'}
+          </Button>
+
+          <Button
+            variant="outlined"
+            startIcon={showBuiltInPoint ? <VisibilityOffIcon /> : <VisibilityIcon />}
+            onClick={toggleBuiltInPoint}
+            fullWidth
+          >
+            {showBuiltInPoint ? 'Hide' : 'Show'} Debug Point
           </Button>
 
           <Button

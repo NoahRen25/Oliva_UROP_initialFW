@@ -17,8 +17,9 @@ import { useWebGazer } from '../utils/WebGazerContext';
 import BackButton from "../components/BackButton";
 
 // 9-point calibration grid positions (percentage-based)
+// Perfect 3x3 symmetrical grid: 10%/50%/90% on both axes
 const CALIBRATION_POINTS = [
-  { id: 1, x: 25, y: 25 },   // Top-left (adjusted to avoid webcam)
+  { id: 1, x: 10, y: 10 },   // Top-left
   { id: 2, x: 50, y: 10 },   // Top-center
   { id: 3, x: 90, y: 10 },   // Top-right
   { id: 4, x: 10, y: 50 },   // Middle-left
@@ -74,10 +75,11 @@ export default function WebGazerCalibration() {
       const point = calibrationData.find((pt) => pt.id === pointId);
       if (!point || point.clicks >= CLICKS_PER_POINT) return;
 
-      // Record the screen position for WebGazer
-      const rect = event.target.getBoundingClientRect();
-      const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 2;
+      // Use clientX/Y for accurate screen position recording
+      // This is more accurate than bounding rect center, especially on high-DPI displays
+      // Also accounts for the exact spot where the user clicked
+      const x = event.clientX;
+      const y = event.clientY;
       recordCalibrationPoint(x, y);
 
       // Update local state
@@ -109,21 +111,24 @@ export default function WebGazerCalibration() {
   // Loading state
   if (isLoading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '80vh',
-          gap: 3,
-        }}
-      >
-        <CircularProgress size={60} />
-        <Typography variant="h6">Initializing Eye Tracker...</Typography>
-        <Typography variant="body2" color="text.secondary">
-          Please allow camera access when prompted
-        </Typography>
+      <Box sx={{ p: 2 }}>
+        <BackButton />
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '70vh',
+            gap: 3,
+          }}
+        >
+          <CircularProgress size={60} />
+          <Typography variant="h6">Initializing Eye Tracker...</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Please allow camera access when prompted
+          </Typography>
+        </Box>
       </Box>
     );
   }
@@ -151,7 +156,7 @@ export default function WebGazerCalibration() {
         elevation={3}
         sx={{
           position: 'fixed',
-          top: 80,
+          top: 130,
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 100,
