@@ -15,6 +15,7 @@ import {
 import ScoreSlider from "../components/ScoreSlider";
 import UsernameEntry from "../components/UsernameEntry";
 import { getGroupBatch, getIndividualBatch } from "../utils/ImageLoader";
+import { preloadImages } from "../utils/preloadImages";
 
 export default function GroupRate() {
   const navigate = useNavigate();
@@ -34,9 +35,10 @@ export default function GroupRate() {
     //1 benchmark + 4 for group
     const bench = getIndividualBatch(1)[0];
     const group = getGroupBatch(1)[0];
-    
+
     setBenchmarkImage(bench);
     setGroupData(group);
+    preloadImages([bench.src, ...group.images.map((img) => img.src)]);
 
     // Initialize ratings and moves
     const initialRanks = {};

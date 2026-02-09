@@ -19,6 +19,7 @@ import {
 import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
 import { getRankedBatch } from "../utils/ImageLoader";
+import { preloadImages } from "../utils/preloadImages";
 
 export default function RankedRate() {
   const navigate = useNavigate();
@@ -34,7 +35,9 @@ export default function RankedRate() {
   const [isFinished, setIsFinished] = useState(false);
 
   useEffect(() => {
-    setRankGroups(getRankedBatch(3));
+    const batch = getRankedBatch(3);
+    setRankGroups(batch);
+    preloadImages(batch.flatMap((g) => g.images.map((img) => img.src)));
   }, []);
 
   useEffect(() => {

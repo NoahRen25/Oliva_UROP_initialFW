@@ -16,6 +16,7 @@ import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
 import { getIndividualBatch } from "../utils/ImageLoader";
 import SpeedWarning from "../components/SpeedWarning";
+import { preloadImages } from "../utils/preloadImages";
 
 export default function IndividualRate() {
   const navigate = useNavigate();
@@ -53,11 +54,13 @@ export default function IndividualRate() {
   const progressValue =
     activeStep === 1 ? 0 : activeStep === 2 ? currentImageIndex + 1 : totalImages;
     useEffect(() => {
-      const batch = getIndividualBatch(6); 
+      const batch = getIndividualBatch(6);
       setBenchmarkImage(batch[0]);
       setImagesToRate(batch.slice(1));
-      
-      resetEngagement(); 
+      // Preload all images in the batch
+      preloadImages(batch.map((img) => img.src));
+
+      resetEngagement();
     }, []);
     const handleNext = (isBenchmark = false) => {
       if (isLocked) return;

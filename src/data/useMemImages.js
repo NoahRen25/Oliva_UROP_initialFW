@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Papa from "papaparse";
+import { getImageUrl } from "../utils/supabaseImageUrl";
 
 // imports the CSV content as a plain string at build time
 // if no vite, JSON
@@ -17,12 +18,17 @@ export function useMemImages() {
       skipEmptyLines: true,
     });
 
-    // clean headers to remove hidden spaces
+    // clean headers to remove hidden spaces and convert paths to Supabase URLs
     const cleanData = parsed.data.map((row) => {
       const newRow = {};
       Object.keys(row).forEach((key) => {
         newRow[key.trim()] = row[key];
       });
+      // Transform path: "mem_images/target_000000.jpg" → Supabase URL or local "/mem_images/..."
+      if (newRow.path) {
+        const filename = newRow.path.replace(/^mem_images\//, "");
+        newRow.path = getImageUrl("mem-images", filename);
+      }
       return newRow;
     });
 

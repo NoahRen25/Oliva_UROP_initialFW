@@ -1,6 +1,6 @@
 import { supabase } from "../supabaseClient";
 
-export const uploadImageToSupabase = async (file, userId, bucket = "experiment-images") => {
+export const uploadImageToSupabase = async (file, userId, bucket = "generated-images") => {
   if (!file) throw new Error("No file selected.");
 
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -19,7 +19,7 @@ export const createImageRecord = async ({
   fileName,
   prompt,
   notes,
-  bucket = "experiment-images",
+  bucket = "generated-images",
 }) => {
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth?.user?.id;

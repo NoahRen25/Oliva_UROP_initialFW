@@ -14,6 +14,7 @@ import {
 import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
 import { getPairwiseBatch } from "../utils/ImageLoader";
+import { preloadImages } from "../utils/preloadImages";
 
 export default function PairwiseRate() {
   const navigate = useNavigate();
@@ -28,7 +29,9 @@ export default function PairwiseRate() {
   const [isFinished, setIsFinished] = useState(false);
 
   useEffect(() => {
-    setPairs(getPairwiseBatch(5));
+    const batch = getPairwiseBatch(5);
+    setPairs(batch);
+    preloadImages(batch.flatMap((p) => [p.left.src, p.right.src]));
   }, []);
 
   useEffect(() => {

@@ -44,7 +44,7 @@ export default function ImageGrid({
             <Card sx={{ p: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
               <CardMedia
                 component="img"
-                image={`/${img.path}`}
+                image={img.path.startsWith("http") ? img.path : `/${img.path}`}
                 sx={{ 
                   height: imageHeight || "25vh",
                   width: "100%",

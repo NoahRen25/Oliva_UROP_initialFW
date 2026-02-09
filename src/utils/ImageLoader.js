@@ -2,11 +2,12 @@ import Papa from "papaparse";
 import csv1Text from "../data/prompts_flux_2_pro.csv?raw";
 import csv2Text from "../data/prompts_gpt-image-1.5.csv?raw";
 import csv3Text from "../data/prompts_nano_banana_pro.csv?raw";
+import { getImageUrl } from "./supabaseImageUrl";
 
-const FOLDER_PATHS = {
-  1: "/public/images/flux_2_pro",
-  2: "/public/images/gptimage15",
-  3: "/public/images/nano_banana_pro",
+const FOLDER_NAMES = {
+  1: "flux_2_pro",
+  2: "gptimage15",
+  3: "nano_banana_pro",
 };
 
 // parse single csv
@@ -17,15 +18,16 @@ const parseCSV = (csvString, folderId) => {
   });
 
   return result.data.map((row) => {
-    const rawFilename = row.Output_Filename || row.output_filename || ""; 
-    const cleanFilename = rawFilename.split("/").pop(); 
+    const rawFilename = row.Output_Filename || row.output_filename || "";
+    const cleanFilename = rawFilename.split("/").pop();
+    const folderName = FOLDER_NAMES[folderId];
 
     return {
       category: row.Category || row.category || "Uncategorized",
       prompt: row.prompt_text || row.prompt_text || "No prompt available",
       filename: cleanFilename,
       folderId: folderId,
-      src: `${FOLDER_PATHS[folderId]}/${cleanFilename}`,
+      src: getImageUrl("generated-images", `${folderName}/${cleanFilename}`),
     };
   });
 };
@@ -50,6 +52,10 @@ ALL_DATA.forEach((item) => {
 
 const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
+/** Derive a display filename from folder + cleanFilename */
+const displayFilename = (folderId, cleanFilename) =>
+  `${FOLDER_NAMES[folderId]}/${cleanFilename}`;
+
 
 //randomly go through 3 folders
 export const getIndividualBatch = (count = 5) => {
@@ -57,13 +63,13 @@ export const getIndividualBatch = (count = 5) => {
   for (let i = 0; i < count; i++) {
     // pick random image
     const item = getRandomItem(ALL_DATA);
-    
+
     batch.push({
       id: i,
       src: item.src,
       prompt: item.prompt,
       category: item.category,
-      filename: item.src.slice(15),
+      filename: displayFilename(item.folderId, item.filename),
       alt: `Folder ${item.folderId} - ${item.filename}`,
       folderId: item.folderId,
     });
@@ -75,12 +81,12 @@ export const getIndividualBatch = (count = 5) => {
 export const getGroupBatch = (count = 1) => {
   // get list of unique categories
   const categories = [...new Set(ALL_DATA.map((d) => d.category))];
-  
+
   const batch = [];
   for (let i = 0; i < count; i++) {
     // pick random category
     const selectedCat = getRandomItem(categories);
-    
+
     // filter all data for  category
     const candidates = ALL_DATA.filter((d) => d.category === selectedCat);
 
@@ -92,7 +98,7 @@ export const getGroupBatch = (count = 1) => {
       id: `g_${i}_${idx}`,
       src: img.src,
       prompt: img.prompt,
-      filename: img.src.slice(15),
+      filename: displayFilename(img.folderId, img.filename),
       alt: `Img ${idx + 1}`,
     }));
 
@@ -118,7 +124,7 @@ export const getPairwiseBatch = (count = 5) => {
     // make sure 2 folders
     const availableFolders = Object.keys(variants).map(Number);
     if (availableFolders.length < 2) {
-      i--; 
+      i--;
       continue;
     }
 
@@ -134,18 +140,18 @@ export const getPairwiseBatch = (count = 5) => {
 
     batch.push({
       id: i,
-      prompt: itemA.prompt, 
-      left: { 
-        src: itemA.src, 
-        alt: `Model ${folderA}`, 
-        filename: itemA.src.slice(15),
-        folderId: folderA 
+      prompt: itemA.prompt,
+      left: {
+        src: itemA.src,
+        alt: `Model ${folderA}`,
+        filename: displayFilename(folderA, itemA.filename),
+        folderId: folderA
       },
-      right: { 
-        src: itemB.src, 
-        alt: `Model ${folderB}`, 
-        filename: itemB.src.slice(15),
-        folderId: folderB 
+      right: {
+        src: itemB.src,
+        alt: `Model ${folderB}`,
+        filename: displayFilename(folderB, itemB.filename),
+        folderId: folderB
       },
     });
   }
@@ -173,9 +179,9 @@ export const getRankedBatch = (count = 3) => {
       groupId: i,
       prompt: variants[1].prompt,
       images: [
-        { id: `r${i}_1`, src: variants[1].src, filename: variants[1].src.slice(15), alt: "Folder 1", folderId: 1 },
-        { id: `r${i}_2`, src: variants[2].src, filename: variants[2].src.slice(15),alt: "Folder 2", folderId: 2 },
-        { id: `r${i}_3`, src: variants[3].src, filename: variants[3].src.slice(15), alt: "Folder 3", folderId: 3 },
+        { id: `r${i}_1`, src: variants[1].src, filename: displayFilename(1, variants[1].filename), alt: "Folder 1", folderId: 1 },
+        { id: `r${i}_2`, src: variants[2].src, filename: displayFilename(2, variants[2].filename), alt: "Folder 2", folderId: 2 },
+        { id: `r${i}_3`, src: variants[3].src, filename: displayFilename(3, variants[3].filename), alt: "Folder 3", folderId: 3 },
       ]
     });
   }

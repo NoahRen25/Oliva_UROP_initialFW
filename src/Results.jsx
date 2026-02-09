@@ -5,6 +5,23 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
+import {
+  insertSession,
+  deleteSession,
+  deleteSessionsByType,
+  insertRatingScores,
+  insertPairwiseChoices,
+  insertRankedResults,
+  insertBestWorstTrials,
+  insertTranscript as sbInsertTranscript,
+  deleteTranscript as sbDeleteTranscript,
+  deleteAllTranscripts as sbDeleteAllTranscripts,
+  fetchSessionsWithScores,
+  fetchSessionsWithChoices,
+  fetchSessionsWithRankings,
+  fetchSessionsWithBestWorst,
+  fetchTranscripts,
+} from "./services/supabaseResults";
 
 const Results = createContext(null);
 
@@ -33,21 +50,23 @@ export const useResults = () => {
 // Constant for the task prompt used in File A
 const defaultPrompt = "Rate how interesting this image would be to a general population";
 
-const useLocalStorage = (key, initialValue) => {
-  const [state, setState] = useState(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : initialValue;
-    } catch {
-      return initialValue;
-    }
-  });
+// ==========================================
+// localStorage helpers (write-through cache)
+// ==========================================
 
-  useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(state));
-  }, [key, state]);
+const readLS = (key, fallback) => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+};
 
-  return [state, setState];
+const writeLS = (key, value) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch { /* quota exceeded — ignore */ }
 };
 
 export const ResultsProvider = ({ children }) => {
@@ -56,31 +75,106 @@ export const ResultsProvider = ({ children }) => {
   // ==========================================
 
   // --- Common Sessions ---
-  const [individualSessions, setIndividualSessions] = useLocalStorage("app_individual", []);
-  const [groupSessions, setGroupSessions] = useLocalStorage("app_group", []); // Flat group sessions (File B)
-  const [transcripts, setTranscripts] = useLocalStorage("app_transcripts", []);
+  const [individualSessions, setIndividualSessions] = useState(() => readLS("app_individual", []));
+  const [groupSessions, setGroupSessions] = useState(() => readLS("app_group", []));
+  const [transcripts, setTranscripts] = useState(() => readLS("app_transcripts", []));
 
   // --- File A Specific (Layouts & Fixed) ---
-  const [fixedSessions, setFixedSessions] = useLocalStorage("app_fixed_sessions", []);
-  const [groupSessionsByLayout, setGroupSessionsByLayout] = useLocalStorage("app_group_by_layout", {});
+  const [fixedSessions, setFixedSessions] = useState(() => readLS("app_fixed_sessions", []));
+  const [groupSessionsByLayout, setGroupSessionsByLayout] = useState(() => readLS("app_group_by_layout", {}));
   const [taskPrompt, setTaskPrompt] = useState(defaultPrompt);
 
   // --- File B Specific (Modes) ---
-  const [pairwiseSessions, setPairwiseSessions] = useLocalStorage("app_pairwise", []);
-  const [rankedSessions, setRankedSessions] = useLocalStorage("app_ranked", []);
-  const [bestWorstSessions, setBestWorstSessions] = useLocalStorage("app_best_worst", []);
+  const [pairwiseSessions, setPairwiseSessions] = useState(() => readLS("app_pairwise", []));
+  const [rankedSessions, setRankedSessions] = useState(() => readLS("app_ranked", []));
+  const [bestWorstSessions, setBestWorstSessions] = useState(() => readLS("app_best_worst", []));
   const [pressureCookerSessions, setPressureCookerSessions] = useState([]);
 
   // --- Voice / Audio State ---
-  const [isAnnouncing, setIsAnnouncing] = useLocalStorage("app_announcing", false); // Preference (File B)
-  const [isSpeaking, setIsSpeaking] = useState(false); // Active Status (File A)
+  const [isAnnouncing, setIsAnnouncing] = useState(() => readLS("app_announcing", false));
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // --- Engagement / Speed Warning (File B) ---
+  // --- Engagement / Speed Warning ---
   const [showSpeedWarning, setShowSpeedWarning] = useState(false);
   const [lastWarnedIndex, setLastWarnedIndex] = useState(0);
 
   // ==========================================
-  // ENGAGEMENT LOGIC (File B)
+  // WRITE-THROUGH to localStorage
+  // ==========================================
+
+  useEffect(() => { writeLS("app_individual", individualSessions); }, [individualSessions]);
+  useEffect(() => { writeLS("app_group", groupSessions); }, [groupSessions]);
+  useEffect(() => { writeLS("app_transcripts", transcripts); }, [transcripts]);
+  useEffect(() => { writeLS("app_fixed_sessions", fixedSessions); }, [fixedSessions]);
+  useEffect(() => { writeLS("app_group_by_layout", groupSessionsByLayout); }, [groupSessionsByLayout]);
+  useEffect(() => { writeLS("app_pairwise", pairwiseSessions); }, [pairwiseSessions]);
+  useEffect(() => { writeLS("app_ranked", rankedSessions); }, [rankedSessions]);
+  useEffect(() => { writeLS("app_best_worst", bestWorstSessions); }, [bestWorstSessions]);
+  useEffect(() => { writeLS("app_announcing", isAnnouncing); }, [isAnnouncing]);
+
+  // ==========================================
+  // SUPABASE HYDRATION ON MOUNT
+  // ==========================================
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrate() {
+      try {
+        const [indiv, group, fixed, pairwise, ranked, bestWorst, pressure, trans] =
+          await Promise.all([
+            fetchSessionsWithScores("individual"),
+            fetchSessionsWithScores("group"),
+            fetchSessionsWithScores("fixed"),
+            fetchSessionsWithChoices("pairwise"),
+            fetchSessionsWithRankings(),
+            fetchSessionsWithBestWorst(),
+            fetchSessionsWithChoices("pressure_cooker"),
+            fetchTranscripts(),
+          ]);
+
+        if (cancelled) return;
+
+        // Only overwrite local state if Supabase returned data
+        if (indiv.length) setIndividualSessions(indiv);
+        if (group.length) setGroupSessions(group);
+        if (fixed.length) setFixedSessions(fixed);
+        if (pairwise.length) setPairwiseSessions(pairwise);
+        if (ranked.length) setRankedSessions(ranked);
+        if (bestWorst.length) setBestWorstSessions(bestWorst);
+        if (pressure.length) setPressureCookerSessions(pressure);
+        if (trans.length) setTranscripts(trans);
+
+        // Hydrate layout_group sessions
+        const layoutSessions = await fetchSessionsWithScores("layout_group");
+        if (!cancelled && layoutSessions.length) {
+          const byLayout = {};
+          for (const s of layoutSessions) {
+            const lid = s.layoutId || s.meta?.layoutId;
+            if (!lid) continue;
+            if (!byLayout[lid]) byLayout[lid] = [];
+            byLayout[lid].push(s);
+          }
+          setGroupSessionsByLayout((prev) => {
+            // Merge: Supabase data takes precedence
+            const merged = { ...prev };
+            for (const [k, v] of Object.entries(byLayout)) {
+              merged[k] = v;
+            }
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.warn("Supabase hydration failed, using localStorage:", err.message);
+      }
+    }
+
+    hydrate();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ==========================================
+  // ENGAGEMENT LOGIC
   // ==========================================
 
   const resetEngagement = () => {
@@ -89,14 +183,13 @@ export const ResultsProvider = ({ children }) => {
   };
 
   const checkEngagement = (timesArray, currentIndex) => {
-    // don't warn too often
     if (currentIndex - lastWarnedIndex < 2) return true;
     if (timesArray.length < 2) return true;
 
     const total = timesArray.reduce((acc, curr) => acc + curr, 0);
     const average = total / timesArray.length;
 
-    if (average < 10.0) {
+    if (average < 4.0) {
       setShowSpeedWarning(true);
       setLastWarnedIndex(currentIndex);
       return false;
@@ -105,29 +198,24 @@ export const ResultsProvider = ({ children }) => {
   };
 
   // ==========================================
-  // SPEECH LOGIC (Merged)
+  // SPEECH LOGIC
   // ==========================================
 
-  // Toggle the preference (File B)
   const toggleAnnouncing = () => {
     if (isAnnouncing) window.speechSynthesis.cancel();
     setIsAnnouncing((prev) => !prev);
   };
 
-  // Hard stop (File A)
   const stopAnnouncing = useCallback(() => {
     window.speechSynthesis.cancel();
     setIsSpeaking(false);
   }, []);
 
-  // Announce (Merged Logic)
   const announce = useCallback(
     (text) => {
-      // Check preference first (File B requirement)
       if (!isAnnouncing) return;
       if (!text) return;
 
-      // Cancel current speech (File A requirement)
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
@@ -135,7 +223,6 @@ export const ResultsProvider = ({ children }) => {
       const setVoiceAndSpeak = () => {
         const voices = window.speechSynthesis.getVoices();
 
-        // Robust voice selection (File A)
         const preferredVoice =
           voices.find((v) => v.name.includes("Karen") && v.lang.startsWith("en")) ||
           voices.find((v) => v.lang.startsWith("en")) ||
@@ -145,7 +232,6 @@ export const ResultsProvider = ({ children }) => {
         utterance.rate = 1.05;
         utterance.pitch = 1.0;
 
-        // UI Feedback handlers (File A)
         utterance.onstart = () => setIsSpeaking(true);
         utterance.onend = () => setIsSpeaking(false);
         utterance.onerror = () => setIsSpeaking(false);
@@ -166,7 +252,7 @@ export const ResultsProvider = ({ children }) => {
   // DATA MANAGEMENT FUNCTIONS
   // ==========================================
 
-  // --- Transcripts (Common) ---
+  // --- Transcripts ---
   const addTranscript = (text, duration) => {
     if (!text.trim()) return;
     const newEntry = {
@@ -177,72 +263,92 @@ export const ResultsProvider = ({ children }) => {
       length: text.trim().length,
     };
     setTranscripts((prev) => [newEntry, ...prev]);
+    sbInsertTranscript(newEntry);
   };
 
   const delTranscript = (id, timestamp) => {
     if (window.confirm(`Delete this transcript from ${timestamp}?`)) {
       setTranscripts((prev) => prev.filter((t) => t.id !== id));
+      sbDeleteTranscript(id);
     }
   };
 
   const clearTranscripts = () => {
-    if (window.confirm("Delete all transcripts?")) setTranscripts([]);
+    if (window.confirm("Delete all transcripts?")) {
+      setTranscripts([]);
+      sbDeleteAllTranscripts();
+    }
   };
 
-  // --- Individual Sessions (Common) ---
+  // --- Individual Sessions ---
   const addIndividualSession = (username, scores) => {
-    setIndividualSessions((prev) => [
-      ...prev,
-      { id: Date.now(), username, scores, timestamp: new Date().toISOString() },
-    ]);
+    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString() };
+    setIndividualSessions((prev) => [...prev, session]);
+    // Async Supabase write
+    insertSession({ id: session.id, type: "individual", username, timestamp: session.timestamp });
+    insertRatingScores(session.id, scores);
   };
 
   const deleteIndividualSession = (id, username) => {
     if (window.confirm(`Delete individual session by user ${username}?`)) {
       setIndividualSessions((prev) => prev.filter((session) => session.id != id));
+      deleteSession(id);
     }
   };
 
   const clearIndividual = () => {
-    if (window.confirm("Delete ALL Individual sessions?")) setIndividualSessions([]);
+    if (window.confirm("Delete ALL Individual sessions?")) {
+      setIndividualSessions([]);
+      deleteSessionsByType("individual");
+    }
   };
 
-  // --- Flat Group Sessions (File B Style) ---
+  // --- Flat Group Sessions ---
   const addGroupSession = (username, scores) => {
-    setGroupSessions((prev) => [
-      ...prev,
-      { id: Date.now(), username, scores, timestamp: new Date().toISOString() },
-    ]);
+    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString() };
+    setGroupSessions((prev) => [...prev, session]);
+    insertSession({ id: session.id, type: "group", username, timestamp: session.timestamp });
+    insertRatingScores(session.id, scores);
   };
 
   const deleteGroupSession = (id, username) => {
     if (window.confirm(`Delete group session by user ${username}?`)) {
       setGroupSessions((prev) => prev.filter((session) => session.id != id));
+      deleteSession(id);
     }
   };
 
   const clearGroup = () => {
-    if (window.confirm("Delete ALL Group sessions?")) setGroupSessions([]);
+    if (window.confirm("Delete ALL Group sessions?")) {
+      setGroupSessions([]);
+      deleteSessionsByType("group");
+    }
   };
 
-  // --- Layout Group Sessions (File A Style) ---
+  // --- Layout Group Sessions ---
   const addGroupSessionForLayout = (layoutId, username, scores, meta = {}) => {
+    const session = {
+      id: Date.now(),
+      username,
+      scores,
+      meta,
+      layoutId,
+      timestamp: new Date(),
+    };
     setGroupSessionsByLayout((prev) => {
       const next = { ...(prev || {}) };
       const list = next[layoutId] || [];
-      next[layoutId] = [
-        ...list,
-        {
-          id: Date.now(),
-          username,
-          scores,
-          meta,
-          layoutId,
-          timestamp: new Date(),
-        },
-      ];
+      next[layoutId] = [...list, session];
       return next;
     });
+    insertSession({
+      id: session.id,
+      type: "layout_group",
+      username,
+      timestamp: new Date().toISOString(),
+      meta: { ...meta, layoutId },
+    });
+    insertRatingScores(session.id, scores);
   };
 
   const getGroupSessions = (layoutId) => {
@@ -257,6 +363,7 @@ export const ResultsProvider = ({ children }) => {
         next[layoutId] = (next[layoutId] || []).filter((s) => s.id != id);
         return next;
       });
+      deleteSession(id);
     }
   };
 
@@ -264,7 +371,10 @@ export const ResultsProvider = ({ children }) => {
     if (window.confirm(`Delete ALL Group sessions for ${layoutId}?`)) {
       setGroupSessionsByLayout((prev) => {
         const next = { ...(prev || {}) };
+        const sessionIds = (next[layoutId] || []).map((s) => s.id);
         next[layoutId] = [];
+        // Delete each session from Supabase (cascade handles children)
+        sessionIds.forEach((id) => deleteSession(id));
         return next;
       });
     }
@@ -272,98 +382,138 @@ export const ResultsProvider = ({ children }) => {
 
   const clearAllGroupLayouts = () => {
     if (window.confirm("Delete ALL Group sessions across ALL layouts?")) {
+      // Collect all session IDs before clearing
+      const allIds = Object.values(groupSessionsByLayout || {})
+        .flat()
+        .map((s) => s.id);
       setGroupSessionsByLayout({});
+      allIds.forEach((id) => deleteSession(id));
     }
   };
 
-  // --- Fixed Sessions (File A) ---
+  // --- Fixed Sessions ---
   const addFixedSession = (username, scores) => {
-    setFixedSessions((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        username,
-        scores,
-        timestamp: new Date().toLocaleString(),
-      },
-    ]);
+    const session = {
+      id: Date.now(),
+      username,
+      scores,
+      timestamp: new Date().toLocaleString(),
+    };
+    setFixedSessions((prev) => [...prev, session]);
+    insertSession({ id: session.id, type: "fixed", username, timestamp: new Date().toISOString() });
+    insertRatingScores(session.id, scores);
   };
 
   const deleteFixedSession = (sessionId) => {
     if (window.confirm("Are you sure you want to delete this specific session?")) {
       setFixedSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      deleteSession(sessionId);
     }
   };
 
   const clearFixedSessions = () => {
-    if (window.confirm("Clear all fixed protocol results?")) setFixedSessions([]);
+    if (window.confirm("Clear all fixed protocol results?")) {
+      setFixedSessions([]);
+      deleteSessionsByType("fixed");
+    }
   };
 
-  // --- Pairwise Sessions (File B) ---
+  // --- Pairwise Sessions ---
   const addPairwiseSession = (username, choices) => {
-    setPairwiseSessions((prev) => [
-      ...prev,
-      { id: Date.now(), username, choices, timestamp: new Date().toISOString() },
-    ]);
+    const session = { id: Date.now(), username, choices, timestamp: new Date().toISOString() };
+    setPairwiseSessions((prev) => [...prev, session]);
+    insertSession({ id: session.id, type: "pairwise", username, timestamp: session.timestamp });
+    insertPairwiseChoices(session.id, choices);
   };
 
   const deletePairwiseSession = (id, username) => {
     if (window.confirm(`Delete session by user #${username} ?`)) {
       setPairwiseSessions((prev) => prev.filter((session) => session.id != id));
+      deleteSession(id);
     }
   };
 
   const clearPairwise = () => {
-    if (window.confirm("Delete ALL Pairwise sessions?")) setPairwiseSessions([]);
+    if (window.confirm("Delete ALL Pairwise sessions?")) {
+      setPairwiseSessions([]);
+      deleteSessionsByType("pairwise");
+    }
   };
 
-  // --- Ranked Sessions (File B) ---
+  // --- Ranked Sessions ---
   const addRankedSession = (username, rankings) => {
-    setRankedSessions((prev) => [
-      ...prev,
-      { id: Date.now(), username, rankings, timestamp: new Date().toISOString() },
-    ]);
+    const session = { id: Date.now(), username, rankings, timestamp: new Date().toISOString() };
+    setRankedSessions((prev) => [...prev, session]);
+    insertSession({ id: session.id, type: "ranked", username, timestamp: session.timestamp });
+    insertRankedResults(session.id, rankings);
   };
 
   const deleteRankedSession = (id, username) => {
     if (window.confirm(`Delete this ranked session by user ${username}?`)) {
       setRankedSessions((prev) => prev.filter((session) => session.id != id));
+      deleteSession(id);
     }
   };
 
   const clearRanked = () => {
-    if (window.confirm("Delete ALL Ranked sessions?")) setRankedSessions([]);
+    if (window.confirm("Delete ALL Ranked sessions?")) {
+      setRankedSessions([]);
+      deleteSessionsByType("ranked");
+    }
   };
 
-  // --- Best-Worst Sessions (File B) ---
+  // --- Best-Worst Sessions ---
   const addBestWorstSession = (username, trials) => {
-    setBestWorstSessions((prev) => [
-      ...prev,
-      { id: Date.now(), username, trials, timestamp: new Date().toISOString() },
-    ]);
+    const session = { id: Date.now(), username, trials, timestamp: new Date().toISOString() };
+    setBestWorstSessions((prev) => [...prev, session]);
+    insertSession({ id: session.id, type: "best_worst", username, timestamp: session.timestamp });
+    insertBestWorstTrials(session.id, trials);
   };
 
   const deleteBestWorstSession = (id, username) => {
     if (window.confirm(`Delete this best-worst session by user ${username}?`)) {
       setBestWorstSessions((prev) => prev.filter((session) => session.id != id));
+      deleteSession(id);
     }
   };
 
   const clearBestWorst = () => {
-    if (window.confirm("Delete ALL Best-Worst sessions?")) setBestWorstSessions([]);
+    if (window.confirm("Delete ALL Best-Worst sessions?")) {
+      setBestWorstSessions([]);
+      deleteSessionsByType("best_worst");
+    }
   };
 
-  // --- Pressure Cooker (File B) ---
+  // --- Pressure Cooker ---
   const addPressureCookerSession = (username, choices, bestStreak) => {
+    const pcId = Date.now();
     setPressureCookerSessions((prev) => [
       ...prev,
-      { username, choices, bestStreak, timestamp: new Date().toISOString() },
+      { id: pcId, username, choices, bestStreak, timestamp: new Date().toISOString() },
     ]);
+    insertSession({
+      id: pcId,
+      type: "pressure_cooker",
+      username,
+      timestamp: new Date().toISOString(),
+      meta: { bestStreak },
+    });
+    insertPairwiseChoices(pcId, choices);
+
     // Also add to pairwise history
+    const pwId = pcId + 1; // offset by 1ms to avoid collision
     setPairwiseSessions((prev) => [
       ...prev,
-      { username, choices, timestamp: new Date().toISOString(), mode: "pressure-cooker" },
+      { id: pwId, username, choices, timestamp: new Date().toISOString(), mode: "pressure-cooker" },
     ]);
+    insertSession({
+      id: pwId,
+      type: "pairwise",
+      username,
+      timestamp: new Date().toISOString(),
+      meta: { mode: "pressure-cooker" },
+    });
+    insertPairwiseChoices(pwId, choices);
   };
 
   return (
@@ -379,8 +529,8 @@ export const ResultsProvider = ({ children }) => {
         announce,
         stopAnnouncing,
         toggleAnnouncing,
-        isAnnouncing, // Preference state
-        isSpeaking,   // Active state
+        isAnnouncing,
+        isSpeaking,
         taskPrompt,
         setTaskPrompt,
 

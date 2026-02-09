@@ -91,10 +91,16 @@ export default function DatasetManager() {
     if (session) refreshImages();
   }, [session]);
 
+  const ALLOWED_EMAILS = ["siminiucdenis@gmail.com"];
+
   const handleLogin = async () => {
     setAuthError("");
     setAuthMessage("");
     if (!email) return;
+    if (!ALLOWED_EMAILS.includes(email.toLowerCase().trim())) {
+      setAuthError("This email is not authorized to access the Dataset Manager.");
+      return;
+    }
     setLoadingAuth(true);
     const { error } = await supabase.auth.signInWithOtp({ email });
     setLoadingAuth(false);
