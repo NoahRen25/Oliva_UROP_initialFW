@@ -28,13 +28,13 @@ export async function insertSession({ id, type, username, timestamp, meta = {} }
 export async function deleteSession(id) {
   if (!isConfigured()) return;
   const { error } = await supabase.from("sessions").delete().eq("id", id);
-  if (error) console.error("deleteSession error:", error.message);
+  if (error) console.warn("deleteSession: requires auth —", error.message);
 }
 
 export async function deleteSessionsByType(type) {
   if (!isConfigured()) return;
   const { error } = await supabase.from("sessions").delete().eq("type", type);
-  if (error) console.error("deleteSessionsByType error:", error.message);
+  if (error) console.warn("deleteSessionsByType: requires auth —", error.message);
 }
 
 // =====================
@@ -135,13 +135,13 @@ export async function insertTranscript({ id, text, duration, timestamp, length }
 export async function deleteTranscript(id) {
   if (!isConfigured()) return;
   const { error } = await supabase.from("transcripts").delete().eq("id", id);
-  if (error) console.error("deleteTranscript error:", error.message);
+  if (error) console.warn("deleteTranscript: requires auth —", error.message);
 }
 
 export async function deleteAllTranscripts() {
   if (!isConfigured()) return;
   const { error } = await supabase.from("transcripts").delete().neq("id", 0);
-  if (error) console.error("deleteAllTranscripts error:", error.message);
+  if (error) console.warn("deleteAllTranscripts: requires auth —", error.message);
 }
 
 // =====================

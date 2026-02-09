@@ -127,10 +127,25 @@
     ALTER TABLE best_worst_trials ENABLE ROW LEVEL SECURITY;
     ALTER TABLE transcripts ENABLE ROW LEVEL SECURITY;
 
-    -- Permissive policies for anon role (app uses numeric usernames, not Supabase auth)
-    CREATE POLICY "anon_all_sessions" ON sessions FOR ALL TO anon USING (true) WITH CHECK (true);
-    CREATE POLICY "anon_all_rating_scores" ON rating_scores FOR ALL TO anon USING (true) WITH CHECK (true);
-    CREATE POLICY "anon_all_pairwise_choices" ON pairwise_choices FOR ALL TO anon USING (true) WITH CHECK (true);
-    CREATE POLICY "anon_all_ranked_results" ON ranked_results FOR ALL TO anon USING (true) WITH CHECK (true);
-    CREATE POLICY "anon_all_best_worst_trials" ON best_worst_trials FOR ALL TO anon USING (true) WITH CHECK (true);
-    CREATE POLICY "anon_all_transcripts" ON transcripts FOR ALL TO anon USING (true) WITH CHECK (true);
+    -- Anon can read and insert (participants submit results)
+    CREATE POLICY "anon_select_sessions" ON sessions FOR SELECT TO anon USING (true);
+    CREATE POLICY "anon_insert_sessions" ON sessions FOR INSERT TO anon WITH CHECK (true);
+    CREATE POLICY "anon_select_rating_scores" ON rating_scores FOR SELECT TO anon USING (true);
+    CREATE POLICY "anon_insert_rating_scores" ON rating_scores FOR INSERT TO anon WITH CHECK (true);
+    CREATE POLICY "anon_select_pairwise_choices" ON pairwise_choices FOR SELECT TO anon USING (true);
+    CREATE POLICY "anon_insert_pairwise_choices" ON pairwise_choices FOR INSERT TO anon WITH CHECK (true);
+    CREATE POLICY "anon_select_ranked_results" ON ranked_results FOR SELECT TO anon USING (true);
+    CREATE POLICY "anon_insert_ranked_results" ON ranked_results FOR INSERT TO anon WITH CHECK (true);
+    CREATE POLICY "anon_select_best_worst_trials" ON best_worst_trials FOR SELECT TO anon USING (true);
+    CREATE POLICY "anon_insert_best_worst_trials" ON best_worst_trials FOR INSERT TO anon WITH CHECK (true);
+    CREATE POLICY "anon_select_transcripts" ON transcripts FOR SELECT TO anon USING (true);
+    CREATE POLICY "anon_insert_transcripts" ON transcripts FOR INSERT TO anon WITH CHECK (true);
+
+    -- Only authenticated users can update/delete
+    CREATE POLICY "auth_delete_sessions" ON sessions FOR DELETE TO authenticated USING (true);
+    CREATE POLICY "auth_update_sessions" ON sessions FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+    CREATE POLICY "auth_delete_rating_scores" ON rating_scores FOR DELETE TO authenticated USING (true);
+    CREATE POLICY "auth_delete_pairwise_choices" ON pairwise_choices FOR DELETE TO authenticated USING (true);
+    CREATE POLICY "auth_delete_ranked_results" ON ranked_results FOR DELETE TO authenticated USING (true);
+    CREATE POLICY "auth_delete_best_worst_trials" ON best_worst_trials FOR DELETE TO authenticated USING (true);
+    CREATE POLICY "auth_delete_transcripts" ON transcripts FOR DELETE TO authenticated USING (true);
