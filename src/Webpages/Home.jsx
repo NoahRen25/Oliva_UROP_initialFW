@@ -26,6 +26,36 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 export default function Home() {
   const menuItems = [
     {
+    title: "Start Rating Session",
+    path: "/rate", // Goes to the unified dropdown page
+    icon: <AssessmentIcon fontSize="large" />,
+    color: "#d32f2f",
+  },
+  {
+    title: "View Results",
+    path: "/results", // Goes to the unified results page
+    icon: <InsightsIcon fontSize="large" />,
+    color: "#1976d2",
+  },
+  {
+    title: "Upload Config",
+    path: "/rate/upload",
+    icon: <CloudUploadIcon fontSize="large" />,
+    color: "#9c27b0",
+  },
+  {
+    title: "Combo Rate (33 Images)",
+    path: "/combo-rate",
+    icon: <AutoAwesomeIcon fontSize="large" />,
+    color: "#ff9800",
+  },
+  {
+    title: "Combo Results (33 Images)",
+    path: "/combo-results",
+    icon: <LocalFireDepartmentIcon fontSize="large" />,
+    color: "#ff9800",
+  },
+    {
       title: "Individual Rate",
       path: "/individual-rate",
       icon: <PersonIcon fontSize="large" />,

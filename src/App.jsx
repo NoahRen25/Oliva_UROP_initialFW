@@ -44,6 +44,10 @@ import WebGazerGazeTest from "./Webpages/WebGazerGazeTest";
 import BestWorstRate from "./Webpages/BestWorstRate";
 import BestWorstResult from "./Webpages/BestWorstResult";
 import DatasetManager from "./Webpages/DatasetManager";
+import ResultsPage from "./Webpages/ResultsPage";
+import LayoutRatingFlow from "./components/LayoutRatingFlow";
+import ComboRatingFlow from "./Webpages/ComboRatingFlow";
+import ComboResultsPage from "./Webpages/ComboResultsPage";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
@@ -114,6 +118,11 @@ function NavigationWrapper() {
           <Route path="/best-worst-rate" element={<BestWorstRate />} />
           <Route path="/best-worst-result" element={<BestWorstResult />} />
           <Route path="/dataset-manager" element={<DatasetManager />} />
+          <Route path="/rate" element={<LayoutRatingFlow mode="manual" />} />
+          <Route path="/results" element={<ResultsPage />} />
+          <Route path="/rate/upload" element={<LayoutRatingFlow mode="upload" />} />
+          <Route path="/combo-rate" element={<ComboRatingFlow />} />
+        <Route path="/combo-results" element={<ComboResultsPage />} />
         </Routes>
       </Box>
     </Router>
