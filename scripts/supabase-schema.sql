@@ -127,25 +127,25 @@
     ALTER TABLE best_worst_trials ENABLE ROW LEVEL SECURITY;
     ALTER TABLE transcripts ENABLE ROW LEVEL SECURITY;
 
-    -- Anon can read and insert (participants submit results)
-    CREATE POLICY "anon_select_sessions" ON sessions FOR SELECT TO anon USING (true);
+    -- Anon: INSERT only (participants submit results but cannot read them)
     CREATE POLICY "anon_insert_sessions" ON sessions FOR INSERT TO anon WITH CHECK (true);
-    CREATE POLICY "anon_select_rating_scores" ON rating_scores FOR SELECT TO anon USING (true);
     CREATE POLICY "anon_insert_rating_scores" ON rating_scores FOR INSERT TO anon WITH CHECK (true);
-    CREATE POLICY "anon_select_pairwise_choices" ON pairwise_choices FOR SELECT TO anon USING (true);
     CREATE POLICY "anon_insert_pairwise_choices" ON pairwise_choices FOR INSERT TO anon WITH CHECK (true);
-    CREATE POLICY "anon_select_ranked_results" ON ranked_results FOR SELECT TO anon USING (true);
     CREATE POLICY "anon_insert_ranked_results" ON ranked_results FOR INSERT TO anon WITH CHECK (true);
-    CREATE POLICY "anon_select_best_worst_trials" ON best_worst_trials FOR SELECT TO anon USING (true);
     CREATE POLICY "anon_insert_best_worst_trials" ON best_worst_trials FOR INSERT TO anon WITH CHECK (true);
-    CREATE POLICY "anon_select_transcripts" ON transcripts FOR SELECT TO anon USING (true);
     CREATE POLICY "anon_insert_transcripts" ON transcripts FOR INSERT TO anon WITH CHECK (true);
 
-    -- Only authenticated users can update/delete
+    -- Authenticated: full access (admin can read, delete, update)
+    CREATE POLICY "auth_select_sessions" ON sessions FOR SELECT TO authenticated USING (true);
     CREATE POLICY "auth_delete_sessions" ON sessions FOR DELETE TO authenticated USING (true);
     CREATE POLICY "auth_update_sessions" ON sessions FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+    CREATE POLICY "auth_select_rating_scores" ON rating_scores FOR SELECT TO authenticated USING (true);
     CREATE POLICY "auth_delete_rating_scores" ON rating_scores FOR DELETE TO authenticated USING (true);
+    CREATE POLICY "auth_select_pairwise_choices" ON pairwise_choices FOR SELECT TO authenticated USING (true);
     CREATE POLICY "auth_delete_pairwise_choices" ON pairwise_choices FOR DELETE TO authenticated USING (true);
+    CREATE POLICY "auth_select_ranked_results" ON ranked_results FOR SELECT TO authenticated USING (true);
     CREATE POLICY "auth_delete_ranked_results" ON ranked_results FOR DELETE TO authenticated USING (true);
+    CREATE POLICY "auth_select_best_worst_trials" ON best_worst_trials FOR SELECT TO authenticated USING (true);
     CREATE POLICY "auth_delete_best_worst_trials" ON best_worst_trials FOR DELETE TO authenticated USING (true);
+    CREATE POLICY "auth_select_transcripts" ON transcripts FOR SELECT TO authenticated USING (true);
     CREATE POLICY "auth_delete_transcripts" ON transcripts FOR DELETE TO authenticated USING (true);
