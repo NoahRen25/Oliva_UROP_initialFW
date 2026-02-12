@@ -1,8 +1,34 @@
 import React from "react";
 import { useResults } from "../Results";
-import { Container, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableFooter, Button, Box, IconButton } from "@mui/material";
+import { Container, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Box, IconButton, Accordion, AccordionSummary, AccordionDetails, Chip } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import DevicesIcon from '@mui/icons-material/Devices';
+
+function SessionMetadata({ metadata }) {
+  if (!metadata) return null;
+  return (
+    <Accordion disableGutters sx={{ boxShadow: 'none', '&:before': { display: 'none' }, bgcolor: 'transparent' }}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 32, px: 1, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <DevicesIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+          <Typography variant="caption" color="text.secondary">Session Info</Typography>
+        </Box>
+      </AccordionSummary>
+      <AccordionDetails sx={{ px: 1, pt: 0, pb: 1 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+          <Chip label={metadata.browser} size="small" variant="outlined" />
+          <Chip label={metadata.platform} size="small" variant="outlined" />
+          <Chip label={`Window: ${metadata.screenSize}`} size="small" variant="outlined" />
+          <Chip label={`Screen: ${metadata.screenResolution}`} size="small" variant="outlined" />
+          <Chip label={`${metadata.pixelRatio}x DPR`} size="small" variant="outlined" />
+          {metadata.isMobile && <Chip label="Mobile" size="small" color="info" />}
+        </Box>
+      </AccordionDetails>
+    </Accordion>
+  );
+}
 
 export default function IndividualResult() {
   const { individualSessions, deleteIndividualSession, clearIndividual } = useResults();
@@ -37,13 +63,13 @@ export default function IndividualResult() {
               {individualSessions.map((session) => {
                 const nonBenchmark = session.scores.filter((s) => s.imageId !== 0);
                 const hasScores = nonBenchmark.length > 0;
-                
+
                 const avgScore = hasScores ? (nonBenchmark.reduce((a, b) => a + b.score, 0) / nonBenchmark.length).toFixed(2) : "N/A";
                 const avgTime = hasScores ? (nonBenchmark.reduce((a, b) => a + parseFloat(b.timeSpent), 0) / nonBenchmark.length).toFixed(2) : "N/A";
                 const avgMoves = hasScores ? (nonBenchmark.reduce((a, b) => a + (b.interactionCount || 0), 0) / nonBenchmark.length).toFixed(1) : "N/A";
 
                 return (
-                  <>
+                  <React.Fragment key={session.id}>
                     {session.scores.map((score, scoreIdx) => (
                       <TableRow key={`${session.id}-${scoreIdx}`}>
                         {scoreIdx === 0 && (
@@ -71,8 +97,13 @@ export default function IndividualResult() {
                       <TableCell align="right" sx={{ fontWeight: "bold", color: "#1976d2" }}>{avgMoves}</TableCell>
                       <TableCell />
                     </TableRow>
+                    <TableRow>
+                      <TableCell colSpan={6} sx={{ py: 0, px: 1 }}>
+                        <SessionMetadata metadata={session.metadata} />
+                      </TableCell>
+                    </TableRow>
                     <TableRow><TableCell colSpan={6} sx={{ bgcolor: "#f1f1f1", height: "8px", p: 0 }}/></TableRow>
-                    </>
+                  </React.Fragment>
                 );
               })}
             </TableBody>

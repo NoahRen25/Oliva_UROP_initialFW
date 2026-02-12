@@ -1,12 +1,38 @@
 import React from "react";
 import { useResults } from "../Results";
-import { Container, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, Box, TableFooter, Button, IconButton } from "@mui/material";
+import { Container, Typography, Paper, Table, TableBody, TableCell, TableHead, TableRow, Box, TableFooter, Button, IconButton, Accordion, AccordionSummary, AccordionDetails, Chip } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import DevicesIcon from '@mui/icons-material/Devices';
+
+function SessionMetadata({ metadata }) {
+  if (!metadata) return null;
+  return (
+    <Accordion disableGutters sx={{ boxShadow: 'none', '&:before': { display: 'none' }, bgcolor: 'transparent' }}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 32, px: 1, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <DevicesIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+          <Typography variant="caption" color="text.secondary">Session Info</Typography>
+        </Box>
+      </AccordionSummary>
+      <AccordionDetails sx={{ px: 1, pt: 0, pb: 1 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+          <Chip label={metadata.browser} size="small" variant="outlined" />
+          <Chip label={metadata.platform} size="small" variant="outlined" />
+          <Chip label={`Window: ${metadata.screenSize}`} size="small" variant="outlined" />
+          <Chip label={`Screen: ${metadata.screenResolution}`} size="small" variant="outlined" />
+          <Chip label={`${metadata.pixelRatio}x DPR`} size="small" variant="outlined" />
+          {metadata.isMobile && <Chip label="Mobile" size="small" color="info" />}
+        </Box>
+      </AccordionDetails>
+    </Accordion>
+  );
+}
 
 export default function GroupResult() {
   const { groupSessions, deleteGroupSession, clearGroup } = useResults();
-  
+
   return (
     <Container maxWidth="md" sx={{ mt: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -19,7 +45,7 @@ export default function GroupResult() {
       </Box>
 
       <Paper sx={{ p: 2 }}>
-        {groupSessions.length === 0 ? <Typography>No group ratings yet.</Typography> : 
+        {groupSessions.length === 0 ? <Typography>No group ratings yet.</Typography> :
           groupSessions.map((session) => {
             const mainScores = session.scores.filter(s => s.imageId !== "b1");
             const hasScores = mainScores.length > 0;
@@ -33,7 +59,7 @@ export default function GroupResult() {
                   <Typography variant="h6" color="primary" gutterBottom>User ID: {session.username}</Typography>
                   <IconButton color="error" onClick={() => deleteGroupSession(session.id, session.username)}><DeleteIcon /></IconButton>
                 </Box>
-                
+
                 <Table size="small">
                   <TableHead>
                     <TableRow sx={{ bgcolor: '#f5f5f5' }}>
@@ -64,6 +90,8 @@ export default function GroupResult() {
                     </TableRow>
                   </TableFooter>
                 </Table>
+
+                <SessionMetadata metadata={session.metadata} />
               </Box>
             );
           })}

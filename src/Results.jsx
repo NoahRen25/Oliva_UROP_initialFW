@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
+import { getSessionMetadata } from "./utils/getSessionMetadata";
 
 const Results = createContext({});
 
@@ -113,26 +114,27 @@ export const ResultsProvider = ({ children }) => {
 
   // --- 3. Add Data Functions ---
   const addIndividualSession = (username, scores) => {
-    setIndividualSessions((prev) => [...prev, { id: Date.now(), username, scores, timestamp: new Date() }]);
+    setIndividualSessions((prev) => [...prev, { id: Date.now(), username, scores, timestamp: new Date(), metadata: getSessionMetadata() }]);
   };
   const addGroupSession = (username, scores) => {
-    setGroupSessions((prev) => [...prev, { id: Date.now(), username, scores, timestamp: new Date() }]);
+    setGroupSessions((prev) => [...prev, { id: Date.now(), username, scores, timestamp: new Date(), metadata: getSessionMetadata() }]);
   };
   const addPairwiseSession = (username, choices) => {
-    setPairwiseSessions((prev) => [...prev, { id: Date.now(), username, choices, timestamp: new Date() }]);
+    setPairwiseSessions((prev) => [...prev, { id: Date.now(), username, choices, timestamp: new Date(), metadata: getSessionMetadata() }]);
   };
   const addRankedSession = (username, rankings) => {
-    setRankedSessions((prev) => [...prev, { id: Date.now(), username, rankings, timestamp: new Date() }]);
+    setRankedSessions((prev) => [...prev, { id: Date.now(), username, rankings, timestamp: new Date(), metadata: getSessionMetadata() }]);
   };
   const addPressureCookerSession = (username, choices, bestStreak) => {
+    const meta = getSessionMetadata();
     setPressureCookerSessions((prev) => [
       ...prev,
-      { id: Date.now(), username, choices, bestStreak, timestamp: new Date() },
+      { id: Date.now(), username, choices, bestStreak, timestamp: new Date(), metadata: meta },
     ]);
     // Also add to pairwise sessions for combined results
     setPairwiseSessions((prev) => [
       ...prev,
-      { id: Date.now(), username, choices, timestamp: new Date(), mode: "pressure-cooker" },
+      { id: Date.now(), username, choices, timestamp: new Date(), mode: "pressure-cooker", metadata: meta },
     ]);
   };
   const addTranscript = (text, duration) => {
