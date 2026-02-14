@@ -11,10 +11,39 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import DevicesIcon from "@mui/icons-material/Devices";
 import ResultsHeader from "../components/ResultsHeader";
 import ExportCSVButton from "../components/ExportCSVButton";
 import StatsSummary from "../components/StatsSummary";
+
+function SessionMetadata({ metadata }) {
+  if (!metadata) return null;
+  return (
+    <Accordion disableGutters sx={{ boxShadow: 'none', '&:before': { display: 'none' }, bgcolor: 'transparent' }}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 32, px: 1, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <DevicesIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+          <Typography variant="caption" color="text.secondary">Session Info</Typography>
+        </Box>
+      </AccordionSummary>
+      <AccordionDetails sx={{ px: 1, pt: 0, pb: 1 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+          <Chip label={metadata.browser} size="small" variant="outlined" />
+          <Chip label={metadata.platform} size="small" variant="outlined" />
+          <Chip label={`Window: ${metadata.screenSize}`} size="small" variant="outlined" />
+          <Chip label={`Screen: ${metadata.screenResolution}`} size="small" variant="outlined" />
+          <Chip label={`${metadata.pixelRatio}x DPR`} size="small" variant="outlined" />
+          {metadata.isMobile && <Chip label="Mobile" size="small" color="info" />}
+        </Box>
+      </AccordionDetails>
+    </Accordion>
+  );
+}
 
 export default function RankedResult() {
   const { rankedSessions } = useResults();
@@ -72,6 +101,7 @@ export default function RankedResult() {
             No ranked sessions recorded yet.
           </Typography>
         ) : (
+          <>
           <Table size="small">
             <TableHead>
               <TableRow sx={{ bgcolor: "#f5f5f5" }}>
@@ -154,6 +184,14 @@ export default function RankedResult() {
               })}
             </TableBody>
           </Table>
+          {rankedSessions.length > 0 && (
+            <Box sx={{ p: 1 }}>
+              {rankedSessions.map((session) => (
+                <SessionMetadata key={session.id} metadata={session.metadata} />
+              ))}
+            </Box>
+          )}
+          </>
         )}
       </Paper>
       <StatsSummary sessions={rankedSessions} dataExtractor={extractData} />

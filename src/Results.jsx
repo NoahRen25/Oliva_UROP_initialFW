@@ -22,6 +22,7 @@ import {
   fetchSessionsWithBestWorst,
   fetchTranscripts,
 } from "./services/supabaseResults";
+import { getSessionMetadata } from "./utils/getSessionMetadata";
 
 const Results = createContext(null);
 
@@ -94,6 +95,10 @@ export const ResultsProvider = ({ children }) => {
   const [isAnnouncing, setIsAnnouncing] = useState(() => readLS("app_announcing", false));
   const [isSpeaking, setIsSpeaking] = useState(false);
 
+  // --- Consent State ---
+  const [consentGiven, setConsentGiven] = useState(() => readLS("app_consent_given", false));
+  const [consentTimestamp, setConsentTimestamp] = useState(() => readLS("app_consent_timestamp", null));
+
   // --- Engagement / Speed Warning ---
   const [showSpeedWarning, setShowSpeedWarning] = useState(false);
   const [lastWarnedIndex, setLastWarnedIndex] = useState(0);
@@ -111,6 +116,8 @@ export const ResultsProvider = ({ children }) => {
   useEffect(() => { writeLS("app_ranked", rankedSessions); }, [rankedSessions]);
   useEffect(() => { writeLS("app_best_worst", bestWorstSessions); }, [bestWorstSessions]);
   useEffect(() => { writeLS("app_announcing", isAnnouncing); }, [isAnnouncing]);
+  useEffect(() => { writeLS("app_consent_given", consentGiven); }, [consentGiven]);
+  useEffect(() => { writeLS("app_consent_timestamp", consentTimestamp); }, [consentTimestamp]);
 
   // ==========================================
   // SUPABASE HYDRATION ON MOUNT
@@ -282,7 +289,7 @@ export const ResultsProvider = ({ children }) => {
 
   // --- Individual Sessions ---
   const addIndividualSession = (username, scores) => {
-    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString() };
+    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString(), metadata: getSessionMetadata() };
     setIndividualSessions((prev) => [...prev, session]);
     // Async Supabase write
     insertSession({ id: session.id, type: "individual", username, timestamp: session.timestamp });
@@ -305,7 +312,7 @@ export const ResultsProvider = ({ children }) => {
 
   // --- Flat Group Sessions ---
   const addGroupSession = (username, scores) => {
-    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString() };
+    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString(), metadata: getSessionMetadata() };
     setGroupSessions((prev) => [...prev, session]);
     insertSession({ id: session.id, type: "group", username, timestamp: session.timestamp });
     insertRatingScores(session.id, scores);
@@ -420,7 +427,7 @@ export const ResultsProvider = ({ children }) => {
 
   // --- Pairwise Sessions ---
   const addPairwiseSession = (username, choices) => {
-    const session = { id: Date.now(), username, choices, timestamp: new Date().toISOString() };
+    const session = { id: Date.now(), username, choices, timestamp: new Date().toISOString(), metadata: getSessionMetadata() };
     setPairwiseSessions((prev) => [...prev, session]);
     insertSession({ id: session.id, type: "pairwise", username, timestamp: session.timestamp });
     insertPairwiseChoices(session.id, choices);
@@ -442,7 +449,7 @@ export const ResultsProvider = ({ children }) => {
 
   // --- Ranked Sessions ---
   const addRankedSession = (username, rankings) => {
-    const session = { id: Date.now(), username, rankings, timestamp: new Date().toISOString() };
+    const session = { id: Date.now(), username, rankings, timestamp: new Date().toISOString(), metadata: getSessionMetadata() };
     setRankedSessions((prev) => [...prev, session]);
     insertSession({ id: session.id, type: "ranked", username, timestamp: session.timestamp });
     insertRankedResults(session.id, rankings);
@@ -484,12 +491,49 @@ export const ResultsProvider = ({ children }) => {
     }
   };
 
+  const clearPressureCooker = () => {
+    if (window.confirm("Delete ALL Pressure Cooker sessions?")) {
+      setPressureCookerSessions([]);
+      deleteSessionsByType("pressure_cooker");
+    }
+  };
+
+  // --- Consent ---
+  const acceptConsent = () => {
+    setConsentGiven(true);
+    setConsentTimestamp(new Date().toISOString());
+  };
+
+  const revokeConsent = () => {
+    if (window.confirm("Are you sure you want to revoke your consent?")) {
+      setConsentGiven(false);
+      setConsentTimestamp(null);
+    }
+  };
+
+  const clearAllData = () => {
+    if (window.confirm("This will delete ALL your data and revoke consent. Are you sure?")) {
+      setIndividualSessions([]);
+      setGroupSessions([]);
+      setPairwiseSessions([]);
+      setRankedSessions([]);
+      setBestWorstSessions([]);
+      setPressureCookerSessions([]);
+      setTranscripts([]);
+      setFixedSessions([]);
+      setGroupSessionsByLayout({});
+      setConsentGiven(false);
+      setConsentTimestamp(null);
+    }
+  };
+
   // --- Pressure Cooker ---
   const addPressureCookerSession = (username, choices, bestStreak) => {
     const pcId = Date.now();
+    const meta = getSessionMetadata();
     setPressureCookerSessions((prev) => [
       ...prev,
-      { id: pcId, username, choices, bestStreak, timestamp: new Date().toISOString() },
+      { id: pcId, username, choices, bestStreak, timestamp: new Date().toISOString(), metadata: meta },
     ]);
     insertSession({
       id: pcId,
@@ -504,7 +548,7 @@ export const ResultsProvider = ({ children }) => {
     const pwId = pcId + 1; // offset by 1ms to avoid collision
     setPairwiseSessions((prev) => [
       ...prev,
-      { id: pwId, username, choices, timestamp: new Date().toISOString(), mode: "pressure-cooker" },
+      { id: pwId, username, choices, timestamp: new Date().toISOString(), mode: "pressure-cooker", metadata: meta },
     ]);
     insertSession({
       id: pwId,
@@ -582,6 +626,14 @@ export const ResultsProvider = ({ children }) => {
         // Pressure Cooker
         pressureCookerSessions,
         addPressureCookerSession,
+        clearPressureCooker,
+
+        // Consent
+        consentGiven,
+        consentTimestamp,
+        acceptConsent,
+        revokeConsent,
+        clearAllData,
 
         // Engagement
         showSpeedWarning,

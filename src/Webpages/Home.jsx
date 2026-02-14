@@ -22,6 +22,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import CenterFocusStrongIcon from "@mui/icons-material/CenterFocusStrong";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import PrivacyTipIcon from "@mui/icons-material/PrivacyTip";
 
 export default function Home() {
   const menuItems = [
@@ -144,6 +145,12 @@ export default function Home() {
       path: "/dataset-manager",
       icon: <CloudUploadIcon fontSize="large" />,
       color: "#1565c0",
+    },
+    {
+      title: "Privacy Settings",
+      path: "/privacy",
+      icon: <PrivacyTipIcon fontSize="large" />,
+      color: "#607d8b",
     },
   ];
 

@@ -48,16 +48,19 @@ import ResultsPage from "./Webpages/ResultsPage";
 import LayoutRatingFlow from "./components/LayoutRatingFlow";
 import ComboRatingFlow from "./Webpages/ComboRatingFlow";
 import ComboResultsPage from "./Webpages/ComboResultsPage";
+import PrivacySettings from "./Webpages/PrivacySettings";
+import ConsentModal from "./components/ConsentModal";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
 });
 
 function NavigationWrapper() {
-  const { addTranscript, isAnnouncing, toggleAnnouncing } = useResults();
+  const { addTranscript, isAnnouncing, toggleAnnouncing, consentGiven, acceptConsent } = useResults();
 
   return (
     <Router>
+      <ConsentModal open={!consentGiven} onAccept={acceptConsent} />
       <WebGazerAutoStop />
       <AppBar position="fixed" color="default" elevation={1}>
         <Toolbar>
@@ -123,6 +126,7 @@ function NavigationWrapper() {
           <Route path="/rate/upload" element={<LayoutRatingFlow mode="upload" />} />
           <Route path="/combo-rate" element={<ComboRatingFlow />} />
         <Route path="/combo-results" element={<ComboResultsPage />} />
+          <Route path="/privacy" element={<PrivacySettings />} />
         </Routes>
       </Box>
     </Router>
