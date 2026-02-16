@@ -4,7 +4,6 @@ import {
   Slider, Select, MenuItem, FormControl, InputLabel,
 } from "@mui/material";
 
-// ——— Instruction text per mode ———
 const INSTRUCTIONS = {
   individual: {
     title: "Individual Rating",
@@ -42,7 +41,6 @@ Click an image again to deselect it. When finished, press Submit.`,
   },
 };
 
-// ——— Shared placeholder box ———
 const Placeholder = ({ height = "14vh", label }) => (
   <Box
     sx={{
@@ -63,7 +61,6 @@ const Placeholder = ({ height = "14vh", label }) => (
   </Box>
 );
 
-// ——— Individual mock ———
 const IndividualPreview = () => (
   <Card sx={{ maxWidth: 360, mx: "auto", pointerEvents: "none" }}>
     <Box sx={{ p: 1.5, bgcolor: "#fff3e0", textAlign: "center" }}>
@@ -85,7 +82,6 @@ const IndividualPreview = () => (
   </Card>
 );
 
-// ——— Pairwise mock ———
 const PairwisePreview = () => (
   <Box>
     <Typography variant="body2" align="center" sx={{ mb: 1, fontStyle: "italic", color: "text.secondary" }}>
@@ -115,7 +111,6 @@ const PairwisePreview = () => (
   </Box>
 );
 
-// ——— Ranked mock ———
 const RankedPreview = () => (
   <Box>
     <Typography variant="body2" align="center" sx={{ mb: 1, fontStyle: "italic", color: "text.secondary" }}>
@@ -150,7 +145,6 @@ const RankedPreview = () => (
   </Box>
 );
 
-// ——— Selection mock ———
 const SelectionPreview = () => (
   <Box>
     <Paper sx={{ p: 1, mb: 1.5, textAlign: "center", bgcolor: "#fff3e0" }}>
@@ -201,7 +195,6 @@ const SelectionPreview = () => (
   </Box>
 );
 
-// ——— Preview picker ———
 const PREVIEWS = {
   individual: IndividualPreview,
   pairwise: PairwisePreview,
@@ -209,7 +202,6 @@ const PREVIEWS = {
   selection: SelectionPreview,
 };
 
-// ——— Main component ———
 export default function ModeInstructionScreen({ mode, prompt, onNext }) {
   const info = INSTRUCTIONS[mode] || INSTRUCTIONS.individual;
   const Preview = PREVIEWS[mode] || PREVIEWS.individual;

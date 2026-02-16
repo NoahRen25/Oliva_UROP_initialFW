@@ -8,12 +8,10 @@ export default function ReadPromptButton() {
   const { activePrompt } = useResults();
   const [speaking, setSpeaking] = useState(false);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => window.speechSynthesis.cancel();
   }, []);
 
-  // Stop when prompt changes (new page / new image)
   useEffect(() => {
     window.speechSynthesis.cancel();
     setSpeaking(false);
@@ -41,7 +39,6 @@ export default function ReadPromptButton() {
     setSpeaking(true);
   }, [activePrompt, speaking]);
 
-  // Hide when no active prompt
   if (!activePrompt) return null;
 
   return (

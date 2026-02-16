@@ -34,7 +34,6 @@ export default function PairwiseRate() {
     preloadImages(batch.flatMap((p) => [p.left.src, p.right.src]));
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       window.speechSynthesis.cancel();
@@ -42,7 +41,6 @@ export default function PairwiseRate() {
     };
   }, [setActivePrompt]);
 
-  // Update activePrompt on pair change
   useEffect(() => {
     if (isFinished || pairs.length === 0 || step !== 2) {
       setActivePrompt(null);
