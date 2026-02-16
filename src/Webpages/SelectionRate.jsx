@@ -6,7 +6,6 @@ import {
 } from "@mui/material";
 import UsernameEntry from "../components/UsernameEntry";
 import ModeInstructionScreen from "../components/ModeInstructionScreen";
-import ReadPromptButton from "../components/ReadPromptButton";
 import { getSelectionBatch } from "../utils/ImageLoader";
 import { preloadImages } from "../utils/preloadImages";
 
@@ -14,7 +13,7 @@ export default function SelectionRate() {
   const navigate = useNavigate();
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
-  const { addSelectionSession, announce } = useResults();
+  const { addSelectionSession, setActivePrompt } = useResults();
 
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
@@ -32,9 +31,12 @@ export default function SelectionRate() {
 
   useEffect(() => {
     if (step === 2) {
-      announce(`Selection task. ${taskPrompt}`);
+      setActivePrompt(taskPrompt);
+    } else {
+      setActivePrompt(null);
     }
-  }, [step]);
+    return () => setActivePrompt(null);
+  }, [step, taskPrompt, setActivePrompt]);
 
   const toggleSelect = (id) => {
     setSelected((prev) => {
@@ -79,8 +81,6 @@ export default function SelectionRate() {
 
       {step === 2 && (
         <>
-          <ReadPromptButton prompt={taskPrompt} />
-
           <Paper sx={{ p: 2, mb: 3, textAlign: "center", bgcolor: "#fff3e0" }}>
             <Typography variant="subtitle2" color="text.secondary">
               Task Prompt

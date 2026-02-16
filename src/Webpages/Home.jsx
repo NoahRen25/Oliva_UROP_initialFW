@@ -10,6 +10,7 @@ import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import StorageIcon from "@mui/icons-material/Storage";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
+import PrivacyTipIcon from "@mui/icons-material/PrivacyTip";
 
 export default function Home() {
   const menuItems = [
@@ -61,6 +62,12 @@ export default function Home() {
       path: "/dataset-manager",
       icon: <StorageIcon fontSize="large" />,
       color: "#1565c0",
+    },
+    {
+      title: "Privacy Settings",
+      path: "/privacy",
+      icon: <PrivacyTipIcon fontSize="large" />,
+      color: "#607d8b",
     },
   ];
 

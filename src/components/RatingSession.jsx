@@ -9,9 +9,14 @@ export default function RatingSession({
   gridProps,
 }) {
   const [ratings, setRatings] = useState({});
+  const [sliderMoves, setSliderMoves] = useState({});
   const [startTime] = useState(performance.now());
   const { addGroupSession } = useResults();
   const navigate = useNavigate();
+
+  const trackMove = (id) => {
+    setSliderMoves((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+  };
 
   const handleSubmit = () => {
     const totalTime = (performance.now() - startTime) / 1000;
@@ -33,6 +38,7 @@ export default function RatingSession({
         images={images}
         ratings={ratings}
         setRatings={setRatings}
+        trackMove={trackMove}
         {...gridProps}
       />
 

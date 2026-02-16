@@ -30,16 +30,20 @@ import ModeResultsPage from "./Webpages/ModeResultsPage";
 import LayoutRatingFlow from "./components/LayoutRatingFlow";
 import UnifiedUploadPage from "./Webpages/UnifiedUploadPage";
 import ComboRatingFlow from "./Webpages/ComboRatingFlow";
+import ComboResultsPage from "./Webpages/ComboResultsPage";
+import PrivacySettings from "./Webpages/PrivacySettings";
+import ConsentModal from "./components/ConsentModal";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
 });
 
 function NavigationWrapper() {
-  const { addTranscript } = useResults();
+  const { addTranscript, isAnnouncing, toggleAnnouncing, consentGiven, acceptConsent } = useResults();
 
   return (
     <Router>
+      <ConsentModal open={!consentGiven} onAccept={acceptConsent} />
       <WebGazerAutoStop />
       <AppBar position="fixed" color="default" elevation={1}>
         <Toolbar>
@@ -86,7 +90,6 @@ function NavigationWrapper() {
           <Route path="/selection-rate" element={<SelectionRate />} />
           <Route path="/ranked-rate" element={<RankedRate />} />
           <Route path="/best-worst-rate" element={<BestWorstRate />} />
-          <Route path="/selection-rate" element={<SelectionRate />} />
           <Route path="/combo-rate" element={<ComboRatingFlow />} />
           <Route path="/pressure-cooker" element={<PressureCooker />} />
 
@@ -94,6 +97,10 @@ function NavigationWrapper() {
           <Route path="/webgazer-calibration" element={<WebGazerCalibration />} />
           <Route path="/webgazer-gaze-test" element={<WebGazerGazeTest />} />
           <Route path="/dataset-manager" element={<DatasetManager />} />
+          <Route path="/rate" element={<LayoutRatingFlow mode="manual" />} />
+          <Route path="/results" element={<ResultsPage />} />
+        <Route path="/combo-results" element={<ComboResultsPage />} />
+          <Route path="/privacy" element={<PrivacySettings />} />
         </Routes>
       </Box>
     </Router>

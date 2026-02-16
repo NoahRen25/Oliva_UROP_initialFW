@@ -22,6 +22,7 @@ import {
   fetchSessionsWithBestWorst,
   fetchTranscripts,
 } from "./services/supabaseResults";
+import { getSessionMetadata } from "./utils/getSessionMetadata";
 
 const Results = createContext(null);
 
@@ -91,6 +92,10 @@ export const ResultsProvider = ({ children }) => {
   // --- Active Prompt for ReadPromptButton ---
   const [activePrompt, setActivePrompt] = useState(null);
 
+  // --- Consent State ---
+  const [consentGiven, setConsentGiven] = useState(() => readLS("app_consent_given", false));
+  const [consentTimestamp, setConsentTimestamp] = useState(() => readLS("app_consent_timestamp", null));
+
   // --- Engagement / Speed Warning ---
   const [showSpeedWarning, setShowSpeedWarning] = useState(false);
   const [lastWarnedIndex, setLastWarnedIndex] = useState(0);
@@ -106,6 +111,8 @@ export const ResultsProvider = ({ children }) => {
   useEffect(() => { writeLS("app_best_worst", bestWorstSessions); }, [bestWorstSessions]);
   useEffect(() => { writeLS("app_selection", selectionSessions); }, [selectionSessions]);
   useEffect(() => { writeLS("app_announcing", isAnnouncing); }, [isAnnouncing]);
+  useEffect(() => { writeLS("app_consent_given", consentGiven); }, [consentGiven]);
+  useEffect(() => { writeLS("app_consent_timestamp", consentTimestamp); }, [consentTimestamp]);
 
   // Supabase hydration (keeping existing code, abbreviated for space)
   useEffect(() => {
@@ -286,35 +293,168 @@ export const ResultsProvider = ({ children }) => {
   const deleteSelectionSession = (id) => { if (window.confirm("Delete this session?")) { setSelectionSessions((p) => p.filter((s) => s.id !== id)); deleteSession(id); } };
   const clearSelection = () => { if (window.confirm("Delete ALL Selection sessions?")) { setSelectionSessions([]); deleteSessionsByType("selection"); } };
 
-  // Pressure Cooker
+  const clearPressureCooker = () => {
+    if (window.confirm("Delete ALL Pressure Cooker sessions?")) {
+      setPressureCookerSessions([]);
+      deleteSessionsByType("pressure_cooker");
+    }
+  };
+
+  // --- Consent ---
+  const acceptConsent = () => {
+    setConsentGiven(true);
+    setConsentTimestamp(new Date().toISOString());
+  };
+
+  const revokeConsent = () => {
+    if (window.confirm("Are you sure you want to revoke your consent?")) {
+      setConsentGiven(false);
+      setConsentTimestamp(null);
+    }
+  };
+
+  const clearAllData = () => {
+    if (window.confirm("This will delete ALL your data and revoke consent. Are you sure?")) {
+      setIndividualSessions([]);
+      setGroupSessions([]);
+      setPairwiseSessions([]);
+      setRankedSessions([]);
+      setBestWorstSessions([]);
+      setPressureCookerSessions([]);
+      setSelectionSessions([]);
+      setTranscripts([]);
+      setFixedSessions([]);
+      setGroupSessionsByLayout({});
+      setConsentGiven(false);
+      setConsentTimestamp(null);
+    }
+  };
+
+  // --- Pressure Cooker ---
   const addPressureCookerSession = (username, choices, bestStreak) => {
     const pcId = Date.now();
-    setPressureCookerSessions((p) => [...p, { id: pcId, username, choices, bestStreak, timestamp: new Date().toISOString() }]);
-    insertSession({ id: pcId, type: "pressure_cooker", username, timestamp: new Date().toISOString(), meta: { bestStreak } });
+    const meta = getSessionMetadata();
+    setPressureCookerSessions((prev) => [
+      ...prev,
+      { id: pcId, username, choices, bestStreak, timestamp: new Date().toISOString(), metadata: meta },
+    ]);
+    insertSession({
+      id: pcId,
+      type: "pressure_cooker",
+      username,
+      timestamp: new Date().toISOString(),
+      meta: { bestStreak },
+    });
     insertPairwiseChoices(pcId, choices);
-    const pwId = pcId + 1;
-    setPairwiseSessions((p) => [...p, { id: pwId, username, choices, timestamp: new Date().toISOString(), mode: "pressure-cooker" }]);
-    insertSession({ id: pwId, type: "pairwise", username, timestamp: new Date().toISOString(), meta: { mode: "pressure-cooker" } });
+
+    // Also add to pairwise history
+    const pwId = pcId + 1; // offset by 1ms to avoid collision
+    setPairwiseSessions((prev) => [
+      ...prev,
+      { id: pwId, username, choices, timestamp: new Date().toISOString(), mode: "pressure-cooker", metadata: meta },
+    ]);
+    insertSession({
+      id: pwId,
+      type: "pairwise",
+      username,
+      timestamp: new Date().toISOString(),
+      meta: { mode: "pressure-cooker" },
+    });
     insertPairwiseChoices(pwId, choices);
   };
 
   return (
-    <Results.Provider value={{
-      transcripts, addTranscript, delTranscript, clearTranscripts,
-      announce, stopAnnouncing, toggleAnnouncing, isAnnouncing, isSpeaking,
-      taskPrompt, setTaskPrompt,
-      activePrompt, setActivePrompt,
-      individualSessions, addIndividualSession, deleteIndividualSession, clearIndividual,
-      groupSessions, addGroupSession, deleteGroupSession, clearGroup,
-      groupSessionsByLayout, getGroupSessions, addGroupSessionForLayout, deleteGroupSessionForLayout, clearGroupForLayout, clearAllGroupLayouts,
-      fixedSessions, addFixedSession, deleteFixedSession, clearFixedSessions, setFixedSessions,
-      pairwiseSessions, addPairwiseSession, deletePairwiseSession, clearPairwise,
-      rankedSessions, addRankedSession, deleteRankedSession, clearRanked,
-      bestWorstSessions, addBestWorstSession, deleteBestWorstSession, clearBestWorst,
-      selectionSessions, addSelectionSession, deleteSelectionSession, clearSelection,
-      pressureCookerSessions, addPressureCookerSession,
-      showSpeedWarning, setShowSpeedWarning, checkEngagement, resetEngagement,
-    }}>
+    <Results.Provider
+      value={{
+        // Transcripts
+        transcripts,
+        addTranscript,
+        delTranscript,
+        clearTranscripts,
+
+        // Voice / Prompt
+        announce,
+        stopAnnouncing,
+        toggleAnnouncing,
+        isAnnouncing,
+        isSpeaking,
+        taskPrompt,
+        setTaskPrompt,
+
+        // Individual
+        individualSessions,
+        addIndividualSession,
+        deleteIndividualSession,
+        clearIndividual,
+
+        // Flat Group (Legacy/Simple)
+        groupSessions,
+        addGroupSession,
+        deleteGroupSession,
+        clearGroup,
+
+        // Layout Group (Complex)
+        groupSessionsByLayout,
+        getGroupSessions,
+        addGroupSessionForLayout,
+        deleteGroupSessionForLayout,
+        clearGroupForLayout,
+        clearAllGroupLayouts,
+
+        // Fixed
+        fixedSessions,
+        addFixedSession,
+        deleteFixedSession,
+        clearFixedSessions,
+        setFixedSessions,
+
+        // Pairwise
+        pairwiseSessions,
+        addPairwiseSession,
+        deletePairwiseSession,
+        clearPairwise,
+
+        // Ranked
+        rankedSessions,
+        addRankedSession,
+        deleteRankedSession,
+        clearRanked,
+
+        // Best Worst
+        bestWorstSessions,
+        addBestWorstSession,
+        deleteBestWorstSession,
+        clearBestWorst,
+
+        // Pressure Cooker
+        pressureCookerSessions,
+        addPressureCookerSession,
+        clearPressureCooker,
+
+        // Consent
+        consentGiven,
+        consentTimestamp,
+        acceptConsent,
+        revokeConsent,
+        clearAllData,
+
+        // Active Prompt (for ReadPromptButton)
+        activePrompt,
+        setActivePrompt,
+
+        // Selection
+        selectionSessions,
+        addSelectionSession,
+        deleteSelectionSession,
+        clearSelection,
+
+        // Engagement
+        showSpeedWarning,
+        setShowSpeedWarning,
+        checkEngagement,
+        resetEngagement,
+      }}
+    >
       {children}
     </Results.Provider>
   );
