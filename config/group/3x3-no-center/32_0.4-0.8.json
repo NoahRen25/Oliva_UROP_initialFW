@@ -1,0 +1,6 @@
+{
+    "layout": "3x3-no-center",
+    "count": 32,
+    "minScore": 0.4,
+    "maxScore": 0.8
+  }

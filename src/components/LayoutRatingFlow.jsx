@@ -1,275 +1,211 @@
-import React, { useMemo, useState } from "react";
-import { 
-  Container, 
-  Typography, 
-  Box, 
-  CircularProgress, 
-  LinearProgress, 
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Paper
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  Container, Box, Typography, Button, LinearProgress, CircularProgress
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import { useResults } from "../Results";
 import { useMemImages } from "../data/UseMemImages";
-import { getGridConfig, LAYOUT_OPTIONS } from "../data/gridConstants";
-
-// Sub-components
+import { getGridConfig } from "../data/gridConstants";
 import UsernameEntry from "./UsernameEntry";
-import SelectionScreen from "./SelectionScreen";
-import ConfigSelectionScreen from "./ConfigSelectionScreen";
+import InstructionScreen from "./InstructionScreen";
 import ImageGrid from "./ImageGrid";
-import InstructionScreen from "./InstructionScreen"; // Import the new screen
 
-export default function LayoutRatingFlow({ 
-  mode = "manual", 
-  layoutId: initialLayoutId,
-  defaultCount = 4 
-}) {
+export default function LayoutRatingFlow({ mode = "upload" }) {
   const navigate = useNavigate();
-  const { addGroupSessionForLayout, setTaskPrompt } = useResults();
-  const { ready, countInRange, sampleInRange } = useMemImages();
+  const location = useLocation();
+  const uploadConfig = location.state?.uploadConfig || null;
 
-  // --- Session State ---
-  // 0: User, 1: Config, 2: Instructions, 3: Rating (Grid)
-  const [step, setStep] = useState(0); 
-  const [username, setUsername] = useState("");
-  
-  // --- Configuration State ---
-  const [config, setConfig] = useState({
-    layoutId: initialLayoutId || "2x2",
-    range: [0.0, 1.0],
-    count: defaultCount,
-    showRating: true // Default for manual mode
-  });
+  const { addGroupSessionForLayout, setTaskPrompt, setActivePrompt } = useResults();
+  const { ready, sampleInRange } = useMemImages();
 
-  // --- Runtime State (The Grid) ---
+  // Determine layout from config
+  const layoutId = uploadConfig?.type || "2x2";
+  const gridConfig = getGridConfig(layoutId);
+
+  // Steps: 0 = Username (if not provided), 1 = Instructions, 2 = Rating
+  const [step, setStep] = useState(uploadConfig?.username ? 1 : 0);
+  const [username, setUsername] = useState(uploadConfig?.username || "");
+
+  // Grid state
+  const [images, setImages] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [selected, setSelected] = useState([]);
   const [ratings, setRatings] = useState({});
   const [sliderMoves, setSliderMoves] = useState({});
-  const [startTime, setStartTime] = useState(null);
   const [interactionSequence, setInteractionSequence] = useState([]);
   const [savedClickOrders, setSavedClickOrders] = useState({});
 
-  const gridSettings = useMemo(() => getGridConfig(config.layoutId), [config.layoutId]);
-  const pageSize = gridSettings.pageSize;
+  const imageCount = uploadConfig?.count || gridConfig.pageSize;
+  const minScore = uploadConfig?.minScore || 0;
+  const maxScore = uploadConfig?.maxScore || 1;
+  const showRating = uploadConfig?.showRating !== false;
+  const taskPromptText = uploadConfig?.prompt || "Rate this image";
 
-  const availableCount = useMemo(() => {
-    if (!ready) return 0;
-    return countInRange(config.range[0], config.range[1]);
-  }, [ready, config.range, countInRange]);
+  // Set task prompt for the context
+  useEffect(() => {
+    setTaskPrompt(taskPromptText);
+    return () => setTaskPrompt("");
+  }, [taskPromptText, setTaskPrompt]);
 
-  const totalPages = Math.ceil(selected.length / pageSize);
+  // Set active prompt for ReadPromptButton when on rating step
+  useEffect(() => {
+    if (step === 2) {
+      setActivePrompt(taskPromptText);
+    } else {
+      setActivePrompt(null);
+    }
+    return () => setActivePrompt(null);
+  }, [step, taskPromptText, setActivePrompt]);
+
+  // Load images when ready
+  useEffect(() => {
+    if (ready && images.length === 0) {
+      const sampled = sampleInRange(minScore, maxScore, imageCount);
+      setImages(sampled);
+    }
+  }, [ready, sampleInRange, minScore, maxScore, imageCount, images.length]);
+
+  // Pagination
+  const totalPages = Math.ceil(images.length / gridConfig.pageSize);
+  const currentImages = useMemo(() => {
+    const start = currentPage * gridConfig.pageSize;
+    return images.slice(start, start + gridConfig.pageSize);
+  }, [images, currentPage, gridConfig.pageSize]);
+
   const isLastPage = currentPage === totalPages - 1;
 
-  const currentImages = useMemo(() => {
-    const start = currentPage * pageSize;
-    return selected.slice(start, start + pageSize);
-  }, [selected, currentPage, pageSize]);
+  // Handlers
+  const handleUsernameSubmit = () => setStep(1);
 
-  // --- Actions ---
-
-  // 1. Prepare data, but go to Instructions (Step 2)
-  const prepareSession = (overrideCount) => {
-    const finalCount = overrideCount || config.count;
-    const imgs = sampleInRange(config.range[0], config.range[1], finalCount);
-    setSelected(imgs);
-    setCurrentPage(0);
-    setStep(2); // Go to Instructions
-  };
-
-  const handleConfigUpload = (loadedData) => {
-    if (loadedData.prompt) {
-      setTaskPrompt(loadedData.prompt);
-    }
-    setConfig({
-      layoutId: loadedData.layout,
-      range: loadedData.range,
-      count: loadedData.count,
-      showRating: loadedData.showRating // Load boolean from JSON
-    });
-    // Wait for state update then prepare
-    setTimeout(() => prepareSession(loadedData.count), 0);
-  };
-
-  // 2. Actually start the timer and show Grid (Step 3)
-  const handleStartGrid = () => {
-    setStartTime(performance.now());
-    setStep(3);
+  const handleInstructionsNext = () => {
+    window.scrollTo(0, 0);
+    setStep(2);
   };
 
   const handleInteraction = (id) => {
-    setSliderMoves(prev => ({...prev, [id]: (prev[id] || 0) + 1}));
+    setSliderMoves(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
     if (!interactionSequence.includes(id)) {
       const nextOrder = interactionSequence.length + 1;
       setInteractionSequence(prev => [...prev, id]);
-      setSavedClickOrders(prev => ({
-        ...prev,
-        [id]: nextOrder
-      }));
+      setSavedClickOrders(prev => ({ ...prev, [id]: nextOrder }));
     }
   };
 
   const handleNext = () => {
-    if (isLastPage) submit();
-    else {
-      setCurrentPage((p) => p + 1);
-      window.scrollTo(0, 0);
+    if (isLastPage) {
+      // Submit results
+      const scores = images.map((img, index) => {
+        const pageIndex = Math.floor(index / gridConfig.pageSize);
+        const posOnPage = index % gridConfig.pageSize;
+        
+        let row, col;
+        if (gridConfig.removeCenter && gridConfig.columns === 3) {
+          const visualIndex = posOnPage < 4 ? posOnPage : posOnPage + 1;
+          row = Math.floor(visualIndex / 3) + 1;
+          col = (visualIndex % 3) + 1;
+        } else {
+          row = Math.floor(posOnPage / gridConfig.columns) + 1;
+          col = (posOnPage % gridConfig.columns) + 1;
+        }
+
+        return {
+          imageId: img.id,
+          imageName: img.id,
+          score: ratings[img.id] ?? 5,
+          position: `P${pageIndex + 1}:(${row},${col})`,
+          interactionCount: sliderMoves[img.id] || 0,
+          clickOrder: savedClickOrders[img.id] ?? "-",
+          memorabilityScore: img.score,
+        };
+      });
+
+      addGroupSessionForLayout(layoutId, username, scores, {
+        grid: gridConfig,
+        prompt: taskPromptText,
+      });
+      navigate("/grid-results");
+    } else {
+      setCurrentPage(prev => prev + 1);
       setInteractionSequence([]);
+      window.scrollTo(0, 0);
     }
   };
 
-  const submit = () => {
-    const totalTime = startTime ? (performance.now() - startTime) / 1000 : 0;
-    
-    const scores = selected.map((img, index) => {
-      const posInPage = index % pageSize; 
-      let row, col;
-  
-      if (config.layoutId === "3x3-no-center") {
-        const visualIndex = posInPage < 4 ? posInPage : posInPage + 1;
-        row = Math.floor(visualIndex / 3) + 1;
-        col = (visualIndex % 3) + 1;
-      } else {
-        row = Math.floor(posInPage / gridSettings.columns) + 1;
-        col = (posInPage % gridSettings.columns) + 1;
-      }
-  
-      const clickOrder = savedClickOrders[img.id] ?? "-";
-
-      return {
-        imageId: img.id,
-        imageName: img.id,
-        score: ratings[img.id] ?? 3,
-        position: `(${row}, ${col})`,
-        timeSpent: (totalTime / Math.max(1, selected.length)).toFixed(2),
-        interactionCount: sliderMoves[img.id] || 0,
-        clickOrder: clickOrder,
-      };
-    });
-  
-    addGroupSessionForLayout(config.layoutId, username, scores, { grid: gridSettings });
-    navigate(`/results`);
-  };
+  // Loading state
+  if (!ready) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
-      {/* STEP 0: Username */}
+      {/* Step 0: Username */}
       {step === 0 && (
-        <UsernameEntry 
-          title={mode === 'upload' ? "Upload Configuration" : "New Rating Session"} 
-          username={username} 
-          setUsername={setUsername} 
-          onStart={() => setStep(1)} 
+        <UsernameEntry
+          title={`${layoutId.toUpperCase()} Grid Rating`}
+          username={username}
+          setUsername={setUsername}
+          onStart={handleUsernameSubmit}
         />
       )}
 
-      {/* STEP 1: Configuration */}
+      {/* Step 1: Instructions */}
       {step === 1 && (
-        <Box sx={{ maxWidth: 600, mx: "auto", mt: 4 }}>
-          {!ready ? (
-            <CircularProgress sx={{ display: "block", mx: "auto" }} />
-          ) : (
-            <>
-              {mode === "manual" ? (
-                <>
-                  <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-                    <Typography variant="h6" gutterBottom>Session Settings</Typography>
-                    
-                    <FormControl fullWidth size="small" sx={{ mb: 3 }}>
-                      <InputLabel>Grid Layout</InputLabel>
-                      <Select
-                        value={config.layoutId}
-                        label="Grid Layout"
-                        onChange={(e) => setConfig(prev => ({ ...prev, layoutId: e.target.value }))}
-                      >
-                        {LAYOUT_OPTIONS.map((opt) => (
-                          <MenuItem key={opt.id} value={opt.id}>
-                            {opt.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-
-                    <SelectionScreen
-                      range={config.range}
-                      setRange={(r) => setConfig(prev => ({ ...prev, range: r }))}
-                      count={config.count}
-                      setCount={(c) => setConfig(prev => ({ ...prev, count: c }))}
-                      availableCount={availableCount}
-                      pageSize={pageSize} 
-                    />
-                  </Paper>
-
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    size="large"
-                    sx={{ py: 1.5 }}
-                    disabled={availableCount === 0 || config.count < 1 || config.count % pageSize !== 0}
-                    onClick={() => prepareSession()}
-                  >
-                    Next: Instructions
-                  </Button>
-                </>
-              ) : (
-                <ConfigSelectionScreen 
-                  onConfigLoaded={handleConfigUpload}
-                  ready={ready}
-                  countInRange={countInRange}
-                />
-              )}
-            </>
-          )}
-        </Box>
-      )}
-
-      {/* STEP 2: Instructions */}
-      {step === 2 && (
-        <InstructionScreen 
-          onNext={handleStartGrid} 
-          showRating={config.showRating}
-          layoutId={config.layoutId}
+        <InstructionScreen
+          layoutId={layoutId}
+          showRating={showRating}
+          onNext={handleInstructionsNext}
         />
       )}
 
-      {/* STEP 3: Rating Grid */}
-      {step === 3 && (
-        <Box sx={{ mt: 2, pb: 10 }}>
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="body2" color="text.secondary" align="center" gutterBottom>
-              Page {currentPage + 1} of {totalPages}
+      {/* Step 2: Rating Grid */}
+      {step === 2 && (
+        <Box sx={{ mt: 1, pb: 10 }}>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h5" align="center" gutterBottom>
+              {layoutId.toUpperCase()} Grid: Page {currentPage + 1} of {totalPages}
             </Typography>
-            <LinearProgress 
-              variant="determinate" 
-              value={((currentPage + 1) / totalPages) * 100} 
+            <LinearProgress
+              variant="determinate"
+              value={((currentPage + 1) / totalPages) * 100}
               sx={{ height: 10, borderRadius: 5 }}
             />
+            <Typography variant="caption" display="block" align="center" sx={{ mt: 1, color: 'text.secondary' }}>
+              Images {currentPage * gridConfig.pageSize + 1} - {Math.min((currentPage + 1) * gridConfig.pageSize, images.length)} of {images.length}
+            </Typography>
           </Box>
 
-          <ImageGrid 
-            images={currentImages} 
-            ratings={ratings} 
-            setRatings={setRatings} 
-            trackMove={handleInteraction} 
-            columns={gridSettings.columns} 
-            imageHeight={gridSettings.imageHeight} 
-            removeCenter={gridSettings.removeCenter}
-            showRating={config.showRating} // Pass the config setting
+          {/* Task Prompt Display */}
+          <Box sx={{ p: 2, mb: 2, bgcolor: "#fff3e0", borderRadius: 2, textAlign: "center" }}>
+            <Typography variant="subtitle2" color="text.secondary">
+              Task Prompt
+            </Typography>
+            <Typography variant="h6" color="primary.main">
+              {taskPromptText}
+            </Typography>
+          </Box>
+
+          <ImageGrid
+            images={currentImages}
+            ratings={ratings}
+            setRatings={setRatings}
+            trackMove={handleInteraction}
+            columns={gridConfig.columns}
+            imageHeight={gridConfig.imageHeight}
+            removeCenter={gridConfig.removeCenter}
+            showRating={showRating}
           />
 
-          <Button 
-            sx={{ mt: 6 }} 
-            variant="contained" 
-            size="large" 
-            fullWidth 
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            sx={{ mt: 4 }}
             onClick={handleNext}
           >
-            {isLastPage ? "Finish & Submit Results" : "Next Page"}
+            {isLastPage ? "Finish & View Results" : "Next Page"}
           </Button>
         </Box>
       )}

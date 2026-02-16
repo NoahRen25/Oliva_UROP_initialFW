@@ -14,10 +14,7 @@ export default function SelectionScreen({
   };
 
   return (
-    <Box sx={{ p: 3, bgcolor: "background.paper", borderRadius: 2, boxShadow: 1 }}>
-      <Typography variant="h6" gutterBottom>
-        Configuration
-      </Typography>
+    <>
 
       <Typography gutterBottom>
         Memorability Range: <strong>{range[0].toFixed(2)} - {range[1].toFixed(2)}</strong>
@@ -48,6 +45,6 @@ export default function SelectionScreen({
         helperText={`Maximum available: ${availableCount}`}
         InputProps={{ inputProps: {max: availableCount, step: pageSize} }}
       />
-    </Box>
+      </>
   );
 }

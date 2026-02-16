@@ -1,0 +1,6 @@
+{
+    "layout": "4x4",
+    "count": 64,
+    "minScore": 0.4,
+    "maxScore": 0.8
+  }

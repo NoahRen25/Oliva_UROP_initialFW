@@ -1,0 +1,7 @@
+{
+    "layout": "3x3-small",
+    "count": 18,
+    "minScore": 0.4,
+    "maxScore": 0.8,
+    "prompt": "Rate how interesting this image would be to a general population"
+  }

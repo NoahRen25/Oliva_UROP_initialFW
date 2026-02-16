@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Box, Typography, Button, Card, Slider, Grid } from "@mui/material";
-import { getGridConfig } from "../data/gridConstants"; 
+import { getGridConfig, LAYOUT_OPTIONS } from "../data/gridConstants"; 
 import { useResults } from "../Results";
 
 export default function InstructionScreen({ 
@@ -11,23 +11,29 @@ export default function InstructionScreen({
 }) {
   const { taskPrompt } = useResults();
 
-  // --- HEIGHT CONFIGURATION ---
-  // Synchronized the 3x3 variants to 10vh to ensure identical item sizes
-  const instructionHeights = {
-    "4x1": "50vh",
-    "2x2": "20vh",
-    "3x3": "10vh",
-    "3x3-no-center": "10vh",
-    "4x4": "4vh",
-    "default": "10vh"
+  // Height configuration for different layouts
+  const getPreviewHeight = (id) => {
+    const heights = {
+      "4x1": "12vh",
+      "2x2": "12vh",
+      "3x3": "8vh",
+      "3x3-small": "6vh",
+      "3x3-no-center": "8vh",
+      "4x4": "5vh",
+    };
+    return heights[id] || "10vh";
   };
 
-  const getHeight = (id) => instructionHeights[id] || instructionHeights["default"];
+  // Get layout label for display
+  const getLayoutLabel = (id) => {
+    const option = LAYOUT_OPTIONS.find(opt => opt.id === id);
+    return option ? option.label : id;
+  };
 
   const GridPreview = ({ lId, title }) => {
     const config = getGridConfig(lId);
     const { columns, pageSize, removeCenter } = config;
-    const activeHeight = getHeight(lId);
+    const previewHeight = getPreviewHeight(lId);
 
     const displaySlots = useMemo(() => {
       const items = Array.from({ length: pageSize }, (_, i) => i + 1);
@@ -51,7 +57,9 @@ export default function InstructionScreen({
             gridTemplateColumns: `repeat(${columns}, 1fr)`,
             alignItems: "start",
             mb: 2,
-            px: 1
+            px: 1,
+            maxWidth: columns <= 2 ? 400 : columns === 3 ? 500 : 600,
+            mx: "auto",
           }}
         >
           {displaySlots.map((id, index) => (
@@ -60,7 +68,7 @@ export default function InstructionScreen({
                 <Card sx={{ p: 0.5, height: '100%' }}>
                   <Box
                     sx={{ 
-                      height: activeHeight, 
+                      height: previewHeight, 
                       width: "100%",
                       bgcolor: '#f0f0f0',
                       borderRadius: 1,
@@ -68,18 +76,26 @@ export default function InstructionScreen({
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: '#ccc',
-                      fontSize: '1.5rem',
-                      fontWeight: 'bold'
+                      fontSize: '1.2rem',
+                      fontWeight: 'bold',
+                      border: "2px dashed #ddd",
                     }}
                   >
-                    -
+                    –
                   </Box>
                   <Box sx={{ px: 0.5, mt: 0.5 }}>
-                    <Slider defaultValue={5} min={1} max={10} step={1} size="small" />
+                    <Slider 
+                      defaultValue={5} 
+                      min={1} 
+                      max={10} 
+                      step={1} 
+                      size="small" 
+                      disabled 
+                    />
                   </Box>
                 </Card>
               ) : (
-                <Box sx={{ height: activeHeight }} />
+                <Box sx={{ height: previewHeight }} />
               )}
             </Box>
           ))}
@@ -89,46 +105,64 @@ export default function InstructionScreen({
   };
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: "auto", mt: 2, textAlign: "center" }}>
+    <Box sx={{ width: "90%", mx: "auto", mt: 2, textAlign: "center" }}>
+      <Typography variant="h4" gutterBottom>
+        {variant === "combo" ? "Combo Protocol" : `${getLayoutLabel(layoutId)} Grid Rating`}
+      </Typography>
       <Typography variant="h5" gutterBottom>Instructions</Typography>
 
-      <Typography variant="body1" sx={{ 
-        whiteSpace: "pre-line", 
-        mb: 4, 
-        textAlign: "left", 
-        px: 2,
-        mt: 6 
-      }}>
-        In the following task, you will see a grid of images. Please rate each image based on the prompt listed below.
-        If you ever want the prompt to be repeated, click the <strong>READ PROMPT</strong> button in the top right of your screen.
-        Clicking it while it is speaking will <strong>STOP</strong> the audio. 
-        Each slider is set to a default 5. 1 is the lowest score, and 10 is the highest score. 
-        Scroll down and click "Start Rating" when you are ready to begin.
-      </Typography>
+      <Box sx={{ textAlign: "left", px: 2, mt: 4, mb: 4 }}>
+        <Typography variant="body1" sx={{ whiteSpace: "pre-line" }}>
+          In the following task, you will see a grid of images. Please rate each image based on the prompt listed below.
+          {"\n\n"}
+          If you ever want the prompt to be repeated, click the <strong>READ PROMPT</strong> button (microphone icon) in the top right of your screen.
+          Clicking it while it is speaking will <strong>STOP</strong> the audio.
+          {"\n\n"}
+          Each slider is set to a default of 5. 1 is the lowest score, and 10 is the highest score.
+          {"\n\n"}
+          Scroll down and click "Start Rating" when you are ready to begin.
+        </Typography>
+      </Box>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 3 }}>
-          Prompt: {taskPrompt}
+        Prompt: {taskPrompt}
       </Typography>
 
-      {variant === "combo" ? (
-        <Grid container spacing={4} justifyContent="center" sx={{ mb: 6 }}>
-          <Grid item>
-            {/* Standardized width 300 matches both previews */}
-            <Box sx={{ width: 300 }}>
-              <GridPreview lId="3x3-no-center" title="Pages 1-3 (8 Images)" />
-            </Box>
+      {/* Visual Preview */}
+      <Box
+        sx={{
+          p: 2.5,
+          mb: 4,
+          bgcolor: "#fafafa",
+          borderRadius: 2,
+          border: "1px solid #e0e0e0",
+        }}
+      >
+        <Typography
+          variant="overline"
+          display="block"
+          sx={{ mb: 1.5, color: "text.secondary", letterSpacing: 1 }}
+        >
+          Preview – What you will see
+        </Typography>
+
+        {variant === "combo" ? (
+          <Grid container spacing={4} justifyContent="center">
+            <Grid item>
+              <Box sx={{ width: 300 }}>
+                <GridPreview lId="3x3-no-center" title="Pages 1-3 (8 Images)" />
+              </Box>
+            </Grid>
+            <Grid item>
+              <Box sx={{ width: 300 }}>
+                <GridPreview lId="3x3" title="Page 4 (9 Images)" />
+              </Box>
+            </Grid>
           </Grid>
-          <Grid item>
-            <Box sx={{ width: 300 }}>
-              <GridPreview lId="3x3" title="Page 4 (9 Images)" />
-            </Box>
-          </Grid>
-        </Grid>
-      ) : (
-        <Box sx={{ mb: 6, px: 2, maxWidth: 600, mx: 'auto' }}>
-           <GridPreview lId={layoutId} title={`${layoutId} Layout Example`} />
-        </Box>
-      )}
+        ) : (
+          <GridPreview lId={layoutId} title={`${getLayoutLabel(layoutId)} Layout`} />
+        )}
+      </Box>
 
       <Button variant="contained" size="large" fullWidth onClick={onNext} sx={{ mb: 10 }}>
         Start Rating

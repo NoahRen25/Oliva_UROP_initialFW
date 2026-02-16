@@ -185,5 +185,18 @@ export const getRankedBatch = (count = 3) => {
       ]
     });
   }
+  
   return batch;
+};
+
+export const getSelectionBatch = (count = 9) => {
+  const shuffled = [...ALL_DATA].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count).map((item, i) => ({
+    id: `sel_${i}`,
+    src: item.src,
+    prompt: item.prompt,
+    category: item.category,
+    filename: displayFilename(item.folderId, item.filename),
+    folderId: item.folderId,
+  }));
 };

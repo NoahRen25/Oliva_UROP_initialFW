@@ -6,7 +6,7 @@ import { getGridConfig } from "../data/gridConstants";
 import UsernameEntry from "../components/UsernameEntry";
 import ImageGrid from "../components/ImageGrid";
 import InstructionScreen from "../components/InstructionScreen"; 
-import { useMemImages } from "../data/useMemImages";
+import { useMemImages } from "../data/UseMemImages";
 
 //fisher-yates alg is optimal
 const shuffleArray = (array) => {
@@ -197,7 +197,7 @@ export default function ComboRatingFlow() {
       }).filter(Boolean); // Filter out any nulls
 
       addFixedSession(username, scores);
-      navigate("/combo-results");
+      navigate("/grid-results");
     } else {
       setCurrentPage(prev => prev + 1);
       setInteractionSequence([]); 

@@ -1,60 +1,42 @@
 import React, { useEffect } from "react";
 import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Link,
-  useLocation,
+  BrowserRouter as Router, Routes, Route, Link, useLocation,
 } from "react-router-dom";
 import {
-  AppBar,
-  Toolbar,
-  Button,
-  Typography,
-  ThemeProvider,
-  createTheme,
-  CssBaseline,
-  Box,
-  Tooltip,
-  IconButton,
+  AppBar, Toolbar, Button, Typography, ThemeProvider, createTheme,
+  CssBaseline, Box,
 } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 import HistoryEduIcon from "@mui/icons-material/HistoryEdu";
-import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
-import VoiceOverOffIcon from "@mui/icons-material/VoiceOverOff";
 
 import { ResultsProvider, useResults } from "./Results";
 import { WebGazerProvider, useWebGazer } from "./utils/WebGazerContext";
 import VoiceRecorder from "./components/VoiceRecorder";
 import TranscriptHistory from "./Webpages/TranscriptHistory";
+import ReadPromptButton from "./components/ReadPromptButton";
 
 import Home from "./Webpages/Home";
-import CombinedResult from "./Webpages/CombinedResult";
-import GroupResult from "./Webpages/GroupResult";
-import GroupRate from "./Webpages/GroupRate";
 import IndividualRate from "./Webpages/IndividualRate";
-import IndividualResult from "./Webpages/IndividualResult";
 import PairwiseRate from "./Webpages/PairwiseRate";
 import RankedRate from "./Webpages/RankedRate";
-import PairwiseResult from "./Webpages/PairwiseResult";
-import RankedResult from "./Webpages/RankedResult";
+import BestWorstRate from "./Webpages/BestWorstRate";
+import SelectionRate from "./Webpages/SelectionRate";
 import PressureCooker from "./Webpages/PressureCooker";
 import WebGazerCalibration from "./Webpages/WebGazerCalibration";
 import WebGazerGazeTest from "./Webpages/WebGazerGazeTest";
-import BestWorstRate from "./Webpages/BestWorstRate";
-import BestWorstResult from "./Webpages/BestWorstResult";
 import DatasetManager from "./Webpages/DatasetManager";
 import ResultsPage from "./Webpages/ResultsPage";
+import ModeResultsPage from "./Webpages/ModeResultsPage";
 import LayoutRatingFlow from "./components/LayoutRatingFlow";
+import UnifiedUploadPage from "./Webpages/UnifiedUploadPage";
 import ComboRatingFlow from "./Webpages/ComboRatingFlow";
-import ComboResultsPage from "./Webpages/ComboResultsPage";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
 });
 
 function NavigationWrapper() {
-  const { addTranscript, isAnnouncing, toggleAnnouncing } = useResults();
+  const { addTranscript } = useResults();
 
   return (
     <Router>
@@ -64,21 +46,9 @@ function NavigationWrapper() {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
             OlivaGroupFW
           </Typography>
-          <Tooltip
-            title={isAnnouncing ? "Turn Announcer Off" : "Turn Announcer On"}
-          >
-            <IconButton
-              onClick={toggleAnnouncing}
-              color={isAnnouncing ? "primary" : "default"}
-              sx={{ mr: 2 }}
-            >
-              {isAnnouncing ? <RecordVoiceOverIcon /> : <VoiceOverOffIcon />}
-            </IconButton>
-          </Tooltip>
-          <VoiceRecorder
-            onSave={(text, duration) => addTranscript(text, duration)}
-          />
-
+          {/* ReadPromptButton replaces the announce toggle */}
+          <ReadPromptButton />
+          <VoiceRecorder onSave={(text, dur) => addTranscript(text, dur)} />
           <Button
             startIcon={<HistoryEduIcon />}
             component={Link}
@@ -94,7 +64,7 @@ function NavigationWrapper() {
             to="/"
             color="inherit"
           >
-            Dashboard
+            Home
           </Button>
         </Toolbar>
       </AppBar>
@@ -103,26 +73,27 @@ function NavigationWrapper() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/transcripts" element={<TranscriptHistory />} />
-          <Route path="/combined-result" element={<CombinedResult />} />
-          <Route path="/group-result" element={<GroupResult />} />
-          <Route path="/group-rate" element={<GroupRate />} />
-          <Route path="/individual-result" element={<IndividualResult />} />
+
+          {/* Results */}
+          <Route path="/grid-results" element={<ResultsPage />} />
+          <Route path="/mode-results" element={<ModeResultsPage />} />
+
+          {/* Rating Flows */}
+          <Route path="/rate/upload" element={<UnifiedUploadPage />} />
+          <Route path="/rate/grid" element={<LayoutRatingFlow mode="upload" />} />
           <Route path="/individual-rate" element={<IndividualRate />} />
           <Route path="/pairwise-rate" element={<PairwiseRate />} />
+          <Route path="/selection-rate" element={<SelectionRate />} />
           <Route path="/ranked-rate" element={<RankedRate />} />
-          <Route path="/pairwise-result" element={<PairwiseResult />} />
-          <Route path="/ranked-result" element={<RankedResult />} />
+          <Route path="/best-worst-rate" element={<BestWorstRate />} />
+          <Route path="/selection-rate" element={<SelectionRate />} />
+          <Route path="/combo-rate" element={<ComboRatingFlow />} />
           <Route path="/pressure-cooker" element={<PressureCooker />} />
+
+          {/* Tools */}
           <Route path="/webgazer-calibration" element={<WebGazerCalibration />} />
           <Route path="/webgazer-gaze-test" element={<WebGazerGazeTest />} />
-          <Route path="/best-worst-rate" element={<BestWorstRate />} />
-          <Route path="/best-worst-result" element={<BestWorstResult />} />
           <Route path="/dataset-manager" element={<DatasetManager />} />
-          <Route path="/rate" element={<LayoutRatingFlow mode="manual" />} />
-          <Route path="/results" element={<ResultsPage />} />
-          <Route path="/rate/upload" element={<LayoutRatingFlow mode="upload" />} />
-          <Route path="/combo-rate" element={<ComboRatingFlow />} />
-        <Route path="/combo-results" element={<ComboResultsPage />} />
         </Routes>
       </Box>
     </Router>
@@ -134,7 +105,6 @@ function WebGazerAutoStop() {
   const { endWebGazer, isInitialized } = useWebGazer();
 
   useEffect(() => {
-    // Only cleanup if leaving a webgazer page AND WebGazer was actually initialized
     if (!location.pathname.startsWith("/webgazer") && isInitialized) {
       endWebGazer();
     }
