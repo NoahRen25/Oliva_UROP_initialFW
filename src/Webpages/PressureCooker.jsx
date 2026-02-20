@@ -14,47 +14,51 @@ import {
   CardActionArea,
 } from "@mui/material";
 import BackButton from "../components/BackButton";
+import { getImageUrl } from "../utils/supabaseImageUrl";
+import { preloadImages } from "../utils/preloadImages";
+
+const demoImg = (filename) => getImageUrl("demo-images", filename);
 
 const PAIRS = [
   {
     id: 1,
-    left: { src: "/src/images/GPTMoonFlags.png", alt: "GPT Moon" },
-    right: { src: "/src/images/FluxMoonFlags.png", alt: "Flux Moon" },
+    left: { src: demoImg("GPTMoonFlags.png"), alt: "GPT Moon" },
+    right: { src: demoImg("FluxMoonFlags.png"), alt: "Flux Moon" },
     prompt:
       "Surreal image of the United States flag and the flags of the five permanent members of the UN Security Council planted on the surface of the moon.",
   },
   {
     id: 2,
-    left: { src: "/src/images/GPTShip.png", alt: "GPT Ship" },
-    right: { src: "/src/images/FluxShip.png", alt: "Flux Ship" },
+    left: { src: demoImg("GPTShip.png"), alt: "GPT Ship" },
+    right: { src: demoImg("FluxShip.png"), alt: "Flux Ship" },
     prompt:
       "Image of a cargo ship sailing at sea, various nautical flags displayed along with the national flag of Panama.",
   },
   {
     id: 3,
-    left: { src: "/src/images/GPTFlag.png", alt: "GPT Flag" },
-    right: { src: "/src/images/FluxFlag.png", alt: "Flux Flag" },
+    left: { src: demoImg("GPTFlag.png"), alt: "GPT Flag" },
+    right: { src: demoImg("FluxFlag.png"), alt: "Flux Flag" },
     prompt:
       "Photorealistic image of a row of ten world flags waving in the wind, clear blue sky, 8k.",
   },
   {
     id: 4,
-    left: { src: "/src/images/NanoMoonFlags.png", alt: "Nano Moon" },
-    right: { src: "/src/images/GPTMoonFlags.png", alt: "GPT Moon" },
+    left: { src: demoImg("NanoMoonFlags.png"), alt: "Nano Moon" },
+    right: { src: demoImg("GPTMoonFlags.png"), alt: "GPT Moon" },
     prompt:
       "Surreal image of flags planted on the surface of the moon, Earth visible in the distance.",
   },
   {
     id: 5,
-    left: { src: "/src/images/NanoShip.png", alt: "Nano Ship" },
-    right: { src: "/src/images/FluxShip.png", alt: "Flux Ship" },
+    left: { src: demoImg("NanoShip.png"), alt: "Nano Ship" },
+    right: { src: demoImg("FluxShip.png"), alt: "Flux Ship" },
     prompt:
       "Cargo ship sailing at sea with nautical flags, realistic ocean waves.",
   },
   {
     id: 6,
-    left: { src: "/src/images/NanoFlag.png", alt: "Nano Flag" },
-    right: { src: "/src/images/FluxFlag.png", alt: "Flux Flag" },
+    left: { src: demoImg("NanoFlag.png"), alt: "Nano Flag" },
+    right: { src: demoImg("FluxFlag.png"), alt: "Flux Flag" },
     prompt:
       "Row of world flags waving in the wind, accurate flag colors and patterns.",
   },
@@ -76,6 +80,11 @@ export default function PressureCooker() {
   const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
   const [showTooSlow, setShowTooSlow] = useState(false);
   const [bestStreak, setBestStreak] = useState(0);
+
+  // Preload all pair images on mount
+  useEffect(() => {
+    preloadImages(PAIRS.flatMap((p) => [p.left.src, p.right.src]));
+  }, []);
 
   const startTimeRef = useRef(null);
   const animationFrameRef = useRef(null);

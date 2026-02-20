@@ -1,134 +1,85 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import {
-  Container,
-  Typography,
-  Card,
-  CardActionArea,
-  CardContent,
-  Box,
+  Container, Typography, Card, CardActionArea, CardContent, Box,
 } from "@mui/material";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import GroupsIcon from "@mui/icons-material/Groups";
-import PersonIcon from "@mui/icons-material/Person";
-import PeopleIcon from "@mui/icons-material/People";
-import CalculateIcon from "@mui/icons-material/Calculate";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import InsightsIcon from "@mui/icons-material/Insights";
-import HotelClassIcon from "@mui/icons-material/HotelClass";
-import AssistantIcon from "@mui/icons-material/Assistant";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import CenterFocusStrongIcon from "@mui/icons-material/CenterFocusStrong";
+import StorageIcon from "@mui/icons-material/Storage";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import PrivacyTipIcon from "@mui/icons-material/PrivacyTip";
 
 export default function Home() {
   const menuItems = [
     {
-      title: "Individual Rate",
-      path: "/individual-rate",
-      icon: <PersonIcon fontSize="large" />,
-      color: "#d32f2f",
-    },
-    {
-      title: "Pairwise Rate",
-      path: "/pairwise-rate",
-      icon: <PeopleIcon fontSize="large" />,
-      color: "#F0E68C",
-    },
-    {
-      title: "Ranked Rate",
-      path: "/ranked-rate",
-      icon: <HotelClassIcon fontSize="large" />,
-      color: "#FC46AA",
-    },
-    {
-      title: "Best-Worst Rate",
-      path: "/best-worst-rate",
-      icon: <CompareArrowsIcon fontSize="large" />,
-      color: "#00838f",
-    },
-    {
-      title: "Group Rate",
-      path: "/group-rate",
-      icon: <CalculateIcon fontSize="large" />,
-      color: "#ed6c02",
-    },
-    {
-      title: "Individual Result",
-      path: "/individual-result",
-      icon: <InsightsIcon fontSize="large" />,
+      title: "Upload Config",
+      description: "JSON config for any mode (grid, individual, pairwise, ranked)",
+      path: "/rate/upload",
+      icon: <CloudUploadIcon fontSize="large" />,
       color: "#9c27b0",
     },
     {
-      title: "Pairwise Result",
-      path: "/pairwise-result",
-      icon: <AssistantIcon fontSize="large" />,
-      color: "#bf9000",
-    },
-    {
-      title: "Ranked Result",
-      path: "/ranked-result",
-      icon: <AutoAwesomeIcon fontSize="large" />,
-      color: "#048c7f",
-    },
-    {
-      title: "Best-Worst Result",
-      path: "/best-worst-result",
-      icon: <CompareArrowsIcon fontSize="large" />,
-      color: "#006064",
-    },
-    {
-      title: "Group Result",
-      path: "/group-result",
-      icon: <GroupsIcon fontSize="large" />,
-      color: "#2e7d32",
-    },
-    {
-      title: "Combined Result",
-      path: "/combined-result",
-      icon: <AssessmentIcon fontSize="large" />,
+      title: "Grid Results",
+      description: "Grid layout & combo protocol results",
+      path: "/grid-results",
+      icon: <InsightsIcon fontSize="large" />,
       color: "#1976d2",
     },
     {
+      title: "Mode Results",
+      description: "Individual, pairwise, ranked & best-worst results",
+      path: "/mode-results",
+      icon: <CompareArrowsIcon fontSize="large" />,
+      color: "#2e7d32",
+    },
+    {
+      title: "Combo Protocol",
+      description: "33-image fixed protocol",
+      path: "/combo-rate",
+      icon: <AutoAwesomeIcon fontSize="large" />,
+      color: "#ff9800",
+    },
+    {
       title: "Pressure Cooker",
+      description: "Timed pairwise challenge",
       path: "/pressure-cooker",
       icon: <LocalFireDepartmentIcon fontSize="large" />,
       color: "#d32f2f",
     },
     {
-      title: "Eye Tracking Calibration",
+      title: "Eye Tracking",
+      description: "WebGazer calibration & gaze test",
       path: "/webgazer-calibration",
       icon: <VisibilityIcon fontSize="large" />,
       color: "#7b1fa2",
     },
     {
-      title: "Gaze Test",
-      path: "/webgazer-gaze-test",
-      icon: <CenterFocusStrongIcon fontSize="large" />,
-      color: "#0288d1",
+      title: "Dataset Manager",
+      description: "Upload and manage image datasets",
+      path: "/dataset-manager",
+      icon: <StorageIcon fontSize="large" />,
+      color: "#1565c0",
     },
     {
-      title: "Dataset Manager",
-      path: "/dataset-manager",
-      icon: <CloudUploadIcon fontSize="large" />,
-      color: "#1565c0",
+      title: "Privacy Settings",
+      path: "/privacy",
+      icon: <PrivacyTipIcon fontSize="large" />,
+      color: "#607d8b",
     },
   ];
 
   return (
     <Box justifyContent="center">
-      <Container
-        maxWidth="lg"
-        sx={{ mt: { xs: 6, sm: 8, md: 12, lg: 18, xl: 24 } }}
-      >
+      <Container maxWidth="lg" sx={{ mt: { xs: 6, sm: 8, md: 12, lg: 16 } }}>
         <Box sx={{ textAlign: "center", mb: 6 }}>
           <Typography variant="h3" fontWeight="bold" gutterBottom>
-            Home
+            OlivaGroupFW
           </Typography>
           <Typography variant="h6" color="text.secondary">
-            Select Page
+            Image Rating Research Platform
           </Typography>
         </Box>
 
@@ -141,7 +92,6 @@ export default function Home() {
               sm: "repeat(2, 1fr)",
               md: "repeat(3, 1fr)",
               lg: "repeat(4, 1fr)",
-              xl: "repeat(5, 1fr)",
             },
             gap: 3,
           }}
@@ -153,10 +103,7 @@ export default function Home() {
                 height: "100%",
                 borderRadius: 3,
                 transition: "0.2s",
-                "&:hover": {
-                  boxShadow: 10,
-                  transform: "translateY(-5px)",
-                },
+                "&:hover": { boxShadow: 10, transform: "translateY(-5px)" },
               }}
             >
               <CardActionArea
@@ -164,7 +111,7 @@ export default function Home() {
                 to={item.path}
                 sx={{
                   height: "100%",
-                  p: 4,
+                  p: 3,
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
@@ -179,9 +126,10 @@ export default function Home() {
                   }}
                 >
                   {item.icon}
-                  <CardContent>
-                    <Typography variant="h6" textAlign="center">
-                      {item.title}
+                  <CardContent sx={{ textAlign: "center" }}>
+                    <Typography variant="h6">{item.title}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {item.description}
                     </Typography>
                   </CardContent>
                 </Box>

@@ -1,0 +1,5 @@
+{
+    "type": "pairwise",
+    "count": 10,
+    "prompt": "Which image better represents the given text prompt?"
+  }

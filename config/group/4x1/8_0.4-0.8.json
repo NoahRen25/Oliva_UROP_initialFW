@@ -1,0 +1,7 @@
+{
+    "layout": "4x1",
+    "count": 8,
+    "minScore": 0.4,
+    "maxScore": 0.8,
+    "prompt": "Rate how interesting this image would be to a general population"
+  }

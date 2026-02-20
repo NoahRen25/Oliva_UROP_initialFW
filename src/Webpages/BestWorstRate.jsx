@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useResults } from "../Results";
 import {
@@ -13,6 +13,10 @@ import {
 } from "@mui/material";
 import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
+import { getImageUrl } from "../utils/supabaseImageUrl";
+import { preloadImages } from "../utils/preloadImages";
+
+const demoImg = (filename) => getImageUrl("demo-images", filename);
 
 // # coded by denis comments, simdenis@mit.edu
 const TRIALS = [
@@ -21,10 +25,10 @@ const TRIALS = [
     prompt:
       "Surreal image of the United States flag and the flags of the five permanent members of the UN Security Council planted on the surface of the moon.",
     images: [
-      { id: "bw1a", src: "/src/images/GPTMoonFlags.png", alt: "GPT Moon" },
-      { id: "bw1b", src: "/src/images/FluxMoonFlags.png", alt: "Flux Moon" },
-      { id: "bw1c", src: "/src/images/NanoMoonFlags.png", alt: "Nano Moon" },
-      { id: "bw1d", src: "/src/images/FluxFlag.png", alt: "Flux Flag" },
+      { id: "bw1a", src: demoImg("GPTMoonFlags.png"), alt: "GPT Moon" },
+      { id: "bw1b", src: demoImg("FluxMoonFlags.png"), alt: "Flux Moon" },
+      { id: "bw1c", src: demoImg("NanoMoonFlags.png"), alt: "Nano Moon" },
+      { id: "bw1d", src: demoImg("FluxFlag.png"), alt: "Flux Flag" },
     ],
   },
   {
@@ -32,10 +36,10 @@ const TRIALS = [
     prompt:
       "Image of a cargo ship sailing at sea, various nautical flags displayed along with the national flag of Panama.",
     images: [
-      { id: "bw2a", src: "/src/images/GPTShip.png", alt: "GPT Ship" },
-      { id: "bw2b", src: "/src/images/FluxShip.png", alt: "Flux Ship" },
-      { id: "bw2c", src: "/src/images/NanoShip.png", alt: "Nano Ship" },
-      { id: "bw2d", src: "/src/images/FluxFlag.png", alt: "Flux Flag" },
+      { id: "bw2a", src: demoImg("GPTShip.png"), alt: "GPT Ship" },
+      { id: "bw2b", src: demoImg("FluxShip.png"), alt: "Flux Ship" },
+      { id: "bw2c", src: demoImg("NanoShip.png"), alt: "Nano Ship" },
+      { id: "bw2d", src: demoImg("FluxFlag.png"), alt: "Flux Flag" },
     ],
   },
   {
@@ -43,10 +47,10 @@ const TRIALS = [
     prompt:
       "Photorealistic image of a row of ten world flags waving in the wind, clear blue sky, 8k.",
     images: [
-      { id: "bw3a", src: "/src/images/GPTFlag.png", alt: "GPT Flag" },
-      { id: "bw3b", src: "/src/images/FluxFlag.png", alt: "Flux Flag" },
-      { id: "bw3c", src: "/src/images/NanoFlag.png", alt: "Nano Flag" },
-      { id: "bw3d", src: "/src/images/GPTMoonFlags.png", alt: "GPT Moon" },
+      { id: "bw3a", src: demoImg("GPTFlag.png"), alt: "GPT Flag" },
+      { id: "bw3b", src: demoImg("FluxFlag.png"), alt: "Flux Flag" },
+      { id: "bw3c", src: demoImg("NanoFlag.png"), alt: "Nano Flag" },
+      { id: "bw3d", src: demoImg("GPTMoonFlags.png"), alt: "GPT Moon" },
     ],
   },
 ];
@@ -62,6 +66,11 @@ export default function BestWorstRate() {
   const [worstId, setWorstId] = useState(null);
   const [trialResults, setTrialResults] = useState([]);
   const [startTime, setStartTime] = useState(null);
+
+  // Preload all trial images on mount
+  useEffect(() => {
+    preloadImages(TRIALS.flatMap((t) => t.images.map((img) => img.src)));
+  }, []);
 
   const startTrialTimer = () => setStartTime(performance.now());
 

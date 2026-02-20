@@ -1,0 +1,5 @@
+{
+    "type": "ranked",
+    "count": 5,
+    "prompt": "Rank the images on how they represent the given prompt:"
+  }
