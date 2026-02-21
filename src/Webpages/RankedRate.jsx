@@ -10,13 +10,18 @@ import ProgressBar from "../components/ProgressBar";
 import ModeInstructionScreen from "../components/ModeInstructionScreen";
 import { getRankedBatch } from "../utils/ImageLoader";
 import { preloadImages } from "../utils/preloadImages";
+import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import GazeTrackedImage from "../components/GazeTrackedImage";
+import CalibrationGate from "../components/CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
 
-export default function RankedRate() {
+function RankedRateInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
 
   const { addRankedSession, setActivePrompt } = useResults();
+  const { startSession, getGazeData } = useGazeTracking();
 
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
@@ -89,6 +94,7 @@ export default function RankedRate() {
       setIsFinished(true);
       window.speechSynthesis.cancel();
       addRankedSession(username, updated);
+      saveGazeSession(Date.now().toString(), "ranked", username, getGazeData());
       navigate("/mode-results");
     }
   };
@@ -133,7 +139,7 @@ export default function RankedRate() {
         <ModeInstructionScreen
           mode="ranked"
           prompt={configPrompt || "Per-group prompts will be shown"}
-          onNext={() => setStep(2)}
+          onNext={() => { setStep(2); startSession(); }}
         />
       )}
 
@@ -189,7 +195,8 @@ export default function RankedRate() {
             {activeGroup.images.map((img, index) => (
               <Grid item xs={12} md={4} key={img.id}>
                 <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-                  <CardMedia
+                  <GazeTrackedImage
+                    imageId={img.id}
                     component="img"
                     image={img.src}
                     sx={{ objectFit: "contain", height: "30vh" }}
@@ -224,5 +231,15 @@ export default function RankedRate() {
         </>
       )}
     </Container>
+  );
+}
+
+export default function RankedRate() {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <RankedRateInner />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }
