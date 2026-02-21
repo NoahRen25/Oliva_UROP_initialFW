@@ -9,13 +9,18 @@ import ProgressBar from "../components/ProgressBar";
 import ModeInstructionScreen from "../components/ModeInstructionScreen";
 import { getPairwiseBatch } from "../utils/ImageLoader";
 import { preloadImages } from "../utils/preloadImages";
+import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import GazeTrackedImage from "../components/GazeTrackedImage";
+import CalibrationGate from "../components/CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
 
-export default function PairwiseRate() {
+function PairwiseRateInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
 
   const { addPairwiseSession, setActivePrompt } = useResults();
+  const { startSession, getGazeData } = useGazeTracking();
 
   const [pairs, setPairs] = useState([]);
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
@@ -70,6 +75,7 @@ export default function PairwiseRate() {
       setIsFinished(true);
       window.speechSynthesis.cancel();
       addPairwiseSession(username, newChoices);
+      saveGazeSession(Date.now().toString(), "pairwise", username, getGazeData());
       navigate("/mode-results");
     }
   };
@@ -109,7 +115,7 @@ export default function PairwiseRate() {
         <ModeInstructionScreen
           mode="pairwise"
           prompt={configPrompt || "Per-pair prompts will be shown"}
-          onNext={() => setStep(2)}
+          onNext={() => { setStep(2); startSession(); }}
         />
       )}
 
@@ -169,7 +175,8 @@ export default function PairwiseRate() {
               }}
             >
               <CardActionArea onClick={() => setSelectedSide("left")}>
-                <CardMedia
+                <GazeTrackedImage
+                  imageId={`${currentPair.left.filename || currentPair.left.alt}_left`}
                   component="img"
                   image={currentPair.left.src}
                   sx={{ objectFit: "contain", height: "55vh" }}
@@ -183,7 +190,8 @@ export default function PairwiseRate() {
               }}
             >
               <CardActionArea onClick={() => setSelectedSide("right")}>
-                <CardMedia
+                <GazeTrackedImage
+                  imageId={`${currentPair.right.filename || currentPair.right.alt}_right`}
                   component="img"
                   image={currentPair.right.src}
                   sx={{ objectFit: "contain", height: "55vh" }}
@@ -205,5 +213,15 @@ export default function PairwiseRate() {
         </>
       )}
     </Container>
+  );
+}
+
+export default function PairwiseRate() {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <PairwiseRateInner />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }
