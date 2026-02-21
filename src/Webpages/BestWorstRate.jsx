@@ -15,6 +15,10 @@ import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
 import { getImageUrl } from "../utils/supabaseImageUrl";
 import { preloadImages } from "../utils/preloadImages";
+import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import GazeTrackedImage from "../components/GazeTrackedImage";
+import CalibrationGate from "../components/CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
 
 const demoImg = (filename) => getImageUrl("demo-images", filename);
 
@@ -55,9 +59,10 @@ const TRIALS = [
   },
 ];
 
-export default function BestWorstRate() {
+function BestWorstRateInner() {
   const navigate = useNavigate();
   const { addBestWorstSession } = useResults();
+  const { startSession, getGazeData } = useGazeTracking();
 
   const [step, setStep] = useState(0);
   const [username, setUsername] = useState("");
@@ -81,6 +86,7 @@ export default function BestWorstRate() {
     setBestId(null);
     setWorstId(null);
     startTrialTimer();
+    startSession();
   };
 
   const handleSelectBest = (id) => {
@@ -120,6 +126,7 @@ export default function BestWorstRate() {
       startTrialTimer();
     } else {
       addBestWorstSession(username, updated);
+      saveGazeSession(Date.now().toString(), "best-worst", username, getGazeData());
       setStep(2);
     }
   };
@@ -206,7 +213,8 @@ export default function BestWorstRate() {
                     transition: "0.2s",
                   }}
                 >
-                  <CardMedia
+                  <GazeTrackedImage
+                    imageId={img.id}
                     component="img"
                     image={img.src}
                     sx={{ objectFit: "contain", height: "30vh" }}
@@ -266,5 +274,15 @@ export default function BestWorstRate() {
         </Paper>
       )}
     </Container>
+  );
+}
+
+export default function BestWorstRate() {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <BestWorstRateInner />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }
