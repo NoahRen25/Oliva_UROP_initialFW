@@ -9,14 +9,18 @@ import { getGridConfig } from "../data/gridConstants";
 import UsernameEntry from "./UsernameEntry";
 import InstructionScreen from "./InstructionScreen";
 import ImageGrid from "./ImageGrid";
+import GazeTrackingProvider, { useGazeTracking } from "./GazeTrackingProvider";
+import CalibrationGate from "./CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
 
-export default function LayoutRatingFlow({ mode = "upload" }) {
+function LayoutRatingFlowInner({ mode = "upload" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
 
   const { addGroupSessionForLayout, setTaskPrompt, setActivePrompt } = useResults();
   const { ready, sampleInRange } = useMemImages();
+  const { startSession, getGazeData } = useGazeTracking();
 
   // Determine layout from config
   const layoutId = uploadConfig?.type || "2x2";
@@ -79,6 +83,7 @@ export default function LayoutRatingFlow({ mode = "upload" }) {
   const handleInstructionsNext = () => {
     window.scrollTo(0, 0);
     setStep(2);
+    startSession();
   };
 
   const handleInteraction = (id) => {
@@ -122,6 +127,7 @@ export default function LayoutRatingFlow({ mode = "upload" }) {
         grid: gridConfig,
         prompt: taskPromptText,
       });
+      saveGazeSession(Date.now().toString(), "grid", username, getGazeData());
       navigate("/grid-results");
     } else {
       setCurrentPage(prev => prev + 1);
@@ -210,5 +216,15 @@ export default function LayoutRatingFlow({ mode = "upload" }) {
         </Box>
       )}
     </Container>
+  );
+}
+
+export default function LayoutRatingFlow({ mode }) {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <LayoutRatingFlowInner mode={mode} />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }

@@ -1,5 +1,6 @@
 import React from "react";
-import { Box, Card, CardMedia, Typography, Slider } from "@mui/material";
+import { Box, Card, Typography, Slider } from "@mui/material";
+import GazeTrackedImage from './GazeTrackedImage';
 
 export default function ImageGrid({ 
   images, 
@@ -42,10 +43,11 @@ export default function ImageGrid({
         <Box key={img ? img.id : `spacer-${index}`}>
           {img ? (
             <Card sx={{ p: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <CardMedia
+              <GazeTrackedImage
+                imageId={img.id}
                 component="img"
                 image={img.path.startsWith("http") ? img.path : `/${img.path}`}
-                sx={{ 
+                sx={{
                   height: imageHeight || "25vh",
                   width: "100%",
                   objectFit: "contain",

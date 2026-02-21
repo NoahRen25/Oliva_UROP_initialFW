@@ -7,6 +7,9 @@ import UsernameEntry from "../components/UsernameEntry";
 import ImageGrid from "../components/ImageGrid";
 import InstructionScreen from "../components/InstructionScreen"; 
 import { useMemImages } from "../data/UseMemImages";
+import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import CalibrationGate from "../components/CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
 
 //fisher-yates alg is optimal
 const shuffleArray = (array) => {
@@ -17,10 +20,11 @@ const shuffleArray = (array) => {
     }
     return newArr;
   };
-export default function ComboRatingFlow() {
+function ComboRatingFlowInner() {
   const navigate = useNavigate();
   const { addFixedSession } = useResults();
   const { rows, ready } = useMemImages();
+  const { startSession, getGazeData } = useGazeTracking();
 
   // Step 0: User, 1: Instructions, 2: Grid
   const [step, setStep] = useState(0); 
@@ -146,7 +150,8 @@ export default function ComboRatingFlow() {
 
   const handleInstructionsNext = () => {
     window.scrollTo(0, 0);
-    setStep(2); 
+    setStep(2);
+    startSession();
   };
 
   const handleInteraction = (id) => {
@@ -197,6 +202,7 @@ export default function ComboRatingFlow() {
       }).filter(Boolean); // Filter out any nulls
 
       addFixedSession(username, scores);
+      saveGazeSession(Date.now().toString(), "combo", username, getGazeData());
       navigate("/grid-results");
     } else {
       setCurrentPage(prev => prev + 1);
@@ -257,5 +263,15 @@ export default function ComboRatingFlow() {
         </Box>
       )}
     </Container>
+  );
+}
+
+export default function ComboRatingFlow() {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <ComboRatingFlowInner />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }

@@ -8,7 +8,6 @@ import {
   TextField,
   Button,
   Card,
-  CardMedia,
   CardContent,
   Paper,
   CardActionArea,
@@ -16,6 +15,10 @@ import {
 import BackButton from "../components/BackButton";
 import { getImageUrl } from "../utils/supabaseImageUrl";
 import { preloadImages } from "../utils/preloadImages";
+import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import GazeTrackedImage from "../components/GazeTrackedImage";
+import CalibrationGate from "../components/CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
 
 const demoImg = (filename) => getImageUrl("demo-images", filename);
 
@@ -66,9 +69,10 @@ const PAIRS = [
 
 const TIMER_DURATION = 3000; // 3 seconds in ms
 
-export default function PressureCooker() {
+function PressureCookerInner() {
   const navigate = useNavigate();
   const { addPressureCookerSession } = useResults();
+  const { startSession, getGazeData } = useGazeTracking();
 
   const [step, setStep] = useState(0);
   const [username, setUsername] = useState("");
@@ -173,6 +177,7 @@ export default function PressureCooker() {
       finalChoices,
       Math.max(bestStreak, streak)
     );
+    saveGazeSession(Date.now().toString(), "pressure-cooker", username, getGazeData());
     navigate("/pairwise-result");
   };
 
@@ -244,7 +249,7 @@ export default function PressureCooker() {
             variant="contained"
             color="error"
             size="large"
-            onClick={() => setStep(1)}
+            onClick={() => { setStep(1); startSession(); }}
             disabled={!/^\d+$/.test(username)}
           >
             Start Challenge
@@ -410,7 +415,8 @@ export default function PressureCooker() {
                 onClick={() => handleSelection("left")}
                 disabled={showTooSlow}
               >
-                <CardMedia
+                <GazeTrackedImage
+                  imageId={`${PAIRS[currentPairIndex].left.alt}_left`}
                   component="img"
                   height="350"
                   image={PAIRS[currentPairIndex].left.src}
@@ -460,7 +466,8 @@ export default function PressureCooker() {
                 onClick={() => handleSelection("right")}
                 disabled={showTooSlow}
               >
-                <CardMedia
+                <GazeTrackedImage
+                  imageId={`${PAIRS[currentPairIndex].right.alt}_right`}
                   component="img"
                   height="350"
                   image={PAIRS[currentPairIndex].right.src}
@@ -477,5 +484,15 @@ export default function PressureCooker() {
         </Box>
       )}
     </Container>
+  );
+}
+
+export default function PressureCooker() {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <PressureCookerInner />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }
