@@ -9,6 +9,7 @@ import ProgressBar from "../components/ProgressBar";
 import ModeInstructionScreen from "../components/ModeInstructionScreen";
 import { getPairwiseBatch } from "../utils/ImageLoader";
 import { preloadImages } from "../utils/preloadImages";
+import usePageTranscription from "../hooks/usePageTranscription";
 
 export default function PairwiseRate() {
   const navigate = useNavigate();
@@ -24,6 +25,8 @@ export default function PairwiseRate() {
   const [selectedSide, setSelectedSide] = useState(null);
   const [choices, setChoices] = useState([]);
   const [isFinished, setIsFinished] = useState(false);
+
+  const { markPage, stopAndCollect } = usePageTranscription();
 
   const pairCount = uploadConfig?.count || 5;
   const configPrompt = uploadConfig?.prompt || null;
@@ -48,7 +51,8 @@ export default function PairwiseRate() {
     }
     const prompt = configPrompt || pairs[currentPairIndex].prompt;
     setActivePrompt(prompt);
-  }, [step, currentPairIndex, pairs, configPrompt, isFinished, setActivePrompt]);
+    markPage(currentPairIndex + 1);
+  }, [step, currentPairIndex, pairs, configPrompt, isFinished, setActivePrompt, markPage]);
 
   const handleNext = () => {
     const currentPair = pairs[currentPairIndex];
@@ -69,7 +73,8 @@ export default function PairwiseRate() {
     } else {
       setIsFinished(true);
       window.speechSynthesis.cancel();
-      addPairwiseSession(username, newChoices);
+      const pageTranscripts = stopAndCollect();
+      addPairwiseSession(username, newChoices, { pageTranscripts });
       navigate("/mode-results");
     }
   };

@@ -212,20 +212,20 @@ export const ResultsProvider = ({ children }) => {
   const clearTranscripts = () => { if (window.confirm("Delete all transcripts?")) { setTranscripts([]); sbDeleteAllTranscripts(); } };
 
   // Individual Sessions
-  const addIndividualSession = (username, scores) => {
-    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString() };
+  const addIndividualSession = (username, scores, meta = {}) => {
+    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {} };
     setIndividualSessions((p) => [...p, session]);
-    insertSession({ id: session.id, type: "individual", username, timestamp: session.timestamp });
+    insertSession({ id: session.id, type: "individual", username, timestamp: session.timestamp, meta: { pageTranscripts: meta.pageTranscripts } });
     insertRatingScores(session.id, scores);
   };
   const deleteIndividualSession = (id, username) => { if (window.confirm(`Delete session by ${username}?`)) { setIndividualSessions((p) => p.filter((s) => s.id != id)); deleteSession(id); } };
   const clearIndividual = () => { if (window.confirm("Delete ALL Individual sessions?")) { setIndividualSessions([]); deleteSessionsByType("individual"); } };
 
   // Group Sessions
-  const addGroupSession = (username, scores) => {
-    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString() };
+  const addGroupSession = (username, scores, meta = {}) => {
+    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {} };
     setGroupSessions((p) => [...p, session]);
-    insertSession({ id: session.id, type: "group", username, timestamp: session.timestamp });
+    insertSession({ id: session.id, type: "group", username, timestamp: session.timestamp, meta: { pageTranscripts: meta.pageTranscripts } });
     insertRatingScores(session.id, scores);
   };
   const deleteGroupSession = (id, username) => { if (window.confirm(`Delete session by ${username}?`)) { setGroupSessions((p) => p.filter((s) => s.id != id)); deleteSession(id); } };
@@ -233,7 +233,7 @@ export const ResultsProvider = ({ children }) => {
 
   // Layout Group Sessions
   const addGroupSessionForLayout = (layoutId, username, scores, meta = {}) => {
-    const session = { id: Date.now(), username, scores, meta, layoutId, timestamp: new Date() };
+    const session = { id: Date.now(), username, scores, meta, layoutId, timestamp: new Date(), pageTranscripts: meta.pageTranscripts || {} };
     setGroupSessionsByLayout((p) => { const n = { ...(p || {}) }; n[layoutId] = [...(n[layoutId] || []), session]; return n; });
     insertSession({ id: session.id, type: "layout_group", username, timestamp: new Date().toISOString(), meta: { ...meta, layoutId } });
     insertRatingScores(session.id, scores);
@@ -244,50 +244,50 @@ export const ResultsProvider = ({ children }) => {
   const clearAllGroupLayouts = () => { if (window.confirm("Delete ALL Group sessions across ALL layouts?")) { Object.values(groupSessionsByLayout || {}).flat().forEach((s) => deleteSession(s.id)); setGroupSessionsByLayout({}); } };
 
   // Fixed Sessions
-  const addFixedSession = (username, scores) => {
-    const session = { id: Date.now(), username, scores, timestamp: new Date().toLocaleString() };
+  const addFixedSession = (username, scores, meta = {}) => {
+    const session = { id: Date.now(), username, scores, timestamp: new Date().toLocaleString(), pageTranscripts: meta.pageTranscripts || {} };
     setFixedSessions((p) => [...p, session]);
-    insertSession({ id: session.id, type: "fixed", username, timestamp: new Date().toISOString() });
+    insertSession({ id: session.id, type: "fixed", username, timestamp: new Date().toISOString(), meta: { pageTranscripts: meta.pageTranscripts } });
     insertRatingScores(session.id, scores);
   };
   const deleteFixedSession = (sessionId) => { if (window.confirm("Delete this session?")) { setFixedSessions((p) => p.filter((s) => s.id !== sessionId)); deleteSession(sessionId); } };
   const clearFixedSessions = () => { if (window.confirm("Clear all fixed results?")) { setFixedSessions([]); deleteSessionsByType("fixed"); } };
 
   // Pairwise Sessions
-  const addPairwiseSession = (username, choices) => {
-    const session = { id: Date.now(), username, choices, timestamp: new Date().toISOString() };
+  const addPairwiseSession = (username, choices, meta = {}) => {
+    const session = { id: Date.now(), username, choices, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {} };
     setPairwiseSessions((p) => [...p, session]);
-    insertSession({ id: session.id, type: "pairwise", username, timestamp: session.timestamp });
+    insertSession({ id: session.id, type: "pairwise", username, timestamp: session.timestamp, meta: { pageTranscripts: meta.pageTranscripts } });
     insertPairwiseChoices(session.id, choices);
   };
   const deletePairwiseSession = (id, username) => { if (window.confirm(`Delete session by ${username}?`)) { setPairwiseSessions((p) => p.filter((s) => s.id != id)); deleteSession(id); } };
   const clearPairwise = () => { if (window.confirm("Delete ALL Pairwise sessions?")) { setPairwiseSessions([]); deleteSessionsByType("pairwise"); } };
 
   // Ranked Sessions
-  const addRankedSession = (username, rankings) => {
-    const session = { id: Date.now(), username, rankings, timestamp: new Date().toISOString() };
+  const addRankedSession = (username, rankings, meta = {}) => {
+    const session = { id: Date.now(), username, rankings, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {} };
     setRankedSessions((p) => [...p, session]);
-    insertSession({ id: session.id, type: "ranked", username, timestamp: session.timestamp });
+    insertSession({ id: session.id, type: "ranked", username, timestamp: session.timestamp, meta: { pageTranscripts: meta.pageTranscripts } });
     insertRankedResults(session.id, rankings);
   };
   const deleteRankedSession = (id, username) => { if (window.confirm(`Delete session by ${username}?`)) { setRankedSessions((p) => p.filter((s) => s.id != id)); deleteSession(id); } };
   const clearRanked = () => { if (window.confirm("Delete ALL Ranked sessions?")) { setRankedSessions([]); deleteSessionsByType("ranked"); } };
 
   // Best-Worst Sessions
-  const addBestWorstSession = (username, trials) => {
-    const session = { id: Date.now(), username, trials, timestamp: new Date().toISOString() };
+  const addBestWorstSession = (username, trials, meta = {}) => {
+    const session = { id: Date.now(), username, trials, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {} };
     setBestWorstSessions((p) => [...p, session]);
-    insertSession({ id: session.id, type: "best_worst", username, timestamp: session.timestamp });
+    insertSession({ id: session.id, type: "best_worst", username, timestamp: session.timestamp, meta: { pageTranscripts: meta.pageTranscripts } });
     insertBestWorstTrials(session.id, trials);
   };
   const deleteBestWorstSession = (id, username) => { if (window.confirm(`Delete session by ${username}?`)) { setBestWorstSessions((p) => p.filter((s) => s.id != id)); deleteSession(id); } };
   const clearBestWorst = () => { if (window.confirm("Delete ALL Best-Worst sessions?")) { setBestWorstSessions([]); deleteSessionsByType("best_worst"); } };
 
   // Selection Sessions
-  const addSelectionSession = (username, prompt, selections) => {
-    const session = { id: Date.now(), username, prompt, selections, timestamp: new Date().toISOString() };
+  const addSelectionSession = (username, prompt, selections, meta = {}) => {
+    const session = { id: Date.now(), username, prompt, selections, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {} };
     setSelectionSessions((p) => [...p, session]);
-    insertSession({ id: session.id, type: "selection", username, timestamp: session.timestamp, meta: { prompt } });
+    insertSession({ id: session.id, type: "selection", username, timestamp: session.timestamp, meta: { prompt, pageTranscripts: meta.pageTranscripts } });
     insertRatingScores(session.id, selections.map((s) => ({ imageId: s.imageId, imageName: s.imageName, prompt: s.imagePrompt, score: s.selected ? 1 : 0, interactionCount: 0 })));
   };
   const deleteSelectionSession = (id) => { if (window.confirm("Delete this session?")) { setSelectionSessions((p) => p.filter((s) => s.id !== id)); deleteSession(id); } };

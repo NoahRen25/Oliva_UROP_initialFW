@@ -15,6 +15,7 @@ import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
 import { getImageUrl } from "../utils/supabaseImageUrl";
 import { preloadImages } from "../utils/preloadImages";
+import usePageTranscription from "../hooks/usePageTranscription";
 
 const demoImg = (filename) => getImageUrl("demo-images", filename);
 
@@ -67,12 +68,17 @@ export default function BestWorstRate() {
   const [trialResults, setTrialResults] = useState([]);
   const [startTime, setStartTime] = useState(null);
 
+  const { markPage, stopAndCollect } = usePageTranscription();
+
   // Preload all trial images on mount
   useEffect(() => {
     preloadImages(TRIALS.flatMap((t) => t.images.map((img) => img.src)));
   }, []);
 
-  const startTrialTimer = () => setStartTime(performance.now());
+  const startTrialTimer = () => {
+    setStartTime(performance.now());
+    markPage(currentTrialIndex + 1);
+  };
 
   const handleStart = () => {
     setStep(1);
@@ -119,7 +125,8 @@ export default function BestWorstRate() {
       setCurrentTrialIndex((prev) => prev + 1);
       startTrialTimer();
     } else {
-      addBestWorstSession(username, updated);
+      const pageTranscripts = stopAndCollect();
+      addBestWorstSession(username, updated, { pageTranscripts });
       setStep(2);
     }
   };

@@ -20,6 +20,7 @@ import DevicesIcon from "@mui/icons-material/Devices";
 import ResultsHeader from "../components/ResultsHeader";
 import ExportCSVButton from "../components/ExportCSVButton";
 import StatsSummary from "../components/StatsSummary";
+import PageTranscriptCell, { PageTranscriptHeader } from "../components/PageTranscriptCell";
 
 function SessionMetadata({ metadata }) {
   if (!metadata) return null;
@@ -117,6 +118,7 @@ export default function RankedResult() {
                 <TableCell>
                   <strong>Rank</strong>
                 </TableCell>
+                <PageTranscriptHeader />
               </TableRow>
             </TableHead>
             <TableBody>
@@ -161,6 +163,11 @@ export default function RankedResult() {
                         }
                       />
                     </TableCell>
+                    <PageTranscriptCell
+                      pageKey={item.groupId}
+                      transcripts={session.pageTranscripts}
+                      label={`Group ${item.groupId}`}
+                    />
 
                     {j === 0 && (
                       <TableCell

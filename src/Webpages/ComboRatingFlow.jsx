@@ -7,6 +7,7 @@ import UsernameEntry from "../components/UsernameEntry";
 import ImageGrid from "../components/ImageGrid";
 import InstructionScreen from "../components/InstructionScreen"; 
 import { useMemImages } from "../data/UseMemImages";
+import usePageTranscription from "../hooks/usePageTranscription";
 
 //fisher-yates alg is optimal
 const shuffleArray = (array) => {
@@ -32,6 +33,8 @@ export default function ComboRatingFlow() {
   const [sliderMoves, setSliderMoves] = useState({});
   const [interactionSequence, setInteractionSequence] = useState([]);
   const [savedClickOrders, setSavedClickOrders] = useState({});
+
+  const { markPage, stopAndCollect } = usePageTranscription();
 
   // --- Logic to select 33 images (Custom Placement with Safety Checks) ---
   const fixedImageSequence = useMemo(() => {
@@ -147,6 +150,7 @@ export default function ComboRatingFlow() {
   const handleInstructionsNext = () => {
     window.scrollTo(0, 0);
     setStep(2); 
+    markPage(1);
   };
 
   const handleInteraction = (id) => {
@@ -196,10 +200,11 @@ export default function ComboRatingFlow() {
         };
       }).filter(Boolean); // Filter out any nulls
 
-      addFixedSession(username, scores);
+      addFixedSession(username, scores, { pageTranscripts: stopAndCollect() });
       navigate("/grid-results");
     } else {
       setCurrentPage(prev => prev + 1);
+      markPage(currentPage + 2);
       setInteractionSequence([]); 
       window.scrollTo(0, 0);
     }

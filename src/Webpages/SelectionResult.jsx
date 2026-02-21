@@ -7,6 +7,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import ResultsHeader from "../components/ResultsHeader";
 import ExportCSVButton from "../components/ExportCSVButton";
+import PageTranscriptCell, { PageTranscriptHeader } from "../components/PageTranscriptCell";
 
 export default function SelectionResult() {
   const { selectionSessions, deleteSelectionSession, clearSelection } = useResults();
@@ -65,6 +66,7 @@ export default function SelectionResult() {
                       <TableCell><strong>Image</strong></TableCell>
                       <TableCell><strong>Image Prompt</strong></TableCell>
                       <TableCell align="center"><strong>Selected</strong></TableCell>
+                      <PageTranscriptHeader />
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -81,6 +83,11 @@ export default function SelectionResult() {
                             color={sel.selected ? "primary" : "default"}
                           />
                         </TableCell>
+                        <PageTranscriptCell
+                          pageKey={1}
+                          transcripts={session.pageTranscripts}
+                          label="Selection Task"
+                        />
                       </TableRow>
                     ))}
                   </TableBody>

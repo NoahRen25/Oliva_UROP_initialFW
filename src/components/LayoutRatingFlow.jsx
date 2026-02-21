@@ -9,6 +9,7 @@ import { getGridConfig } from "../data/gridConstants";
 import UsernameEntry from "./UsernameEntry";
 import InstructionScreen from "./InstructionScreen";
 import ImageGrid from "./ImageGrid";
+import usePageTranscription from "../hooks/usePageTranscription";
 
 export default function LayoutRatingFlow({ mode = "upload" }) {
   const navigate = useNavigate();
@@ -33,6 +34,8 @@ export default function LayoutRatingFlow({ mode = "upload" }) {
   const [sliderMoves, setSliderMoves] = useState({});
   const [interactionSequence, setInteractionSequence] = useState([]);
   const [savedClickOrders, setSavedClickOrders] = useState({});
+
+  const { markPage, stopAndCollect } = usePageTranscription();
 
   const imageCount = uploadConfig?.count || gridConfig.pageSize;
   const minScore = uploadConfig?.minScore || 0;
@@ -79,6 +82,7 @@ export default function LayoutRatingFlow({ mode = "upload" }) {
   const handleInstructionsNext = () => {
     window.scrollTo(0, 0);
     setStep(2);
+    markPage(1);
   };
 
   const handleInteraction = (id) => {
@@ -121,10 +125,12 @@ export default function LayoutRatingFlow({ mode = "upload" }) {
       addGroupSessionForLayout(layoutId, username, scores, {
         grid: gridConfig,
         prompt: taskPromptText,
+        pageTranscripts: stopAndCollect(),
       });
       navigate("/grid-results");
     } else {
       setCurrentPage(prev => prev + 1);
+      markPage(currentPage + 2);
       setInteractionSequence([]);
       window.scrollTo(0, 0);
     }
