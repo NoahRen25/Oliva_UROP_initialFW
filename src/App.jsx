@@ -107,12 +107,27 @@ function NavigationWrapper() {
   );
 }
 
+const KEEP_WEBGAZER_ROUTES = [
+  '/webgazer',
+  '/individual-rate',
+  '/pairwise-rate',
+  '/ranked-rate',
+  '/best-worst-rate',
+  '/selection-rate',
+  '/rate',
+  '/combo-rate',
+  '/pressure-cooker',
+];
+
 function WebGazerAutoStop() {
   const location = useLocation();
   const { endWebGazer, isInitialized } = useWebGazer();
 
   useEffect(() => {
-    if (!location.pathname.startsWith("/webgazer") && isInitialized) {
+    const shouldKeep = KEEP_WEBGAZER_ROUTES.some(route =>
+      location.pathname.startsWith(route)
+    );
+    if (!shouldKeep && isInitialized) {
       endWebGazer();
     }
   }, [location.pathname, endWebGazer, isInitialized]);
