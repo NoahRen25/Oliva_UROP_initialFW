@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(echo git not found in PATH:*)",
-      "Bash(git:*)",
-      "Bash(tasklist:*)"
-    ]
-  }
-}

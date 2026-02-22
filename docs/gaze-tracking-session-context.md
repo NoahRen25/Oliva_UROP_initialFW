@@ -1,6 +1,6 @@
 # Gaze Tracking Integration - Session Context
 
-**Date:** 2026-02-21
+**Last Updated:** 2026-02-21
 **Branch:** `henrystesting`
 
 ## What Was Built
@@ -14,7 +14,7 @@ WebGazer.js-based gaze tracking was integrated into all 8 image rating modes in 
 | `src/hooks/useGazeTracker.js` | Core hook: subscribes to `currentGaze` from WebGazerContext, hit-tests registered image DOM elements at 30 FPS, accumulates per-image gaze data (dwell time, entry/exit counts, relative coordinates) |
 | `src/components/GazeTrackingProvider.jsx` | React Context provider wrapping `useGazeTracker` so all `GazeTrackedImage` children can register themselves |
 | `src/components/GazeTrackedImage.jsx` | Drop-in replacement for MUI `CardMedia` that auto-registers/unregisters images for gaze tracking via refs |
-| `src/components/CalibrationGate.jsx` | Blocks rating flow until WebGazer is calibrated. Shows "Calibration Required" screen with redirect to `/webgazer-calibration` |
+| `src/components/CalibrationGate.jsx` | Gates rating flow on both calibration AND active tracking. Auto-initializes WebGazer when calibrated but not yet started. Shows loading spinner during init, calibration prompt otherwise |
 | `src/utils/gazeStorage.js` | localStorage utility for saving/loading gaze sessions under `app_gaze_sessions` key |
 | `docs/plans/2026-02-21-gaze-tracking-integration-design.md` | Approved design document |
 | `docs/plans/2026-02-21-gaze-tracking-implementation.md` | 15-task implementation plan |
@@ -88,14 +88,31 @@ JSON.parse(localStorage.getItem('app_gaze_sessions'))
 ## User Flow
 
 1. User navigates to any rating page (e.g., `/individual-rate`)
-2. **CalibrationGate** checks if WebGazer is calibrated
+2. **CalibrationGate** checks if WebGazer is calibrated (`isCalibrated` from localStorage) AND actively tracking (`isTracking`)
 3. If not calibrated: shows prompt with "Go to Calibration" button → redirects to `/webgazer-calibration`
-4. After calibration: returns to rating page, CalibrationGate passes through
-5. WebGazer starts tracking, `GazeTrackingProvider` initializes
+4. If calibrated but WebGazer not initialized: auto-calls `initWebGazer()` and shows "Initializing Eye Tracker..." spinner with `CircularProgress`
+5. Once `isCalibrated && isTracking` are both true: renders the rating component
 6. `GazeTrackedImage` components register on mount, unregister on unmount
 7. `useGazeTracker` polls `currentGaze` at 30 FPS, hit-tests registered images
 8. On gaze hit: accumulates dwell time, records relative (x,y), tracks entry/exit
 9. On final submit: saves full gaze session data to localStorage
+
+## Bugs Fixed
+
+### Session 2 (2026-02-21): Null gaze data in all rating modes
+
+**Problem:** All gaze data saved to localStorage had null/zero values (`firstGazeTime: null`, `totalGazeTime: 0`, empty `coordinates`). No actual eye tracking data was being collected.
+
+**Root Cause:** `CalibrationGate` only checked `isCalibrated` (derived from localStorage). If calibration data existed from a previous session, it immediately rendered the rating components without ensuring WebGazer was initialized. This meant:
+- `isTracking` stayed `false` in the WebGazer context
+- `currentGaze` stayed `{x: null, y: null}`
+- The gaze tracking effect in `useGazeTracker.js` always hit the early return at line 83 (`if (!isTracking || currentGaze.x == null || currentGaze.y == null) return;`)
+- No gaze data was ever accumulated
+
+**Fix (commit `fb2be50`):** Updated `CalibrationGate` to:
+1. Auto-initialize WebGazer via `useEffect` when `isCalibrated && !isInitialized`
+2. Gate children on `isCalibrated && isTracking` (not just `isCalibrated`)
+3. Show a loading spinner during WebGazer initialization
 
 ## Commits (oldest to newest)
 
@@ -111,6 +128,8 @@ JSON.parse(localStorage.getItem('app_gaze_sessions'))
 | `401ae93` | feat: integrate gaze tracking into RankedRate |
 | `202eda3` | feat: integrate gaze tracking into BestWorstRate and SelectionRate |
 | `38601d7` | feat: integrate gaze tracking into ImageGrid, LayoutRatingFlow, ComboRatingFlow, and PressureCooker |
+| `814222b` | gaze progress for mini games |
+| `fb2be50` | fix: auto-initialize WebGazer in CalibrationGate to collect gaze data |
 
 ## Out of Scope (not implemented)
 
