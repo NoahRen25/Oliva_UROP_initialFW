@@ -1,18 +1,49 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWebGazer } from '../utils/WebGazerContext';
 import {
-  Container, Paper, Typography, Button, Box,
+  Container, Paper, Typography, Button, Box, CircularProgress,
 } from '@mui/material';
 
 export default function CalibrationGate({ children }) {
   const navigate = useNavigate();
-  const { isCalibrated, isInitialized, initWebGazer, error } = useWebGazer();
+  const { isCalibrated, isInitialized, isTracking, initWebGazer, error } = useWebGazer();
 
-  if (isCalibrated) {
+  // Auto-initialize WebGazer when calibrated but not yet initialized
+  useEffect(() => {
+    if (isCalibrated && !isInitialized) {
+      initWebGazer();
+    }
+  }, [isCalibrated, isInitialized, initWebGazer]);
+
+  // Calibrated and actively tracking → render children
+  if (isCalibrated && isTracking) {
     return <>{children}</>;
   }
 
+  // Calibrated but still initializing → show loading
+  if (isCalibrated) {
+    return (
+      <Container maxWidth="sm" sx={{ mt: 8 }}>
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <CircularProgress sx={{ mb: 2 }} />
+          <Typography variant="h6" gutterBottom>
+            Initializing Eye Tracker...
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Please allow camera access if prompted.
+          </Typography>
+          {error && (
+            <Typography color="error" sx={{ mt: 2 }}>
+              {error}
+            </Typography>
+          )}
+        </Paper>
+      </Container>
+    );
+  }
+
+  // Not calibrated → prompt user to calibrate
   return (
     <Container maxWidth="sm" sx={{ mt: 8 }}>
       <Paper sx={{ p: 4, textAlign: 'center' }}>
