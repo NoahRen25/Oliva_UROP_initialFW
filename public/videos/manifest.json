@@ -1,0 +1,10 @@
+{
+    "folders": ["model_a", "model_b"],
+    "files": {
+      "model_a": ["example.mp4"],
+      "model_b": ["example.mp4"]
+    },
+    "prompts": {
+      "example.mp4": "Real Prompt Here"
+    }
+  }

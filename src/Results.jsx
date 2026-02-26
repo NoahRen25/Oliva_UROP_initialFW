@@ -34,6 +34,7 @@ export const useResults = () => {
       individualSessions: [],
       groupSessions: [],
       pairwiseSessions: [],
+      videoPairwiseSessions: [],
       rankedSessions: [],
       bestWorstSessions: [],
       selectionSessions: [],
@@ -41,10 +42,10 @@ export const useResults = () => {
       groupSessionsByLayout: {},
       pressureCookerSessions: [],
       taskPrompt: "",
-      isSpeaking: false,
-      isAnnouncing: false,
       activePrompt: null,
       setActivePrompt: () => {},
+      currentRatingPage: null,
+      setCurrentRatingPage: () => {},
     };
   }
   return context;
@@ -84,13 +85,15 @@ export const ResultsProvider = ({ children }) => {
   const [bestWorstSessions, setBestWorstSessions] = useState(() => readLS("app_best_worst", []));
   const [selectionSessions, setSelectionSessions] = useState(() => readLS("app_selection", []));
   const [pressureCookerSessions, setPressureCookerSessions] = useState([]);
+  const [videoPairwiseSessions, setVideoPairwiseSessions] = useState(() => readLS("app_video_pairwise", []));
 
   // --- Voice / Audio State ---
-  const [isAnnouncing, setIsAnnouncing] = useState(() => readLS("app_announcing", false));
-  const [isSpeaking, setIsSpeaking] = useState(false);
   
   // --- Active Prompt for ReadPromptButton ---
   const [activePrompt, setActivePrompt] = useState(null);
+  
+  // --- Current Rating Page (for page-aware recording) ---
+  const [currentRatingPage, setCurrentRatingPage] = useState(null);
 
   // --- Consent State ---
   const [consentGiven, setConsentGiven] = useState(() => readLS("app_consent_given", false));
@@ -110,7 +113,7 @@ export const ResultsProvider = ({ children }) => {
   useEffect(() => { writeLS("app_ranked", rankedSessions); }, [rankedSessions]);
   useEffect(() => { writeLS("app_best_worst", bestWorstSessions); }, [bestWorstSessions]);
   useEffect(() => { writeLS("app_selection", selectionSessions); }, [selectionSessions]);
-  useEffect(() => { writeLS("app_announcing", isAnnouncing); }, [isAnnouncing]);
+  useEffect(() => { writeLS("app_video_pairwise", videoPairwiseSessions); }, [videoPairwiseSessions]);
   useEffect(() => { writeLS("app_consent_given", consentGiven); }, [consentGiven]);
   useEffect(() => { writeLS("app_consent_timestamp", consentTimestamp); }, [consentTimestamp]);
 
@@ -184,23 +187,6 @@ export const ResultsProvider = ({ children }) => {
     return true;
   };
 
-  // Speech logic
-  const toggleAnnouncing = () => { if (isAnnouncing) window.speechSynthesis.cancel(); setIsAnnouncing((p) => !p); };
-  const stopAnnouncing = useCallback(() => { window.speechSynthesis.cancel(); setIsSpeaking(false); }, []);
-  const announce = useCallback((text) => {
-    if (!isAnnouncing || !text) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find((v) => v.name.includes("Karen") && v.lang.startsWith("en")) || voices.find((v) => v.lang.startsWith("en")) || voices[0];
-    if (voice) u.voice = voice;
-    u.rate = 1.05;
-    u.onstart = () => setIsSpeaking(true);
-    u.onend = () => setIsSpeaking(false);
-    u.onerror = () => setIsSpeaking(false);
-    window.speechSynthesis.speak(u);
-  }, [isAnnouncing]);
-
   // Transcripts
   const addTranscript = (text, duration) => {
     if (!text.trim()) return;
@@ -213,7 +199,7 @@ export const ResultsProvider = ({ children }) => {
 
   // Individual Sessions
   const addIndividualSession = (username, scores, meta = {}) => {
-    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {} };
+    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {}, pageAudioUrls: meta.pageAudioUrls || {} };
     setIndividualSessions((p) => [...p, session]);
     insertSession({ id: session.id, type: "individual", username, timestamp: session.timestamp, meta: { pageTranscripts: meta.pageTranscripts } });
     insertRatingScores(session.id, scores);
@@ -223,7 +209,7 @@ export const ResultsProvider = ({ children }) => {
 
   // Group Sessions
   const addGroupSession = (username, scores, meta = {}) => {
-    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {} };
+    const session = { id: Date.now(), username, scores, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {}, pageAudioUrls: meta.pageAudioUrls || {} };
     setGroupSessions((p) => [...p, session]);
     insertSession({ id: session.id, type: "group", username, timestamp: session.timestamp, meta: { pageTranscripts: meta.pageTranscripts } });
     insertRatingScores(session.id, scores);
@@ -233,7 +219,7 @@ export const ResultsProvider = ({ children }) => {
 
   // Layout Group Sessions
   const addGroupSessionForLayout = (layoutId, username, scores, meta = {}) => {
-    const session = { id: Date.now(), username, scores, meta, layoutId, timestamp: new Date(), pageTranscripts: meta.pageTranscripts || {} };
+    const session = { id: Date.now(), username, scores, meta, layoutId, timestamp: new Date(), pageTranscripts: meta.pageTranscripts || {}, pageAudioUrls: meta.pageAudioUrls || {} };
     setGroupSessionsByLayout((p) => { const n = { ...(p || {}) }; n[layoutId] = [...(n[layoutId] || []), session]; return n; });
     insertSession({ id: session.id, type: "layout_group", username, timestamp: new Date().toISOString(), meta: { ...meta, layoutId } });
     insertRatingScores(session.id, scores);
@@ -245,7 +231,7 @@ export const ResultsProvider = ({ children }) => {
 
   // Fixed Sessions
   const addFixedSession = (username, scores, meta = {}) => {
-    const session = { id: Date.now(), username, scores, timestamp: new Date().toLocaleString(), pageTranscripts: meta.pageTranscripts || {} };
+    const session = { id: Date.now(), username, scores, timestamp: new Date().toLocaleString(), pageTranscripts: meta.pageTranscripts || {}, pageAudioUrls: meta.pageAudioUrls || {} };
     setFixedSessions((p) => [...p, session]);
     insertSession({ id: session.id, type: "fixed", username, timestamp: new Date().toISOString(), meta: { pageTranscripts: meta.pageTranscripts } });
     insertRatingScores(session.id, scores);
@@ -255,7 +241,7 @@ export const ResultsProvider = ({ children }) => {
 
   // Pairwise Sessions
   const addPairwiseSession = (username, choices, meta = {}) => {
-    const session = { id: Date.now(), username, choices, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {} };
+    const session = { id: Date.now(), username, choices, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {}, pageAudioUrls: meta.pageAudioUrls || {} };
     setPairwiseSessions((p) => [...p, session]);
     insertSession({ id: session.id, type: "pairwise", username, timestamp: session.timestamp, meta: { pageTranscripts: meta.pageTranscripts } });
     insertPairwiseChoices(session.id, choices);
@@ -263,9 +249,19 @@ export const ResultsProvider = ({ children }) => {
   const deletePairwiseSession = (id, username) => { if (window.confirm(`Delete session by ${username}?`)) { setPairwiseSessions((p) => p.filter((s) => s.id != id)); deleteSession(id); } };
   const clearPairwise = () => { if (window.confirm("Delete ALL Pairwise sessions?")) { setPairwiseSessions([]); deleteSessionsByType("pairwise"); } };
 
+  // Video Pairwise Sessions
+  const addVideoPairwiseSession = (username, choices, meta = {}) => {
+    const session = { id: Date.now(), username, choices, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {}, pageAudioUrls: meta.pageAudioUrls || {} };
+    setVideoPairwiseSessions((p) => [...p, session]);
+    insertSession({ id: session.id, type: "video_pairwise", username, timestamp: session.timestamp, meta: { pageTranscripts: meta.pageTranscripts } });
+    insertPairwiseChoices(session.id, choices);
+  };
+  const deleteVideoPairwiseSession = (id, username) => { if (window.confirm(`Delete session by ${username}?`)) { setVideoPairwiseSessions((p) => p.filter((s) => s.id != id)); deleteSession(id); } };
+  const clearVideoPairwise = () => { if (window.confirm("Delete ALL Video Pairwise sessions?")) { setVideoPairwiseSessions([]); deleteSessionsByType("video_pairwise"); } };
+
   // Ranked Sessions
   const addRankedSession = (username, rankings, meta = {}) => {
-    const session = { id: Date.now(), username, rankings, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {} };
+    const session = { id: Date.now(), username, rankings, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {}, pageAudioUrls: meta.pageAudioUrls || {} };
     setRankedSessions((p) => [...p, session]);
     insertSession({ id: session.id, type: "ranked", username, timestamp: session.timestamp, meta: { pageTranscripts: meta.pageTranscripts } });
     insertRankedResults(session.id, rankings);
@@ -275,7 +271,7 @@ export const ResultsProvider = ({ children }) => {
 
   // Best-Worst Sessions
   const addBestWorstSession = (username, trials, meta = {}) => {
-    const session = { id: Date.now(), username, trials, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {} };
+    const session = { id: Date.now(), username, trials, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {}, pageAudioUrls: meta.pageAudioUrls || {} };
     setBestWorstSessions((p) => [...p, session]);
     insertSession({ id: session.id, type: "best_worst", username, timestamp: session.timestamp, meta: { pageTranscripts: meta.pageTranscripts } });
     insertBestWorstTrials(session.id, trials);
@@ -285,7 +281,7 @@ export const ResultsProvider = ({ children }) => {
 
   // Selection Sessions
   const addSelectionSession = (username, prompt, selections, meta = {}) => {
-    const session = { id: Date.now(), username, prompt, selections, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {} };
+    const session = { id: Date.now(), username, prompt, selections, timestamp: new Date().toISOString(), pageTranscripts: meta.pageTranscripts || {}, pageAudioUrls: meta.pageAudioUrls || {} };
     setSelectionSessions((p) => [...p, session]);
     insertSession({ id: session.id, type: "selection", username, timestamp: session.timestamp, meta: { prompt, pageTranscripts: meta.pageTranscripts } });
     insertRatingScores(session.id, selections.map((s) => ({ imageId: s.imageId, imageName: s.imageName, prompt: s.imagePrompt, score: s.selected ? 1 : 0, interactionCount: 0 })));
@@ -322,6 +318,7 @@ export const ResultsProvider = ({ children }) => {
       setBestWorstSessions([]);
       setPressureCookerSessions([]);
       setSelectionSessions([]);
+      setVideoPairwiseSessions([]);
       setTranscripts([]);
       setFixedSessions([]);
       setGroupSessionsByLayout({});
@@ -373,13 +370,16 @@ export const ResultsProvider = ({ children }) => {
         clearTranscripts,
 
         // Voice / Prompt
-        announce,
-        stopAnnouncing,
-        toggleAnnouncing,
-        isAnnouncing,
-        isSpeaking,
         taskPrompt,
         setTaskPrompt,
+
+        // Active Prompt (for ReadPromptButton)
+        activePrompt,
+        setActivePrompt,
+
+        // Page tracking (for page-aware recording)
+        currentRatingPage,
+        setCurrentRatingPage,
 
         // Individual
         individualSessions,
@@ -414,6 +414,12 @@ export const ResultsProvider = ({ children }) => {
         deletePairwiseSession,
         clearPairwise,
 
+        // Video Pairwise
+        videoPairwiseSessions,
+        addVideoPairwiseSession,
+        deleteVideoPairwiseSession,
+        clearVideoPairwise,
+
         // Ranked
         rankedSessions,
         addRankedSession,
@@ -437,10 +443,6 @@ export const ResultsProvider = ({ children }) => {
         acceptConsent,
         revokeConsent,
         clearAllData,
-
-        // Active Prompt (for ReadPromptButton)
-        activePrompt,
-        setActivePrompt,
 
         // Selection
         selectionSessions,

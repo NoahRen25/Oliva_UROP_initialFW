@@ -4,13 +4,15 @@ import {
 } from "@mui/material";
 import IndividualResult from "./IndividualResult";
 import PairwiseResult from "./PairwiseResult";
+import VideoPairwiseResult from "./VideoPairwiseResult";
 import RankedResult from "./RankedResult";
 import BestWorstResult from "./BestWorstResult";
 import SelectionResult from "./SelectionResult";
 
 const MODES = [
   { id: "individual", label: "Individual" },
-  { id: "pairwise",   label: "Pairwise" },
+  { id: "pairwise",       label: "Pairwise" },
+  { id: "video-pairwise", label: "Video Pairwise" },
   { id: "ranked",     label: "Ranked" },
   { id: "best-worst", label: "Best-Worst" },
   { id: "selection",  label: "Selection" },
@@ -22,7 +24,8 @@ export default function ModeResultsPage() {
   const renderView = () => {
     switch (view) {
       case "individual": return <IndividualResult />;
-      case "pairwise":   return <PairwiseResult />;
+      case "pairwise":       return <PairwiseResult />;
+      case "video-pairwise": return <VideoPairwiseResult />;
       case "ranked":     return <RankedResult />;
       case "best-worst": return <BestWorstResult />;
       case "selection":  return <SelectionResult />;

@@ -8,20 +8,19 @@ import UsernameEntry from "../components/UsernameEntry";
 import ModeInstructionScreen from "../components/ModeInstructionScreen";
 import { getSelectionBatch } from "../utils/ImageLoader";
 import { preloadImages } from "../utils/preloadImages";
-import usePageTranscription from "../hooks/usePageTranscription";
+import collectPageTranscripts from "../utils/collectPageTranscripts";
+
 
 export default function SelectionRate() {
   const navigate = useNavigate();
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
-  const { addSelectionSession, setActivePrompt } = useResults();
+  const { addSelectionSession, setActivePrompt, setCurrentRatingPage } = useResults();
 
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
   const [images, setImages] = useState([]);
   const [selected, setSelected] = useState(new Set());
-
-  const { markPage, stopAndCollect } = usePageTranscription();
 
   const imageCount = uploadConfig?.count || 9;
   const taskPrompt = uploadConfig?.prompt || "Select all images that match the description";
@@ -35,12 +34,15 @@ export default function SelectionRate() {
   useEffect(() => {
     if (step === 2) {
       setActivePrompt(taskPrompt);
-      markPage(1);
+      setCurrentRatingPage(1);
     } else {
       setActivePrompt(null);
     }
-    return () => setActivePrompt(null);
-  }, [step, taskPrompt, setActivePrompt, markPage]);
+    return () => {
+      setActivePrompt(null);
+      setCurrentRatingPage(null);
+    };
+  }, [step, taskPrompt, setActivePrompt, setCurrentRatingPage]);
 
   const toggleSelect = (id) => {
     setSelected((prev) => {
@@ -58,7 +60,8 @@ export default function SelectionRate() {
       imagePrompt: img.prompt,
       selected: selected.has(img.id),
     }));
-    addSelectionSession(username, taskPrompt, selections, { pageTranscripts: stopAndCollect() });
+    const { transcripts: pageTranscripts, audioUrls: pageAudioUrls } = collectPageTranscripts();
+    addSelectionSession(username, taskPrompt, selections, { pageTranscripts, pageAudioUrls });
     navigate("/mode-results");
   };
 

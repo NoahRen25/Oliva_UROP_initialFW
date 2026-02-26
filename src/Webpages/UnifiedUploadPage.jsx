@@ -9,7 +9,7 @@ import { GRID_DEFINITIONS } from "../data/gridConstants";
 import { useMemImages } from "../data/UseMemImages";
 
 // Non-grid rating types
-const RATING_TYPES = ["individual", "pairwise", "ranked", "selection"];
+const RATING_TYPES = ["individual", "pairwise", "ranked", "selection", "video_pairwise"];
 // All valid types (grid layouts + rating modes)
 const ALL_TYPES = [...RATING_TYPES, ...Object.keys(GRID_DEFINITIONS)];
 
@@ -73,7 +73,9 @@ export default function UnifiedUploadPage() {
       navigate("/rate/grid", { state });
     } else {
       // Navigate to the specific rating mode
-      navigate(`/${config.type}-rate`, { state });
+      // Some types use underscores in config but hyphens in routes
+      const routeType = config.type.replace(/_/g, "-");
+      navigate(`/${routeType}-rate`, { state });
     }
   };
 

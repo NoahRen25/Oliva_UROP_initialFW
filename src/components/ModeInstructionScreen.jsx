@@ -23,6 +23,16 @@ Your task is to select which image better represents the prompt. Click on the im
 
 The prompt is displayed above each pair. Use the READ PROMPT button in the top bar to hear it read aloud.`,
   },
+  video_pairwise: {
+    title: "Video Pairwise Comparison",
+    body: `You will see two videos side by side, generated from the same prompt or scene description.
+
+Watch both videos using the playback controls, then click on the video you think is better. The selected video gets a blue border.
+
+You can replay, pause, and scrub through the videos as many times as you need before making your choice.
+
+The prompt (if available) is displayed above each pair.`,
+  },
   ranked: {
     title: "Ranked Comparison",
     body: `You will see three images generated from the same text prompt.
@@ -195,9 +205,39 @@ const SelectionPreview = () => (
   </Box>
 );
 
+const VideoPairwisePreview = () => (
+  <Box>
+    <Typography variant="body2" align="center" sx={{ mb: 1, fontStyle: "italic", color: "text.secondary" }}>
+      "A cat sitting on a windowsill at sunset..."
+    </Typography>
+    <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+      <Card sx={{ border: "4px solid #1976d2", pointerEvents: "none" }}>
+        <Box sx={{ p: 1 }}>
+          <Placeholder height="12vh" label="▶ Video A" />
+        </Box>
+        <Typography variant="caption" align="center" display="block" sx={{ pb: 1 }}>
+          ← Selected
+        </Typography>
+      </Card>
+      <Card sx={{ border: "4px solid transparent", pointerEvents: "none" }}>
+        <Box sx={{ p: 1 }}>
+          <Placeholder height="12vh" label="▶ Video B" />
+        </Box>
+        <Typography variant="caption" align="center" display="block" sx={{ pb: 1, color: "text.disabled" }}>
+          Click to select
+        </Typography>
+      </Card>
+    </Box>
+    <Box sx={{ textAlign: "center", mt: 1.5 }}>
+      <Button variant="contained" size="small" disabled>Next Pair</Button>
+    </Box>
+  </Box>
+);
+
 const PREVIEWS = {
   individual: IndividualPreview,
   pairwise: PairwisePreview,
+  video_pairwise: VideoPairwisePreview,
   ranked: RankedPreview,
   selection: SelectionPreview,
 };

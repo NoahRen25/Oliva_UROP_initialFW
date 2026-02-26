@@ -8,10 +8,12 @@ import ScoreSlider from "../components/ScoreSlider";
 import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
 import ModeInstructionScreen from "../components/ModeInstructionScreen";
+import PromptDisplay from "../components/PromptDisplay";
 import { getIndividualBatch } from "../utils/ImageLoader";
 import SpeedWarning from "../components/SpeedWarning";
 import { preloadImages } from "../utils/preloadImages";
-import usePageTranscription from "../hooks/usePageTranscription";
+import collectPageTranscripts from "../utils/collectPageTranscripts";
+
 
 export default function IndividualRate() {
   const navigate = useNavigate();
@@ -20,7 +22,7 @@ export default function IndividualRate() {
 
   const {
     addIndividualSession, checkEngagement, setShowSpeedWarning,
-    resetEngagement, setActivePrompt,
+    resetEngagement, setActivePrompt, setCurrentRatingPage,
   } = useResults();
 
   const [activeStep, setActiveStep] = useState(uploadConfig ? 1 : 0);
@@ -35,8 +37,6 @@ export default function IndividualRate() {
   const [interactionCount, setInteractionCount] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
 
-  const { markPage, stopAndCollect } = usePageTranscription();
-
   const imageCount = uploadConfig?.count || 6;
   const configPrompt = uploadConfig?.prompt || null;
 
@@ -48,10 +48,13 @@ export default function IndividualRate() {
     resetEngagement();
   }, []);
 
-  // Cleanup activePrompt on unmount
+  // Cleanup activePrompt and currentRatingPage on unmount
   useEffect(() => {
-    return () => setActivePrompt(null);
-  }, [setActivePrompt]);
+    return () => {
+      setActivePrompt(null);
+      setCurrentRatingPage(null);
+    };
+  }, [setActivePrompt, setCurrentRatingPage]);
 
   const startTimer = () => {
     setStartTime(performance.now());
@@ -66,15 +69,15 @@ export default function IndividualRate() {
   useEffect(() => {
     if (activeStep === 2 && benchmarkImage) {
       setActivePrompt(configPrompt || benchmarkImage.prompt);
-      markPage("benchmark");
+      setCurrentRatingPage("benchmark");
     } else if (activeStep === 3 && imagesToRate[currentImageIndex]) {
       const img = imagesToRate[currentImageIndex];
       setActivePrompt(configPrompt || img.prompt);
-      markPage(currentImageIndex + 1);
+      setCurrentRatingPage(currentImageIndex + 1);
     } else {
       setActivePrompt(null);
     }
-  }, [activeStep, currentImageIndex, benchmarkImage, imagesToRate, configPrompt, setActivePrompt, markPage]);
+  }, [activeStep, currentImageIndex, benchmarkImage, imagesToRate, configPrompt, setActivePrompt, setCurrentRatingPage]);
 
   const handleNext = (isBenchmark = false) => {
     if (isLocked) return;
@@ -110,8 +113,8 @@ export default function IndividualRate() {
     } else if (currentImageIndex < imagesToRate.length - 1) {
       setCurrentImageIndex(currentImageIndex + 1);
     } else {
-      const pageTranscripts = stopAndCollect();
-      addIndividualSession(username, updatedScores, { pageTranscripts });
+      const { transcripts: pageTranscripts, audioUrls: pageAudioUrls } = collectPageTranscripts();
+      addIndividualSession(username, updatedScores, { pageTranscripts, pageAudioUrls });
       setActiveStep(4);
     }
     startTimer();
@@ -184,24 +187,10 @@ export default function IndividualRate() {
                   ? "Benchmark"
                   : `Image ${currentImageIndex + 1} of ${imagesToRate.length}`}
               </Typography>
-              {/* Global Prompt */}
-              {configPrompt && (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 1, fontStyle: "italic" }}
-                >
-                  Task: "{globalPrompt}"
-                </Typography>
-              )}
-              {/* Image-specific Prompt */}
-              <Typography
-                variant="body1"
-                color="primary.main"
-                sx={{ mt: 1, fontWeight: "medium" }}
-              >
-                "{imagePrompt}"
-              </Typography>
+              <PromptDisplay
+                globalPrompt={configPrompt ? globalPrompt : null}
+                itemPrompt={imagePrompt}
+              />
             </Box>
             <CardMedia
               component="img"

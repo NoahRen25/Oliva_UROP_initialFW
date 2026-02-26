@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   BrowserRouter as Router, Routes, Route, Link, useLocation,
 } from "react-router-dom";
@@ -21,6 +21,7 @@ import PairwiseRate from "./Webpages/PairwiseRate";
 import RankedRate from "./Webpages/RankedRate";
 import BestWorstRate from "./Webpages/BestWorstRate";
 import SelectionRate from "./Webpages/SelectionRate";
+import VideoPairwiseRate from "./Webpages/VideoPairwiseRate";
 import PressureCooker from "./Webpages/PressureCooker";
 import WebGazerCalibration from "./Webpages/WebGazerCalibration";
 import WebGazerGazeTest from "./Webpages/WebGazerGazeTest";
@@ -39,7 +40,25 @@ const lightTheme = createTheme({
 });
 
 function NavigationWrapper() {
-  const { addTranscript, isAnnouncing, toggleAnnouncing, consentGiven, acceptConsent } = useResults();
+  const { addTranscript, consentGiven, acceptConsent } = useResults();
+
+  // Holds page transcripts + audio from the last recording
+  const pendingPageTranscriptsRef = useRef({});
+  const pendingPageAudioRef = useRef({});
+  const pendingPageAudioBlobsRef = useRef({});
+
+  // Expose refs globally so rating flows can grab them via collectPageTranscripts()
+  useEffect(() => {
+    window.__pendingPageTranscripts = pendingPageTranscriptsRef;
+    window.__pendingPageAudio = pendingPageAudioRef;
+    window.__pendingPageAudioBlobs = pendingPageAudioBlobsRef;
+  }, []);
+
+  const handleSaveWithPages = (pages, audioUrls, audioBlobs) => {
+    pendingPageTranscriptsRef.current = pages;
+    pendingPageAudioRef.current = audioUrls || {};
+    pendingPageAudioBlobsRef.current = audioBlobs || {};
+  };
 
   return (
     <Router>
@@ -50,9 +69,11 @@ function NavigationWrapper() {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
             OlivaGroupFW
           </Typography>
-          {/* ReadPromptButton replaces the announce toggle */}
           <ReadPromptButton />
-          <VoiceRecorder onSave={(text, dur) => addTranscript(text, dur)} />
+          <VoiceRecorder
+            onSave={(text, dur) => addTranscript(text, dur)}
+            onSaveWithPages={handleSaveWithPages}
+          />
           <Button
             startIcon={<HistoryEduIcon />}
             component={Link}
@@ -87,6 +108,7 @@ function NavigationWrapper() {
           <Route path="/rate/grid" element={<LayoutRatingFlow mode="upload" />} />
           <Route path="/individual-rate" element={<IndividualRate />} />
           <Route path="/pairwise-rate" element={<PairwiseRate />} />
+          <Route path="/video-pairwise-rate" element={<VideoPairwiseRate />} />
           <Route path="/selection-rate" element={<SelectionRate />} />
           <Route path="/ranked-rate" element={<RankedRate />} />
           <Route path="/best-worst-rate" element={<BestWorstRate />} />
@@ -99,7 +121,7 @@ function NavigationWrapper() {
           <Route path="/dataset-manager" element={<DatasetManager />} />
           <Route path="/rate" element={<LayoutRatingFlow mode="manual" />} />
           <Route path="/results" element={<ResultsPage />} />
-        <Route path="/combo-results" element={<ComboResultsPage />} />
+          <Route path="/combo-results" element={<ComboResultsPage />} />
           <Route path="/privacy" element={<PrivacySettings />} />
         </Routes>
       </Box>

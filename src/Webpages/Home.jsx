@@ -50,6 +50,13 @@ export default function Home() {
       color: "#d32f2f",
     },
     {
+      title: "Video Pairwise",
+      description: "Compare two videos side by side",
+      path: "/video-pairwise-rate",
+      icon: <CompareArrowsIcon fontSize="large" />,
+      color: "#00897b",
+    },
+    {
       title: "Eye Tracking",
       description: "WebGazer calibration & gaze test",
       path: "/webgazer-calibration",

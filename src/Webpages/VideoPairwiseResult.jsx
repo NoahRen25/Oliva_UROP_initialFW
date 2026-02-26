@@ -18,27 +18,28 @@ const prepareData = (sessions) =>
       "User ID": s.username,
       Timestamp: new Date(s.timestamp).toLocaleString(),
       "Pair ID": c.pairId,
+      Prompt: c.prompt || "",
       Winner: c.winnerName,
       Loser: c.loserName,
       "Winning Side": c.winnerSide,
     }))
   );
 
-export default function PairwiseResult() {
-  const { pairwiseSessions } = useResults();
+export default function VideoPairwiseResult() {
+  const { videoPairwiseSessions } = useResults();
 
   return (
     <ResultsPageShell
-      title="Pairwise Results"
-      sessions={pairwiseSessions}
-      csvData={prepareData(pairwiseSessions)}
-      csvFilename={`All_Pairwise_Results_${new Date().toISOString().split("T")[0]}.csv`}
+      title="Video Pairwise Results"
+      sessions={videoPairwiseSessions}
+      csvData={prepareData(videoPairwiseSessions)}
+      csvFilename={`All_Video_Pairwise_Results_${new Date().toISOString().split("T")[0]}.csv`}
       dataExtractor={extractStats}
     >
       <PairwiseResultTable
-        sessions={pairwiseSessions}
+        sessions={videoPairwiseSessions}
         prepareData={prepareData}
-        filenamePrefix="Pairwise"
+        filenamePrefix="Video_Pairwise"
       />
     </ResultsPageShell>
   );
