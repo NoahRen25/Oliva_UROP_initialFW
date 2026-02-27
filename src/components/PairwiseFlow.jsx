@@ -46,22 +46,6 @@ export default function PairwiseFlow({
     flow.updatePromptAndPage(prompt, currentPairIndex + 1);
   }, [flow.step, currentPairIndex, pairs, flow.configPrompt, isFinished]);
 
-  // Auto-start recording when entering the rating step
-  useEffect(() => {
-    if (flow.step === 2 && !isFinished) {
-      const vr = window.__voiceRecorder;
-      if (vr && !vr.isRecording) {
-        // Small delay to let the page settle before requesting mic
-        const timer = setTimeout(() => {
-          if (window.__voiceRecorder && !window.__voiceRecorder.isRecording) {
-            window.__voiceRecorder.start();
-          }
-        }, 500);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [flow.step, isFinished]);
-
   const handleNext = () => {
     const currentPair = pairs[currentPairIndex];
     const choiceData = {

@@ -42,23 +42,17 @@ const lightTheme = createTheme({
 function NavigationWrapper() {
   const { addTranscript, consentGiven, acceptConsent } = useResults();
 
-  // Holds page transcripts + audio from the last recording
+  // Global refs for per-page transcript + audio data.
+  // VoiceRecorder writes to these continuously; rating flows read via collectPageTranscripts()
   const pendingPageTranscriptsRef = useRef({});
   const pendingPageAudioRef = useRef({});
   const pendingPageAudioBlobsRef = useRef({});
 
-  // Expose refs globally so rating flows can grab them via collectPageTranscripts()
   useEffect(() => {
     window.__pendingPageTranscripts = pendingPageTranscriptsRef;
     window.__pendingPageAudio = pendingPageAudioRef;
     window.__pendingPageAudioBlobs = pendingPageAudioBlobsRef;
   }, []);
-
-  const handleSaveWithPages = (pages, audioUrls, audioBlobs) => {
-    pendingPageTranscriptsRef.current = pages;
-    pendingPageAudioRef.current = audioUrls || {};
-    pendingPageAudioBlobsRef.current = audioBlobs || {};
-  };
 
   return (
     <Router>
@@ -70,10 +64,7 @@ function NavigationWrapper() {
             OlivaGroupFW
           </Typography>
           <ReadPromptButton />
-          <VoiceRecorder
-            onSave={(text, dur) => addTranscript(text, dur)}
-            onSaveWithPages={handleSaveWithPages}
-          />
+          <VoiceRecorder onSave={(text, dur) => addTranscript(text, dur)} />
           <Button
             startIcon={<HistoryEduIcon />}
             component={Link}

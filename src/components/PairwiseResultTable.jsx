@@ -1,76 +1,53 @@
 import React from "react";
 import {
-  Table, TableBody, TableCell, TableHead, TableRow, Box,
+  Table, TableBody, TableCell, TableHead, TableRow, Box, Paper,
 } from "@mui/material";
 import ExportCSVButton from "./ExportCSVButton";
 import SessionMetadata from "./SessionMetadata";
-import PageTranscriptCell, { PageTranscriptHeader, AudioDownloadCell, AudioDownloadHeader } from "./PageTranscriptCell";
+import { RecordingCell, RecordingHeader } from "./PageTranscriptCell";
 
-/**
- * PairwiseResultTable — Shared table for both image and video pairwise results.
- *
- * Props:
- *   sessions     — array of pairwise sessions
- *   prepareData  — function to flatten sessions for CSV
- *   filenamePrefix — e.g. "Pairwise" or "Video_Pairwise"
- */
 export default function PairwiseResultTable({ sessions, prepareData, filenamePrefix = "Pairwise" }) {
   return (
-    <>
-      <Table>
+    <Paper elevation={1} sx={{ width: "100%", bgcolor: "white", overflow: "hidden" }}>
+      <Table sx={{ width: "100%", tableLayout: "fixed" }}>
+        <colgroup>
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "8%" }} />
+          <col style={{ width: "28%" }} />
+          <col style={{ width: "28%" }} />
+          <col style={{ width: "14%" }} />
+          <col style={{ width: "12%" }} />
+        </colgroup>
         <TableHead>
           <TableRow sx={{ bgcolor: "#f5f5f5" }}>
             <TableCell><strong>User ID</strong></TableCell>
             <TableCell><strong>Pair</strong></TableCell>
             <TableCell><strong>Winner</strong></TableCell>
             <TableCell><strong>Loser</strong></TableCell>
-            <PageTranscriptHeader />
-            <AudioDownloadHeader />
+            <RecordingHeader />
             <TableCell align="center"><strong>Action</strong></TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {sessions.map((session) =>
-            session.choices.map((choice, j) => (
+            (session.choices || []).map((choice, j) => (
               <TableRow key={`${session.id}-${j}`}>
                 {j === 0 && (
-                  <TableCell
-                    rowSpan={session.choices.length}
-                    sx={{ fontWeight: "bold", verticalAlign: "top" }}
-                  >
+                  <TableCell rowSpan={session.choices.length} sx={{ fontWeight: "bold", verticalAlign: "top" }}>
                     {session.username}
                   </TableCell>
                 )}
                 <TableCell>{choice.pairId}</TableCell>
-                <TableCell sx={{ color: "green", fontWeight: "bold" }}>
+                <TableCell sx={{ color: "green", fontWeight: "bold", wordBreak: "break-word" }}>
                   {choice.winnerName}
                 </TableCell>
-                <TableCell sx={{ color: "text.secondary" }}>
+                <TableCell sx={{ color: "text.secondary", wordBreak: "break-word" }}>
                   {choice.loserName}
                 </TableCell>
-                <PageTranscriptCell
-                  pageKey={choice.pairId}
-                  transcripts={session.pageTranscripts}
-                  audioUrls={session.pageAudioUrls}
-                  label={`Pair ${choice.pairId}`}
-                />
-                <AudioDownloadCell
-                  pageKey={choice.pairId}
-                  audioUrls={session.pageAudioUrls}
-                  label={`Pair_${choice.pairId}`}
-                />
+                <RecordingCell pageKey={choice.pairId} audioUrls={session.pageAudioUrls} label={`Pair_${choice.pairId}`} />
                 {j === 0 && (
-                  <TableCell
-                    rowSpan={session.choices.length}
-                    align="center"
-                    sx={{ verticalAlign: "top" }}
-                  >
-                    <ExportCSVButton
-                      variant="icon"
-                      data={prepareData([session])}
-                      filename={`${filenamePrefix}_User_${session.username}.csv`}
-                      label="Export Session"
-                    />
+                  <TableCell rowSpan={session.choices.length} align="center" sx={{ verticalAlign: "top" }}>
+                    <ExportCSVButton variant="icon" data={prepareData([session])} filename={`${filenamePrefix}_User_${session.username}.csv`} label="Export Session" />
                   </TableCell>
                 )}
               </TableRow>
@@ -80,11 +57,9 @@ export default function PairwiseResultTable({ sessions, prepareData, filenamePre
       </Table>
       {sessions.length > 0 && (
         <Box sx={{ p: 1 }}>
-          {sessions.map((session) => (
-            <SessionMetadata key={session.id} metadata={session.metadata} />
-          ))}
+          {sessions.map((s) => <SessionMetadata key={s.id} metadata={s.metadata} />)}
         </Box>
       )}
-    </>
+    </Paper>
   );
 }

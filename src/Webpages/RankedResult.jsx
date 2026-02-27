@@ -6,7 +6,7 @@ import {
 import ResultsPageShell from "../components/ResultsPageShell";
 import SessionMetadata from "../components/SessionMetadata";
 import ExportCSVButton from "../components/ExportCSVButton";
-import PageTranscriptCell, { PageTranscriptHeader, AudioDownloadCell, AudioDownloadHeader } from "../components/PageTranscriptCell";
+import { RecordingCell, RecordingHeader } from "../components/PageTranscriptCell";
 
 const prepareData = (sessions) => {
   const flat = [];
@@ -45,8 +45,7 @@ export default function RankedResult() {
             <TableCell><strong>Group</strong></TableCell>
             <TableCell><strong>Image</strong></TableCell>
             <TableCell><strong>Rank</strong></TableCell>
-            <PageTranscriptHeader />
-                <AudioDownloadHeader />
+                <RecordingHeader />
             <TableCell align="center"><strong>Export</strong></TableCell>
           </TableRow>
         </TableHead>
@@ -67,8 +66,7 @@ export default function RankedResult() {
                 <TableCell>
                   <Chip label={`#${item.rank}`} size="small" color={item.rank === 1 ? "success" : item.rank === 2 ? "primary" : "default"} />
                 </TableCell>
-                <PageTranscriptCell pageKey={item.groupId} transcripts={session.pageTranscripts} audioUrls={session.pageAudioUrls} label={`Group ${item.groupId}`} />
-                <AudioDownloadCell pageKey={item.groupId} audioUrls={session.pageAudioUrls} label={`Group_${item.groupId}`} />
+                <RecordingCell pageKey={item.groupId} audioUrls={session.pageAudioUrls} label={`Group_${item.groupId}`} />
                 {j === 0 && (
                   <TableCell rowSpan={sorted.length} align="center" sx={{ verticalAlign: "top", borderLeft: "1px solid #eee" }}>
                     <ExportCSVButton variant="icon" data={prepareData([session])} filename={`Ranked_User_${session.username}.csv`} label="Export Session" />

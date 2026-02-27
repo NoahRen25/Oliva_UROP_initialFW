@@ -5,7 +5,7 @@ import {
 } from "@mui/material";
 import ResultsPageShell from "../components/ResultsPageShell";
 import SessionMetadata from "../components/SessionMetadata";
-import PageTranscriptCell, { PageTranscriptHeader, AudioDownloadCell, AudioDownloadHeader } from "../components/PageTranscriptCell";
+import { RecordingCell, RecordingHeader } from "../components/PageTranscriptCell";
 
 function SessionAvgRow({ scores }) {
   const main = scores.filter((s) => s.imageId !== 0 && s.imageId !== "0");
@@ -52,8 +52,7 @@ export default function IndividualResult() {
               <TableCell align="right"><strong>Score</strong></TableCell>
               <TableCell align="right"><strong>Time (s)</strong></TableCell>
               <TableCell align="right"><strong>Moves</strong></TableCell>
-              <PageTranscriptHeader />
-                <AudioDownloadHeader />
+                <RecordingHeader />
             </TableRow>
           </TableHead>
           <TableBody>
@@ -70,13 +69,7 @@ export default function IndividualResult() {
                     <TableCell align="right">{score.score}</TableCell>
                     <TableCell align="right">{score.timeSpent}</TableCell>
                     <TableCell align="right">{score.interactionCount || 0}</TableCell>
-                    <PageTranscriptCell
-                      pageKey={score.imageId === 0 || score.imageId === "0" ? "benchmark" : idx}
-                      transcripts={session.pageTranscripts}
-                      audioUrls={session.pageAudioUrls}
-                      label={score.imageId === 0 || score.imageId === "0" ? "Benchmark" : `Image ${idx}`}
-                    />
-                    <AudioDownloadCell
+                    <RecordingCell
                       pageKey={score.imageId === 0 || score.imageId === "0" ? "benchmark" : idx}
                       audioUrls={session.pageAudioUrls}
                       label={score.imageId === 0 || score.imageId === "0" ? "Benchmark" : `Image_${idx}`}
@@ -85,12 +78,12 @@ export default function IndividualResult() {
                 ))}
                 <SessionAvgRow scores={session.scores} />
                 <TableRow>
-                  <TableCell colSpan={7} sx={{ py: 0, px: 1 }}>
+                  <TableCell colSpan={6} sx={{ py: 0, px: 1 }}>
                     <SessionMetadata metadata={session.metadata} />
                   </TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell colSpan={7} sx={{ bgcolor: "#f1f1f1", height: "8px", p: 0 }} />
+                  <TableCell colSpan={6} sx={{ bgcolor: "#f1f1f1", height: "8px", p: 0 }} />
                 </TableRow>
               </React.Fragment>
             ))}

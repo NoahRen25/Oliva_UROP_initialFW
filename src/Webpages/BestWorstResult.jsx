@@ -3,7 +3,7 @@ import { useResults } from "../Results";
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import ResultsPageShell from "../components/ResultsPageShell";
 import ExportCSVButton from "../components/ExportCSVButton";
-import PageTranscriptCell, { PageTranscriptHeader } from "../components/PageTranscriptCell";
+import { RecordingCell, RecordingHeader } from "../components/PageTranscriptCell";
 
 const prepareData = (sessions) =>
   sessions.flatMap((s) =>
@@ -43,7 +43,7 @@ export default function BestWorstResult() {
             <TableCell><strong>Best</strong></TableCell>
             <TableCell><strong>Worst</strong></TableCell>
             <TableCell><strong>Prompt</strong></TableCell>
-            <PageTranscriptHeader />
+                <RecordingHeader />
             <TableCell align="center"><strong>Export</strong></TableCell>
           </TableRow>
         </TableHead>
@@ -60,7 +60,7 @@ export default function BestWorstResult() {
                 <TableCell sx={{ color: "green", fontWeight: "bold" }}>{trial.bestName}</TableCell>
                 <TableCell sx={{ color: "text.secondary" }}>{trial.worstName}</TableCell>
                 <TableCell sx={{ maxWidth: 400 }}>{trial.prompt}</TableCell>
-                <PageTranscriptCell pageKey={trial.trialId} transcripts={session.pageTranscripts} audioUrls={session.pageAudioUrls} label={`Trial ${trial.trialId}`} />
+                <RecordingCell pageKey={trial.trialId} audioUrls={session.pageAudioUrls} label={`Trial_${trial.trialId}`} />
                 {j === 0 && (
                   <TableCell rowSpan={session.trials.length} align="center" sx={{ verticalAlign: "top" }}>
                     <ExportCSVButton variant="icon" data={prepareData([session])} filename={`BestWorst_User_${session.username}.csv`} label="Export Session" />

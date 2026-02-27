@@ -5,7 +5,7 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ExportCSVButton from "./ExportCSVButton";
-import PageTranscriptCell, { PageTranscriptHeader, AudioDownloadCell, AudioDownloadHeader } from "./PageTranscriptCell";
+import { RecordingCell, RecordingHeader } from "./PageTranscriptCell";
 
 const COLOR_A = "#1976d2";
 const COLOR_B = "#9c27b0";
@@ -94,8 +94,7 @@ export default function GridResultTable({
               <TableCell align="right"><strong>Score</strong></TableCell>
               <TableCell align="right"><strong>Moves</strong></TableCell>
               <TableCell align="center"><strong>Sequence</strong></TableCell>
-              <PageTranscriptHeader />
-                <AudioDownloadHeader />
+                <RecordingHeader />
             </TableRow>
           </TableHead>
           <TableBody>
@@ -121,13 +120,7 @@ export default function GridResultTable({
                   >
                     {s.clickOrder || "-"}
                   </TableCell>
-                  <PageTranscriptCell
-                    pageKey={pageNum}
-                    transcripts={session.pageTranscripts}
-                    audioUrls={session.pageAudioUrls}
-                    label={`Page ${pageNum}`}
-                  />
-                  <AudioDownloadCell
+                  <RecordingCell
                     pageKey={pageNum}
                     audioUrls={session.pageAudioUrls}
                     label={`Page_${pageNum}`}

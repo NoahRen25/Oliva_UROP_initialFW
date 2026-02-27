@@ -4,21 +4,10 @@ import { useResults } from "../Results";
 import collectPageTranscripts from "./collectPageTranscripts";
 
 /**
- * useRatingFlow — Extracts the boilerplate shared by every rating flow:
- *   - navigate / location / uploadConfig
- *   - username + step state
- *   - activePrompt + currentRatingPage lifecycle
- *   - page transcript collection on submit
+ * useRatingFlow — Shared hook for all rating flows.
  *
- * Usage:
- *   const flow = useRatingFlow({ mode: "pairwise" });
- *   // flow.step, flow.setStep, flow.username, flow.navigate, ...
- *   // flow.updatePromptAndPage(promptText, pageKey)
- *   // const transcripts = flow.finishSession()
- *
- * @param {Object} opts
- * @param {string} opts.mode - e.g. "individual", "pairwise", "ranked"
- * @param {RegExp} [opts.usernameRegex] - validation regex for username (default: /^\d+$/)
+ * Handles: navigation, username/step state, prompt/page lifecycle,
+ * auto-start/stop recording, and transcript/audio collection.
  */
 export default function useRatingFlow({ mode, usernameRegex = /^\d+$/ } = {}) {
   const navigate = useNavigate();
@@ -39,70 +28,54 @@ export default function useRatingFlow({ mode, usernameRegex = /^\d+$/ } = {}) {
       window.speechSynthesis.cancel();
       setActivePrompt(null);
       setCurrentRatingPage(null);
+      // Stop recording if component unmounts mid-session
+      const vr = window.__voiceRecorder;
+      if (vr && vr.isRecording) vr.stop();
     };
   }, [setActivePrompt, setCurrentRatingPage]);
 
-  /**
-   * Call when the active prompt or page changes during rating.
-   * Handles both setActivePrompt and setCurrentRatingPage.
-   */
+  // Auto-start recording when entering the rating step (step 2)
+  useEffect(() => {
+    if (step === 2) {
+      const timer = setTimeout(() => {
+        const vr = window.__voiceRecorder;
+        if (vr && !vr.isRecording) vr.start();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [step]);
+
   const updatePromptAndPage = useCallback(
     (promptText, pageKey) => {
       setActivePrompt(promptText || null);
-      if (pageKey !== undefined && pageKey !== null) {
-        setCurrentRatingPage(pageKey);
-      }
+      if (pageKey != null) setCurrentRatingPage(pageKey);
     },
     [setActivePrompt, setCurrentRatingPage]
   );
 
-  /**
-   * Call to clear prompt (e.g., when not on rating step).
-   */
   const clearPrompt = useCallback(() => {
     setActivePrompt(null);
   }, [setActivePrompt]);
 
   /**
-   * Call when the session is done. Stops any active recording,
-   * collects page transcripts + audio, and returns them.
+   * Call when the session is done. Stops recording,
+   * collects per-page transcripts + audio, and returns them.
    */
   const finishSession = useCallback(() => {
     window.speechSynthesis.cancel();
-    // Stop recording if it was auto-started, so data gets flushed to refs
+    // Stop recording so final page data gets flushed to global refs
     const vr = window.__voiceRecorder;
-    if (vr && vr.isRecording) {
-      vr.stop();
-    }
-    // Give a moment for any final data to flush, then collect
-    // (The stop path is synchronous for text; audio may lose last chunk but text is primary)
+    if (vr && vr.isRecording) vr.stop();
     return collectPageTranscripts();
   }, []);
 
   return {
-    // Navigation
-    navigate,
-    location,
-    uploadConfig,
-
-    // Config shortcuts
-    configPrompt,
-    count,
-
-    // Step & username
-    step,
-    setStep,
-    username,
-    setUsername,
-    usernameRegex,
-
-    // Prompt & page lifecycle
-    updatePromptAndPage,
-    clearPrompt,
-    setActivePrompt,
-    setCurrentRatingPage,
-
-    // Session finalization
+    navigate, location, uploadConfig,
+    configPrompt, count,
+    step, setStep,
+    username, setUsername, usernameRegex,
+    updatePromptAndPage, clearPrompt,
+    setActivePrompt, setCurrentRatingPage,
     finishSession,
   };
 }

@@ -7,7 +7,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import ResultsPageShell from "../components/ResultsPageShell";
 import ExportCSVButton from "../components/ExportCSVButton";
-import PageTranscriptCell, { PageTranscriptHeader, AudioDownloadCell, AudioDownloadHeader } from "../components/PageTranscriptCell";
+import { RecordingCell, RecordingHeader } from "../components/PageTranscriptCell";
 
 export default function SelectionResult() {
   const { selectionSessions, deleteSelectionSession, clearSelection } = useResults();
@@ -49,8 +49,7 @@ export default function SelectionResult() {
                   <TableCell><strong>Image</strong></TableCell>
                   <TableCell><strong>Image Prompt</strong></TableCell>
                   <TableCell align="center"><strong>Selected</strong></TableCell>
-                  <PageTranscriptHeader />
-                <AudioDownloadHeader />
+                <RecordingHeader />
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -61,8 +60,7 @@ export default function SelectionResult() {
                     <TableCell align="center">
                       <Chip label={sel.selected ? "Yes" : "No"} size="small" color={sel.selected ? "primary" : "default"} />
                     </TableCell>
-                    <PageTranscriptCell pageKey={1} transcripts={session.pageTranscripts} audioUrls={session.pageAudioUrls} label="Selection Task" />
-                    <AudioDownloadCell pageKey={1} audioUrls={session.pageAudioUrls} label="Selection_Task" />
+                    <RecordingCell pageKey={1} audioUrls={session.pageAudioUrls} label="Selection_Task" />
                   </TableRow>
                 ))}
               </TableBody>
