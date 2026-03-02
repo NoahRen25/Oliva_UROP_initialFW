@@ -12,13 +12,13 @@ export function useGazeTracking() {
   return context;
 }
 
-export default function GazeTrackingProvider({ children }) {
-  const gazeTracker = useGazeTracker();
+export default function GazeTrackingProvider({ children, debugMode = true }) {
+  const gazeTracker = useGazeTracker({ debugMode });
 
   return (
-    <GazeTrackingContext.Provider value={gazeTracker}>
+    <GazeTrackingContext.Provider value={{ ...gazeTracker, debugMode }}>
       {children}
-      {gazeTracker.debugEnabled && <GazeDebugOverlay />}
+      {debugMode && <GazeDebugOverlay />}
     </GazeTrackingContext.Provider>
   );
 }

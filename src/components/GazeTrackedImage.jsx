@@ -2,9 +2,9 @@ import React, { useRef, useEffect } from 'react';
 import { CardMedia } from '@mui/material';
 import { useGazeTracking } from './GazeTrackingProvider';
 
-export default function GazeTrackedImage({ imageId, sx, ...props }) {
+export default function GazeTrackedImage({ imageId, ...props }) {
   const ref = useRef(null);
-  const { registerImage, unregisterImage, currentlyGazedId, debugEnabled } = useGazeTracking();
+  const { registerImage, unregisterImage, debugMode } = useGazeTracking();
 
   useEffect(() => {
     if (ref.current && imageId) {
@@ -17,15 +17,7 @@ export default function GazeTrackedImage({ imageId, sx, ...props }) {
     };
   }, [imageId, registerImage, unregisterImage]);
 
-  const debugSx = debugEnabled
-    ? {
-        outline: currentlyGazedId === imageId
-          ? '4px solid rgba(0, 200, 0, 0.7)'
-          : '4px solid rgba(200, 0, 0, 0.3)',
-        outlineOffset: '-4px',
-        transition: 'outline-color 0.15s ease',
-      }
-    : {};
+  const debugSx = debugMode ? { ...props.sx, transition: 'box-shadow 0.15s ease-in-out' } : props.sx;
 
-  return <CardMedia ref={ref} sx={{ ...sx, ...debugSx }} {...props} />;
+  return <CardMedia ref={ref} {...props} sx={debugSx} />;
 }

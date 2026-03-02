@@ -33,3 +33,9 @@ a {
 button {
   font-family: inherit;
 }
+
+.gaze-debug-highlight {
+  box-shadow: 0 0 20px 6px rgba(0, 120, 255, 0.7),
+              0 0 40px 12px rgba(0, 120, 255, 0.3);
+  transition: box-shadow 0.15s ease-in-out;
+}

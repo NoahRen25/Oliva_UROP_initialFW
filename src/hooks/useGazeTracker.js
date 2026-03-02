@@ -1,18 +1,19 @@
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { useWebGazer } from '../utils/WebGazerContext';
 
-export default function useGazeTracker() {
+export default function useGazeTracker({ debugMode = false } = {}) {
   const { currentGaze, isTracking } = useWebGazer();
 
   const registryRef = useRef(new Map());
   const gazeDataRef = useRef(new Map());
   const currentlyGazedRef = useRef(null);
-  const debugEnabled = useRef(typeof window !== 'undefined' && localStorage.getItem('GAZE_DEBUG') === 'true').current;
-  const [currentlyGazedId, setCurrentlyGazedId] = useState(null);
   const sessionStartRef = useRef(null);
   const lastGazeTimeRef = useRef(null);
   const rectsRef = useRef(new Map());
   const rectsDirtyRef = useRef(true);
+  const debugModeRef = useRef(debugMode);
+
+  useEffect(() => { debugModeRef.current = debugMode; }, [debugMode]);
 
   useEffect(() => {
     const markDirty = () => { rectsDirtyRef.current = true; };
@@ -49,6 +50,13 @@ export default function useGazeTracker() {
   }, []);
 
   const unregisterImage = useCallback((imageId) => {
+    const entry = registryRef.current.get(imageId);
+    if (entry?.ref) {
+      entry.ref.classList.remove('gaze-debug-highlight');
+    }
+    if (currentlyGazedRef.current === imageId) {
+      currentlyGazedRef.current = null;
+    }
     registryRef.current.delete(imageId);
     rectsRef.current.delete(imageId);
   }, []);
@@ -58,7 +66,6 @@ export default function useGazeTracker() {
     lastGazeTimeRef.current = null;
     currentlyGazedRef.current = null;
     gazeDataRef.current = new Map();
-    if (debugEnabled) setCurrentlyGazedId(null);
   }, []);
 
   const getGazeData = useCallback(() => {
@@ -80,7 +87,6 @@ export default function useGazeTracker() {
     currentlyGazedRef.current = null;
     lastGazeTimeRef.current = null;
     sessionStartRef.current = performance.now();
-    if (debugEnabled) setCurrentlyGazedId(null);
   }, []);
 
   useEffect(() => {
@@ -159,8 +165,27 @@ export default function useGazeTracker() {
     }
 
     currentlyGazedRef.current = hitImageId;
-    if (debugEnabled && hitImageId !== prevGazed) {
-      setCurrentlyGazedId(hitImageId);
+
+    // Debug mode: highlight gazed image via DOM class
+    if (debugModeRef.current) {
+      if (prevGazed && prevGazed !== hitImageId) {
+        const prevEntry = registryRef.current.get(prevGazed);
+        if (prevEntry?.ref) {
+          prevEntry.ref.classList.remove('gaze-debug-highlight');
+        }
+      }
+      if (hitImageId && hitImageId !== prevGazed) {
+        const entry = registryRef.current.get(hitImageId);
+        if (entry?.ref) {
+          entry.ref.classList.add('gaze-debug-highlight');
+        }
+      }
+      if (!hitImageId && prevGazed) {
+        const prevEntry = registryRef.current.get(prevGazed);
+        if (prevEntry?.ref) {
+          prevEntry.ref.classList.remove('gaze-debug-highlight');
+        }
+      }
     }
   }, [currentGaze, isTracking, refreshRects]);
 
@@ -170,7 +195,6 @@ export default function useGazeTracker() {
     startSession,
     getGazeData,
     resetGazeData,
-    currentlyGazedId,
-    debugEnabled,
+    debugMode,
   };
 }
