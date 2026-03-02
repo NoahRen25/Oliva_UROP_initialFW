@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import { useWebGazer } from '../utils/WebGazerContext';
 
 export default function useGazeTracker() {
@@ -7,6 +7,8 @@ export default function useGazeTracker() {
   const registryRef = useRef(new Map());
   const gazeDataRef = useRef(new Map());
   const currentlyGazedRef = useRef(null);
+  const debugEnabled = useRef(typeof window !== 'undefined' && localStorage.getItem('GAZE_DEBUG') === 'true').current;
+  const [currentlyGazedId, setCurrentlyGazedId] = useState(null);
   const sessionStartRef = useRef(null);
   const lastGazeTimeRef = useRef(null);
   const rectsRef = useRef(new Map());
@@ -56,6 +58,7 @@ export default function useGazeTracker() {
     lastGazeTimeRef.current = null;
     currentlyGazedRef.current = null;
     gazeDataRef.current = new Map();
+    if (debugEnabled) setCurrentlyGazedId(null);
   }, []);
 
   const getGazeData = useCallback(() => {
@@ -77,6 +80,7 @@ export default function useGazeTracker() {
     currentlyGazedRef.current = null;
     lastGazeTimeRef.current = null;
     sessionStartRef.current = performance.now();
+    if (debugEnabled) setCurrentlyGazedId(null);
   }, []);
 
   useEffect(() => {
@@ -155,6 +159,9 @@ export default function useGazeTracker() {
     }
 
     currentlyGazedRef.current = hitImageId;
+    if (debugEnabled && hitImageId !== prevGazed) {
+      setCurrentlyGazedId(hitImageId);
+    }
   }, [currentGaze, isTracking, refreshRects]);
 
   return {
@@ -163,5 +170,7 @@ export default function useGazeTracker() {
     startSession,
     getGazeData,
     resetGazeData,
+    currentlyGazedId,
+    debugEnabled,
   };
 }
