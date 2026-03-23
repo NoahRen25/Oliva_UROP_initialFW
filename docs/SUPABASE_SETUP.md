@@ -19,8 +19,8 @@ VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 - Bucket name: `experiment-images`
 - Visibility: Private
 
-## 4) Create database table
-Run `docs/supabase_schema.sql` in the Supabase SQL editor.
+## 4) Create database tables
+Run `scripts/supabase-schema.sql` in the Supabase SQL editor to create the sessions, scores, and results tables. If you also use the Dataset Manager, additionally run `docs/supabase_schema.sql` for the images table.
 
 ## 5) Storage policies (authenticated only)
 Create policies for the `experiment-images` bucket:

@@ -8,6 +8,7 @@ import ImageGrid from "../components/ImageGrid";
 import InstructionScreen from "../components/InstructionScreen"; 
 import { useMemImages } from "../data/UseMemImages";
 import usePageTranscription from "../hooks/usePageTranscription";
+import BackButton from "../components/BackButton";
 
 //fisher-yates alg is optimal
 const shuffleArray = (array) => {
@@ -214,6 +215,7 @@ export default function ComboRatingFlow() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <BackButton />
       {step === 0 && (
         <UsernameEntry 
           title="Combo Protocol (33)" 

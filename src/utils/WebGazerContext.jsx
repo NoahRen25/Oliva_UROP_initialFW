@@ -1,16 +1,15 @@
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
+import { GazeSmoother } from './gazeSmoother';
 
 const WebGazerContext = createContext(null);
 let webgazerLoaderPromise = null;
 
-// Throttle function to limit gaze update frequency
-const createThrottledGazeUpdater = (setGaze, fps = 30) => {
-  let lastUpdate = 0;
+// Smoothed gaze updater using GazeSmoother + requestAnimationFrame
+const createSmoothedGazeUpdater = (setGaze, smoother) => {
   let pendingGaze = null;
   let rafId = null;
-  const interval = 1000 / fps;
 
-  const update = () => {
+  const flush = () => {
     if (pendingGaze) {
       setGaze(pendingGaze);
       pendingGaze = null;
@@ -20,16 +19,11 @@ const createThrottledGazeUpdater = (setGaze, fps = 30) => {
 
   return {
     update: (x, y) => {
-      const now = performance.now();
-      if (now - lastUpdate >= interval) {
-        lastUpdate = now;
-        setGaze({ x, y });
-      } else {
-        // Store pending update and schedule RAF if not already scheduled
-        pendingGaze = { x, y };
-        if (!rafId) {
-          rafId = requestAnimationFrame(update);
-        }
+      const result = smoother.process(x, y);
+      if (!result) return; // rejected (blink/outlier)
+      pendingGaze = result;
+      if (!rafId) {
+        rafId = requestAnimationFrame(flush);
       }
     },
     cleanup: () => {
@@ -37,7 +31,7 @@ const createThrottledGazeUpdater = (setGaze, fps = 30) => {
         cancelAnimationFrame(rafId);
         rafId = null;
       }
-    }
+    },
   };
 };
 
@@ -90,7 +84,8 @@ export function WebGazerProvider({ children }) {
   const webgazerRef = useRef(null);
   const initializingRef = useRef(false);
   const mountedRef = useRef(true);
-  const throttledGazeRef = useRef(null);
+  const smoothedGazeRef = useRef(null);
+  const smootherRef = useRef(new GazeSmoother());
 
   // Check if webgazer has existing calibration data in localStorage
   const checkCalibration = useCallback(() => {
@@ -128,15 +123,14 @@ export function WebGazerProvider({ children }) {
       webgazer.params.imgWidth = 320;
       webgazer.params.imgHeight = 240;
 
-      // Set up throttled gaze listener to reduce React re-renders
-      // Default 30 FPS is smooth enough for UI while reducing CPU usage
-      if (!throttledGazeRef.current) {
-        throttledGazeRef.current = createThrottledGazeUpdater(setCurrentGaze, 30);
+      // Set up smoothed gaze listener using GazeSmoother pipeline
+      if (!smoothedGazeRef.current) {
+        smoothedGazeRef.current = createSmoothedGazeUpdater(setCurrentGaze, smootherRef.current);
       }
 
       webgazer.setGazeListener((data, elapsedTime) => {
         if (data && mountedRef.current) {
-          throttledGazeRef.current.update(data.x, data.y);
+          smoothedGazeRef.current.update(data.x, data.y);
         }
       });
 
@@ -279,6 +273,7 @@ export function WebGazerProvider({ children }) {
   // Mark calibration as complete and ensure data is saved
   const completeCalibration = useCallback(() => {
     setIsCalibrated(true);
+    smootherRef.current.reset();
     // WebGazer should auto-save with saveDataAcrossSessions(true)
     // But we log for debugging purposes
     const hasData = localStorage.getItem('webgazerGlobalData');
@@ -326,15 +321,16 @@ export function WebGazerProvider({ children }) {
     }
     localStorage.removeItem('webgazerGlobalData');
     setIsCalibrated(false);
+    smootherRef.current.reset();
   }, []);
 
   // Stop camera and release resources WITHOUT clearing calibration data
   // Use this when navigating away from webgazer pages
   const stopCamera = useCallback(() => {
     // Cleanup throttled gaze updater first
-    if (throttledGazeRef.current) {
-      throttledGazeRef.current.cleanup();
-      throttledGazeRef.current = null;
+    if (smoothedGazeRef.current) {
+      smoothedGazeRef.current.cleanup();
+      smoothedGazeRef.current = null;
     }
 
     if (webgazerRef.current) {
@@ -392,9 +388,9 @@ export function WebGazerProvider({ children }) {
     return () => {
       mountedRef.current = false;
       // Cleanup throttled gaze updater
-      if (throttledGazeRef.current) {
-        throttledGazeRef.current.cleanup();
-        throttledGazeRef.current = null;
+      if (smoothedGazeRef.current) {
+        smoothedGazeRef.current.cleanup();
+        smoothedGazeRef.current = null;
       }
       if (webgazerRef.current) {
         // Stop camera tracks

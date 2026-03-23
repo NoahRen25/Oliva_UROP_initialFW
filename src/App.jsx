@@ -35,6 +35,7 @@ import ComboRatingFlow from "./Webpages/ComboRatingFlow";
 import ComboResultsPage from "./Webpages/ComboResultsPage";
 import PrivacySettings from "./Webpages/PrivacySettings";
 import ConsentModal from "./components/ConsentModal";
+import AnalyticsDashboard from "./Webpages/AnalyticsDashboard";
 
 function createAppTheme(mode) {
   const dark = mode === "dark";
@@ -186,6 +187,7 @@ function NavigationWrapper({ mode, toggleMode }) {
           {/* Results */}
           <Route path="/grid-results" element={<ResultsPage />} />
           <Route path="/mode-results" element={<ModeResultsPage />} />
+          <Route path="/analytics" element={<AnalyticsDashboard />} />
 
           {/* Rating Flows */}
           <Route path="/rate/upload" element={<UnifiedUploadPage />} />

@@ -15,6 +15,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import StorageIcon from "@mui/icons-material/Storage";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import PrivacyTipIcon from "@mui/icons-material/PrivacyTip";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 
 const sections = [
   {
@@ -41,6 +42,12 @@ const sections = [
         desc: "Individual, pairwise, ranked & best-worst results",
         path: "/mode-results",
         icon: <CompareArrowsIcon />,
+      },
+      {
+        title: "Analytics Dashboard",
+        desc: "Session metrics, timelines, and data quality overview",
+        path: "/analytics",
+        icon: <AssessmentIcon />,
       },
     ],
   },

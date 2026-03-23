@@ -18,6 +18,7 @@ import ResultsHeader from "../components/ResultsHeader";
 import StatsSummary from "../components/StatsSummary";
 import ExportCSVButton from "../components/ExportCSVButton";
 import PageTranscriptCell, { PageTranscriptHeader } from "../components/PageTranscriptCell";
+import BackButton from "../components/BackButton";
 
 export default function ComboResultsPage() {
   const { fixedSessions, deleteFixedSession, clearFixedSessions } = useResults();
@@ -49,6 +50,7 @@ export default function ComboResultsPage() {
 
   return (
     <Container maxWidth="md" sx={{ mt: 2 }}>
+      <BackButton />
       <ResultsHeader
         title="Combo Protocol Results"
         hasData={fixedSessions.length > 0}

@@ -9,6 +9,7 @@ import ModeInstructionScreen from "../components/ModeInstructionScreen";
 import { getSelectionBatch } from "../utils/ImageLoader";
 import { preloadImages } from "../utils/preloadImages";
 import usePageTranscription from "../hooks/usePageTranscription";
+import BackButton from "../components/BackButton";
 
 export default function SelectionRate() {
   const navigate = useNavigate();
@@ -66,6 +67,7 @@ export default function SelectionRate() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2, pb: 10 }}>
+      <BackButton />
       {step === 0 && (
         <UsernameEntry
           title="Image Selection Task"

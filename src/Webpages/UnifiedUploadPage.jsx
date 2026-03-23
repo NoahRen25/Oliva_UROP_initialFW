@@ -7,6 +7,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import UsernameEntry from "../components/UsernameEntry";
 import { GRID_DEFINITIONS } from "../data/gridConstants";
 import { useMemImages } from "../data/UseMemImages";
+import BackButton from "../components/BackButton";
 
 // Non-grid rating types
 const RATING_TYPES = ["individual", "pairwise", "ranked", "selection"];
@@ -82,6 +83,7 @@ export default function UnifiedUploadPage() {
 
   return (
     <Container maxWidth="sm" sx={{ mt: 4 }}>
+      <BackButton />
       {step === 0 ? (
         <UsernameEntry
           title="Upload Configuration"
