@@ -36,6 +36,7 @@ import ComboResultsPage from "./Webpages/ComboResultsPage";
 import PrivacySettings from "./Webpages/PrivacySettings";
 import ConsentModal from "./components/ConsentModal";
 import AnalyticsDashboard from "./Webpages/AnalyticsDashboard";
+import GazeAnalyticsPage from "./Webpages/GazeAnalyticsPage";
 
 function createAppTheme(mode) {
   const dark = mode === "dark";
@@ -188,6 +189,7 @@ function NavigationWrapper({ mode, toggleMode }) {
           <Route path="/grid-results" element={<ResultsPage />} />
           <Route path="/mode-results" element={<ModeResultsPage />} />
           <Route path="/analytics" element={<AnalyticsDashboard />} />
+          <Route path="/gaze-analytics" element={<GazeAnalyticsPage />} />
 
           {/* Rating Flows */}
           <Route path="/rate/upload" element={<UnifiedUploadPage />} />

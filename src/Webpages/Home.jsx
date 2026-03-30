@@ -16,6 +16,7 @@ import StorageIcon from "@mui/icons-material/Storage";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import PrivacyTipIcon from "@mui/icons-material/PrivacyTip";
 import AssessmentIcon from "@mui/icons-material/Assessment";
+import TimelineIcon from "@mui/icons-material/Timeline";
 
 const sections = [
   {
@@ -68,6 +69,7 @@ const sections = [
     accent: "#fb923c",
     items: [
       { title: "Eye Tracking", path: "/webgazer-calibration", icon: <VisibilityIcon /> },
+      { title: "Gaze Analytics", desc: "Heatmaps, dwell time charts, and gaze export", path: "/gaze-analytics", icon: <TimelineIcon /> },
       { title: "Dataset Manager", path: "/dataset-manager", icon: <StorageIcon /> },
       { title: "Privacy Settings", path: "/privacy", icon: <PrivacyTipIcon /> },
     ],

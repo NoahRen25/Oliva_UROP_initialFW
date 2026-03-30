@@ -8,6 +8,8 @@ import {
   buildImageAggregates,
   buildQualityReport,
 } from "../utils/dashboardTransforms";
+import { getGazeSessions } from "../utils/gazeStorage";
+import { buildGazeOverview } from "../utils/gazeTransforms";
 
 import OverviewMetrics from "../components/analytics/OverviewMetrics";
 import SessionsTimeline from "../components/analytics/SessionsTimeline";
@@ -15,6 +17,8 @@ import ModeBreakdown from "../components/analytics/ModeBreakdown";
 import DataQualityPanel from "../components/analytics/DataQualityPanel";
 import ImageAggregateStats from "../components/analytics/ImageAggregateStats";
 import DashboardExport from "../components/analytics/DashboardExport";
+import GazeOverviewMetrics from "../components/analytics/GazeOverviewMetrics";
+import GazeByMode from "../components/analytics/GazeByMode";
 import BackButton from "../components/BackButton";
 
 export default function AnalyticsDashboard() {
@@ -64,6 +68,9 @@ export default function AnalyticsDashboard() {
   const modeBreakdown = useMemo(() => buildModeBreakdown(sessionData), [sessionData]);
   const imageAggregates = useMemo(() => buildImageAggregates(sessionData), [sessionData]);
   const qualityReport = useMemo(() => buildQualityReport(sessionData), [sessionData]);
+
+  const gazeSessions = useMemo(() => getGazeSessions(), []);
+  const gazeOverview = useMemo(() => buildGazeOverview(gazeSessions), [gazeSessions]);
 
   const isEmpty = metrics.totalSessions === 0;
 
@@ -192,6 +199,10 @@ export default function AnalyticsDashboard() {
 
             {/* Image Stats */}
             <ImageAggregateStats data={imageAggregates} />
+
+            {/* Gaze Tracking */}
+            <GazeOverviewMetrics metrics={gazeOverview} />
+            <GazeByMode data={gazeOverview.byMode} />
 
             {/* Export */}
             <DashboardExport allSessions={sessionData} />
