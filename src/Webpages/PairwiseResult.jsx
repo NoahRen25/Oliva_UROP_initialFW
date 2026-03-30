@@ -20,6 +20,7 @@ import DevicesIcon from "@mui/icons-material/Devices";
 import ResultsHeader from "../components/ResultsHeader";
 import ExportCSVButton from "../components/ExportCSVButton";
 import StatsSummary from "../components/StatsSummary";
+import PageTranscriptCell, { PageTranscriptHeader } from "../components/PageTranscriptCell";
 
 function SessionMetadata({ metadata }) {
   if (!metadata) return null;
@@ -118,6 +119,7 @@ export default function PairwiseResult() {
                 <TableCell>
                   <strong>Loser</strong>
                 </TableCell>
+                <PageTranscriptHeader />
                 <TableCell align="center">
                   <strong>Action</strong>
                 </TableCell>
@@ -142,6 +144,11 @@ export default function PairwiseResult() {
                 <TableCell sx={{ color: "text.secondary" }}>
                   {choice.loserName}
                 </TableCell>
+                    <PageTranscriptCell
+                      pageKey={choice.pairId}
+                      transcripts={session.pageTranscripts}
+                      label={`Pair ${choice.pairId}`}
+                    />
 
                     {j === 0 && (
                       <TableCell

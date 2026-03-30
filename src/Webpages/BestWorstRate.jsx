@@ -19,6 +19,7 @@ import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackin
 import GazeTrackedImage from "../components/GazeTrackedImage";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
+import usePageTranscription from "../hooks/usePageTranscription";
 
 const demoImg = (filename) => getImageUrl("demo-images", filename);
 
@@ -72,12 +73,17 @@ function BestWorstRateInner() {
   const [trialResults, setTrialResults] = useState([]);
   const [startTime, setStartTime] = useState(null);
 
+  const { markPage, stopAndCollect } = usePageTranscription();
+
   // Preload all trial images on mount
   useEffect(() => {
     preloadImages(TRIALS.flatMap((t) => t.images.map((img) => img.src)));
   }, []);
 
-  const startTrialTimer = () => setStartTime(performance.now());
+  const startTrialTimer = () => {
+    setStartTime(performance.now());
+    markPage(currentTrialIndex + 1);
+  };
 
   const handleStart = () => {
     setStep(1);
@@ -125,7 +131,8 @@ function BestWorstRateInner() {
       setCurrentTrialIndex((prev) => prev + 1);
       startTrialTimer();
     } else {
-      addBestWorstSession(username, updated);
+      const pageTranscripts = stopAndCollect();
+      addBestWorstSession(username, updated, { pageTranscripts });
       saveGazeSession(Date.now().toString(), "best-worst", username, getGazeData());
       setStep(2);
     }

@@ -7,6 +7,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import UsernameEntry from "../components/UsernameEntry";
 import { GRID_DEFINITIONS } from "../data/gridConstants";
 import { useMemImages } from "../data/UseMemImages";
+import BackButton from "../components/BackButton";
 
 // Non-grid rating types
 const RATING_TYPES = ["individual", "pairwise", "ranked", "selection"];
@@ -46,6 +47,7 @@ export default function UnifiedUploadPage() {
           minScore: parseFloat(json.minScore) || 0,
           maxScore: parseFloat(json.maxScore) || 1,
           showRating: json.showRating !== undefined ? json.showRating : true,
+          rankMode: json.rankMode || "select",
         };
 
         // For grid types, count available images in range
@@ -81,6 +83,7 @@ export default function UnifiedUploadPage() {
 
   return (
     <Container maxWidth="sm" sx={{ mt: 4 }}>
+      <BackButton />
       {step === 0 ? (
         <UsernameEntry
           title="Upload Configuration"
@@ -110,6 +113,9 @@ export default function UnifiedUploadPage() {
               <Typography><strong>Type:</strong> {config.type}</Typography>
               <Typography><strong>Count:</strong> {config.count}</Typography>
               <Typography><strong>Prompt:</strong> {config.prompt}</Typography>
+              {config.type === "ranked" && (
+                <Typography><strong>Rank Mode:</strong> {config.rankMode === "swap" ? "Swap (Drag & Drop)" : "Select (Dropdown)"}</Typography>
+              )}
               {isGrid && (
                 <>
                   <Typography>

@@ -12,6 +12,8 @@ import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackin
 import GazeTrackedImage from "../components/GazeTrackedImage";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
+import usePageTranscription from "../hooks/usePageTranscription";
+import BackButton from "../components/BackButton";
 
 function SelectionRateInner() {
   const navigate = useNavigate();
@@ -25,6 +27,8 @@ function SelectionRateInner() {
   const [images, setImages] = useState([]);
   const [selected, setSelected] = useState(new Set());
 
+  const { markPage, stopAndCollect } = usePageTranscription();
+
   const imageCount = uploadConfig?.count || 9;
   const taskPrompt = uploadConfig?.prompt || "Select all images that match the description";
 
@@ -37,11 +41,12 @@ function SelectionRateInner() {
   useEffect(() => {
     if (step === 2) {
       setActivePrompt(taskPrompt);
+      markPage(1);
     } else {
       setActivePrompt(null);
     }
     return () => setActivePrompt(null);
-  }, [step, taskPrompt, setActivePrompt]);
+  }, [step, taskPrompt, setActivePrompt, markPage]);
 
   const toggleSelect = (id) => {
     setSelected((prev) => {
@@ -59,7 +64,7 @@ function SelectionRateInner() {
       imagePrompt: img.prompt,
       selected: selected.has(img.id),
     }));
-    addSelectionSession(username, taskPrompt, selections);
+    addSelectionSession(username, taskPrompt, selections, { pageTranscripts: stopAndCollect() });
     saveGazeSession(Date.now().toString(), "selection", username, getGazeData());
     navigate("/mode-results");
   };
@@ -68,6 +73,7 @@ function SelectionRateInner() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2, pb: 10 }}>
+      <BackButton />
       {step === 0 && (
         <UsernameEntry
           title="Image Selection Task"

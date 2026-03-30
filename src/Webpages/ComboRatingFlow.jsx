@@ -10,6 +10,8 @@ import { useMemImages } from "../data/UseMemImages";
 import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
+import usePageTranscription from "../hooks/usePageTranscription";
+import BackButton from "../components/BackButton";
 
 //fisher-yates alg is optimal
 const shuffleArray = (array) => {
@@ -36,6 +38,8 @@ function ComboRatingFlowInner() {
   const [sliderMoves, setSliderMoves] = useState({});
   const [interactionSequence, setInteractionSequence] = useState([]);
   const [savedClickOrders, setSavedClickOrders] = useState({});
+
+  const { markPage, stopAndCollect } = usePageTranscription();
 
   // --- Logic to select 33 images (Custom Placement with Safety Checks) ---
   const fixedImageSequence = useMemo(() => {
@@ -152,6 +156,7 @@ function ComboRatingFlowInner() {
     window.scrollTo(0, 0);
     setStep(2);
     startSession();
+    markPage(1);
   };
 
   const handleInteraction = (id) => {
@@ -201,11 +206,12 @@ function ComboRatingFlowInner() {
         };
       }).filter(Boolean); // Filter out any nulls
 
-      addFixedSession(username, scores);
+      addFixedSession(username, scores, { pageTranscripts: stopAndCollect() });
       saveGazeSession(Date.now().toString(), "combo", username, getGazeData());
       navigate("/grid-results");
     } else {
       setCurrentPage(prev => prev + 1);
+      markPage(currentPage + 2);
       setInteractionSequence([]); 
       window.scrollTo(0, 0);
     }
@@ -215,6 +221,7 @@ function ComboRatingFlowInner() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <BackButton />
       {step === 0 && (
         <UsernameEntry 
           title="Combo Protocol (33)" 

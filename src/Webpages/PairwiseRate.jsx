@@ -13,6 +13,7 @@ import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackin
 import GazeTrackedImage from "../components/GazeTrackedImage";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
+import usePageTranscription from "../hooks/usePageTranscription";
 
 function PairwiseRateInner() {
   const navigate = useNavigate();
@@ -29,6 +30,8 @@ function PairwiseRateInner() {
   const [selectedSide, setSelectedSide] = useState(null);
   const [choices, setChoices] = useState([]);
   const [isFinished, setIsFinished] = useState(false);
+
+  const { markPage, stopAndCollect } = usePageTranscription();
 
   const pairCount = uploadConfig?.count || 5;
   const configPrompt = uploadConfig?.prompt || null;
@@ -53,7 +56,8 @@ function PairwiseRateInner() {
     }
     const prompt = configPrompt || pairs[currentPairIndex].prompt;
     setActivePrompt(prompt);
-  }, [step, currentPairIndex, pairs, configPrompt, isFinished, setActivePrompt]);
+    markPage(currentPairIndex + 1);
+  }, [step, currentPairIndex, pairs, configPrompt, isFinished, setActivePrompt, markPage]);
 
   const handleNext = () => {
     const currentPair = pairs[currentPairIndex];
@@ -74,7 +78,8 @@ function PairwiseRateInner() {
     } else {
       setIsFinished(true);
       window.speechSynthesis.cancel();
-      addPairwiseSession(username, newChoices);
+      const pageTranscripts = stopAndCollect();
+      addPairwiseSession(username, newChoices, { pageTranscripts });
       saveGazeSession(Date.now().toString(), "pairwise", username, getGazeData());
       navigate("/mode-results");
     }

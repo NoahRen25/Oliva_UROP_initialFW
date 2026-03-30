@@ -15,6 +15,7 @@ import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackin
 import GazeTrackedImage from "../components/GazeTrackedImage";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
+import usePageTranscription from "../hooks/usePageTranscription";
 
 function IndividualRateInner() {
   const navigate = useNavigate();
@@ -39,6 +40,8 @@ function IndividualRateInner() {
   const [startTime, setStartTime] = useState(null);
   const [interactionCount, setInteractionCount] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
+
+  const { markPage, stopAndCollect } = usePageTranscription();
 
   const imageCount = uploadConfig?.count || 6;
   const configPrompt = uploadConfig?.prompt || null;
@@ -69,13 +72,15 @@ function IndividualRateInner() {
   useEffect(() => {
     if (activeStep === 2 && benchmarkImage) {
       setActivePrompt(configPrompt || benchmarkImage.prompt);
+      markPage("benchmark");
     } else if (activeStep === 3 && imagesToRate[currentImageIndex]) {
       const img = imagesToRate[currentImageIndex];
       setActivePrompt(configPrompt || img.prompt);
+      markPage(currentImageIndex + 1);
     } else {
       setActivePrompt(null);
     }
-  }, [activeStep, currentImageIndex, benchmarkImage, imagesToRate, configPrompt, setActivePrompt]);
+  }, [activeStep, currentImageIndex, benchmarkImage, imagesToRate, configPrompt, setActivePrompt, markPage]);
 
   const handleNext = (isBenchmark = false) => {
     if (isLocked) return;
@@ -111,7 +116,8 @@ function IndividualRateInner() {
     } else if (currentImageIndex < imagesToRate.length - 1) {
       setCurrentImageIndex(currentImageIndex + 1);
     } else {
-      addIndividualSession(username, updatedScores);
+      const pageTranscripts = stopAndCollect();
+      addIndividualSession(username, updatedScores, { pageTranscripts });
       saveGazeSession(Date.now().toString(), "individual", username, getGazeData());
       setActiveStep(4);
     }

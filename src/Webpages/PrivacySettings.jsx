@@ -18,6 +18,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import WarningIcon from "@mui/icons-material/Warning";
 import PrivacyTipIcon from "@mui/icons-material/PrivacyTip";
+import BackButton from "../components/BackButton";
 
 export default function PrivacySettings() {
   const {
@@ -60,6 +61,7 @@ export default function PrivacySettings() {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <BackButton />
       <Paper sx={{ p: 4 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
           <PrivacyTipIcon sx={{ fontSize: 40, color: "primary.main" }} />

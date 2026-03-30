@@ -20,6 +20,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DevicesIcon from "@mui/icons-material/Devices";
 import ResultsHeader from "../components/ResultsHeader";
 import StatsSummary from "../components/StatsSummary";
+import PageTranscriptCell, {PageTranscriptHeader} from "../components/pageTranscriptCell";
 
 function SessionMetadata({ metadata }) {
   if (!metadata) return null;
@@ -75,6 +76,7 @@ export default function IndividualResult() {
                 <TableCell align="right"><strong>Score</strong></TableCell>
                 <TableCell align="right"><strong>Time (s)</strong></TableCell>
                 <TableCell align="right"><strong>Moves</strong></TableCell>
+                <PageTranscriptHeader />
               </TableRow>
             </TableHead>
             <TableBody>
@@ -128,6 +130,11 @@ export default function IndividualResult() {
                         <TableCell align="right">
                           {score.interactionCount || 0}
                         </TableCell>
+                        <PageTranscriptCell
+                          pageKey={score.imageId === 0 || score.imageId === "0" ? "benchmark" : scoreIdx}
+                          transcripts={session.pageTranscripts}
+                          label={score.imageId === 0 || score.imageId === "0" ? "Benchmark" : `Image ${scoreIdx}`}
+                        />
                       </TableRow>
                     ))}
                     <TableRow sx={{ bgcolor: "#fafafa" }}>
@@ -146,15 +153,16 @@ export default function IndividualResult() {
                       <TableCell align="right" sx={{ fontWeight: "bold", color: "#1976d2" }}>
                         {avgMoves}
                       </TableCell>
+                      <TableCell />
                     </TableRow>
                     <TableRow>
-                      <TableCell colSpan={5} sx={{ py: 0, px: 1 }}>
+                      <TableCell colSpan={6} sx={{ py: 0, px: 1 }}>
                         <SessionMetadata metadata={session.metadata} />
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell
-                        colSpan={5}
+                        colSpan={6}
                         sx={{ bgcolor: "#f1f1f1", height: "8px", p: 0 }}
                       />
                     </TableRow>

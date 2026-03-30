@@ -17,6 +17,7 @@ import { useResults } from "../Results";
 import ResultsHeader from "../components/ResultsHeader";
 import StatsSummary from "../components/StatsSummary";
 import ExportCSVButton from "../components/ExportCSVButton";
+import PageTranscriptCell, { PageTranscriptHeader } from "../components/PageTranscriptCell";
 
 export default function LayoutResultsPage({ layoutId, title }) {
   const { getGroupSessions, deleteGroupSessionForLayout, clearGroupForLayout } =
@@ -146,6 +147,7 @@ export default function LayoutResultsPage({ layoutId, title }) {
                       <TableCell align="right">
                         <strong>Sequence</strong>
                       </TableCell>
+                      <PageTranscriptHeader />
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -168,6 +170,11 @@ export default function LayoutResultsPage({ layoutId, title }) {
                         <TableCell align="center" sx={{ fontWeight: 'bold', color: seqColor}}>
                           {s.clickOrder || "-"}
                         </TableCell>
+                        <PageTranscriptCell
+                          pageKey={parseInt((s.position || "P1").split(":")[0].replace("P", ""), 10) || 1}
+                          transcripts={session.pageTranscripts}
+                          label={`Page ${(s.position || "P1").split(":")[0]}`}
+                        />
                       </TableRow>
                       );
           })}

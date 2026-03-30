@@ -17,6 +17,8 @@ import { useResults } from "../Results";
 import ResultsHeader from "../components/ResultsHeader";
 import StatsSummary from "../components/StatsSummary";
 import ExportCSVButton from "../components/ExportCSVButton";
+import PageTranscriptCell, { PageTranscriptHeader } from "../components/PageTranscriptCell";
+import BackButton from "../components/BackButton";
 
 export default function ComboResultsPage() {
   const { fixedSessions, deleteFixedSession, clearFixedSessions } = useResults();
@@ -48,6 +50,7 @@ export default function ComboResultsPage() {
 
   return (
     <Container maxWidth="md" sx={{ mt: 2 }}>
+      <BackButton />
       <ResultsHeader
         title="Combo Protocol Results"
         hasData={fixedSessions.length > 0}
@@ -125,6 +128,7 @@ export default function ComboResultsPage() {
                       <TableCell align="right"><strong>Score</strong></TableCell>
                       <TableCell align="right"><strong>Moves</strong></TableCell>
                       <TableCell align="center"><strong>Sequence</strong></TableCell>
+                      <PageTranscriptHeader />
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -153,6 +157,11 @@ export default function ComboResultsPage() {
                             <TableCell align="center" sx={{ fontWeight: 'bold', color: seqColor}}>
                             {s.clickOrder || "-"}
                             </TableCell>
+                            <PageTranscriptCell
+                              pageKey={pageNum}
+                              transcripts={session.pageTranscripts}
+                              label={`Page ${pageNum}`}
+                            />
                         </TableRow>
                       );
                     })}

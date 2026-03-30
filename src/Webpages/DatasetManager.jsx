@@ -20,11 +20,13 @@ import {
   getSignedImageUrl,
   listImages,
 } from "../services/supabaseStorage";
+import BackButton from "../components/BackButton";
 
 export default function DatasetManager() {
   if (!supabase) {
     return (
       <Container maxWidth="sm" sx={{ mt: 4 }}>
+        <BackButton />
         <Alert severity="warning">
           Supabase is not configured. Add VITE_SUPABASE_URL and
           VITE_SUPABASE_ANON_KEY to your .env and restart the dev server.
@@ -153,6 +155,7 @@ export default function DatasetManager() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
+      <BackButton />
       <Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>
         Dataset Manager
       </Typography>

@@ -1,35 +1,35 @@
-_# Improvements Roadmap
+# Improvements Roadmap
 
 Notes from a quick pass. Pick a few that match your current goal and ignore the rest.
 
 ## 1) Data Capture and Persistence
-- Persist sessions to a backend (e.g., Supabase, Firebase, or a simple REST API).
-- Add local persistence fallback (localStorage/IndexedDB).
-- Provide export buttons for CSV/JSON of each session and aggregated stats.
-- Store per-session metadata (device, browser, screen size) for analysis.
-- Record prompt text alongside each image in stored results.
+- ~~Persist sessions to a backend~~ **Done** (Supabase integration)
+- ~~Add local persistence fallback~~ **Done** (localStorage write-through)
+- ~~Provide export buttons for CSV/JSON~~ **Done** (Analytics Dashboard CSV export)
+- ~~Store per-session metadata~~ **Done** (meta JSONB field in sessions table)
+- ~~Record prompt text alongside each image~~ **Done** (prompt field in rating_scores)
 
 ## 2) Analysis and Reporting
-- Add per-image aggregate stats: mean, median, std dev, distribution histogram.
+- ~~Add per-image aggregate stats: mean, median, std dev, distribution histogram~~ **Done** (ImageAggregateStats component)
 - Add cross-method comparisons (individual vs group vs ranked vs pairwise).
 - Provide per-user consistency checks (variance, repeatability).
-- Add “exclude benchmark” toggle in results tables.
-- Add outlier detection for extreme ratings or fast completions.
+- Add "exclude benchmark" toggle in results tables.
+- ~~Add outlier detection for extreme ratings or fast completions~~ **Done** (detectOutliers in statsUtils.js)
 
 ## 3) Experimental Design and Rigor
 - Randomize image order for individual and group rating flows.
 - Randomize pair order and left/right positions in pairwise flow.
 - Counterbalance benchmark placement (not always first).
-- Add attention checks (simple “obvious” items to detect low-effort responses).
+- Add attention checks (simple "obvious" items to detect low-effort responses).
 - Collect confidence rating per answer (low/med/high).
-- Add minimum viewing time before enabling “Next.”
+- Add minimum viewing time before enabling "Next."
 
 ## 4) UX and Flow
-- Add a progress indicator (e.g., stepper/progress bar).
+- ~~Add a progress indicator~~ **Done** (ProgressBar + ProgressIndicator components)
 - Add a review/undo step for the last selection.
-- Add clear completion summary and next actions after submit.
-- Show prompt text alongside images in all rating modes.
-- Add keyboard shortcuts (1-5 ratings, arrows to navigate).
+- ~~Add clear completion summary and next actions after submit~~ **Done** (CompletionSummary component)
+- ~~Show prompt text alongside images in all rating modes~~ **Done**
+- ~~Add keyboard shortcuts~~ **Done** (1-5 ratings, arrows to navigate)
 - Improve mobile layouts for card grids and ranking lists.
 
 ## 5) Accessibility
@@ -55,9 +55,9 @@ Notes from a quick pass. Pick a few that match your current goal and ignore the 
 - Enforce lint rules and formatting (ESLint + Prettier).
 
 ## 8) Security and Privacy
-- Provide consent notice before data collection.
-- Add a privacy note for stored data (what is stored, where, retention).
-- Add a “delete my data” flow if collecting personal data.
+- ~~Provide consent notice before data collection~~ **Done** (ConsentModal component)
+- ~~Add a privacy note for stored data~~ **Done** (PrivacySettings page)
+- ~~Add a "delete my data" flow~~ **Done** (clearAllData in Results.jsx)
 
 ## 9) Deployment and Ops
 - Add environment-based config (dev vs prod settings).
@@ -65,8 +65,8 @@ Notes from a quick pass. Pick a few that match your current goal and ignore the 
 - Add static hosting instructions (Vercel/Netlify).
 
 ## 10) Future Features (Optional)
-- Add multi-task sessions (combine pairwise + ranked in one flow).
+- ~~Add multi-task sessions (combine pairwise + ranked in one flow)~~ **Done** (ComboRatingFlow)
 - Add annotations or free-text feedback per image.
-- Add “explain why you chose this” capture for qualitative data.
+- Add "explain why you chose this" capture for qualitative data.
 - Support multiple datasets (prompt sets) with dynamic switching.
-- Add admin dashboard with filters and data export._
+- ~~Add admin dashboard with filters and data export~~ **Done** (AnalyticsDashboard)

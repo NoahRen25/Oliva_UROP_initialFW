@@ -12,6 +12,7 @@ import ImageGrid from "./ImageGrid";
 import GazeTrackingProvider, { useGazeTracking } from "./GazeTrackingProvider";
 import CalibrationGate from "./CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
+import usePageTranscription from "../hooks/usePageTranscription";
 
 function LayoutRatingFlowInner({ mode = "upload" }) {
   const navigate = useNavigate();
@@ -37,6 +38,8 @@ function LayoutRatingFlowInner({ mode = "upload" }) {
   const [sliderMoves, setSliderMoves] = useState({});
   const [interactionSequence, setInteractionSequence] = useState([]);
   const [savedClickOrders, setSavedClickOrders] = useState({});
+
+  const { markPage, stopAndCollect } = usePageTranscription();
 
   const imageCount = uploadConfig?.count || gridConfig.pageSize;
   const minScore = uploadConfig?.minScore || 0;
@@ -84,6 +87,7 @@ function LayoutRatingFlowInner({ mode = "upload" }) {
     window.scrollTo(0, 0);
     setStep(2);
     startSession();
+    markPage(1);
   };
 
   const handleInteraction = (id) => {
@@ -126,11 +130,13 @@ function LayoutRatingFlowInner({ mode = "upload" }) {
       addGroupSessionForLayout(layoutId, username, scores, {
         grid: gridConfig,
         prompt: taskPromptText,
+        pageTranscripts: stopAndCollect(),
       });
       saveGazeSession(Date.now().toString(), "grid", username, getGazeData());
       navigate("/grid-results");
     } else {
       setCurrentPage(prev => prev + 1);
+      markPage(currentPage + 2);
       setInteractionSequence([]);
       window.scrollTo(0, 0);
     }
