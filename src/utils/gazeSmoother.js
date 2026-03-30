@@ -1,52 +1,37 @@
 /**
- * GazeSmoother — multi-stage gaze data processing pipeline.
+ * GazeSmoother — outlier/blink rejection filter.
  *
- * Sits between raw WebGazer output and React state to provide:
- *   1. Outlier / blink rejection
- *   2. Exponential Moving Average (EMA) smoothing
- *   3. Adaptive velocity dampening
+ * Sits between raw WebGazer output and React state.
+ * WebGazer's built-in Kalman filter (fixed in 3.5.3) handles smoothing.
+ * This class only rejects outliers (blinks, tracking losses, sudden jumps).
  */
-
 export class GazeSmoother {
-  constructor({
-    alpha = 0.25,
-    outlierThreshold = 300,
-    historySize = 5,
-    warmupFrames = 10,
-  } = {}) {
-    this._baseAlpha = alpha;
-    this._alpha = alpha;
-    this._outlierThreshold = outlierThreshold;
-    this._historySize = historySize;
-    this._warmupFrames = warmupFrames;
-
-    this._smoothed = null;       // last smoothed output { x, y }
-    this._history = [];          // ring buffer of recent raw points
-    this._frameCount = 0;        // frames since last reset
+  constructor() {
+    this._smoothed = null;       // last accepted point { x, y }
     this._consecutiveRejects = 0;
   }
 
   /**
-   * Process a raw gaze point through the smoothing pipeline.
-   * @returns {{ x: number, y: number } | null} — smoothed point, or null if rejected
+   * Process a raw gaze point. Returns the point if accepted, null if rejected.
+   * Outlier threshold is 15% of viewport diagonal — adapts to any screen size.
    */
   process(x, y) {
     if (x == null || y == null || isNaN(x) || isNaN(y)) return null;
 
     const raw = { x, y };
 
-    // --- Stage 1: Outlier / blink rejection ---
+    // Calculate viewport-relative outlier threshold
+    const threshold = Math.hypot(window.innerWidth, window.innerHeight) * 0.15;
+
     if (this._smoothed) {
       const dist = Math.hypot(raw.x - this._smoothed.x, raw.y - this._smoothed.y);
 
-      if (dist > this._outlierThreshold) {
+      if (dist > threshold) {
         this._consecutiveRejects++;
-        // If 3+ consecutive rejects, the user genuinely moved — accept & reset
+        // 3+ consecutive rejects = genuine movement, accept and reset
         if (this._consecutiveRejects >= 3) {
           this._consecutiveRejects = 0;
           this._smoothed = raw;
-          this._history = [raw];
-          this._frameCount = 1;
           return raw;
         }
         return null; // reject this frame
@@ -55,67 +40,14 @@ export class GazeSmoother {
 
     this._consecutiveRejects = 0;
 
-    // --- Warm-up: first frame accepted directly ---
-    if (!this._smoothed) {
-      this._smoothed = raw;
-      this._history = [raw];
-      this._frameCount = 1;
-      return raw;
-    }
-
-    this._frameCount++;
-
-    // Maintain ring buffer
-    this._history.push(raw);
-    if (this._history.length > this._historySize) {
-      this._history.shift();
-    }
-
-    // --- Stage 3: Adaptive velocity dampening ---
-    const velocity = this._history.length >= 2
-      ? Math.hypot(
-          raw.x - this._history[this._history.length - 2].x,
-          raw.y - this._history[this._history.length - 2].y
-        )
-      : 0;
-
-    // High velocity (saccade) → increase alpha for responsiveness
-    // Low velocity (fixation) → decrease alpha for stability
-    const velocityFactor = Math.min(velocity / 150, 1); // normalize 0..1
-    const adaptiveAlpha = this._baseAlpha + (1 - this._baseAlpha) * velocityFactor * 0.5;
-
-    // During warm-up, use higher alpha for faster convergence
-    const warmupAlpha = this._frameCount <= this._warmupFrames
-      ? 1 - (1 - adaptiveAlpha) * (this._frameCount / this._warmupFrames)
-      : adaptiveAlpha;
-
-    this._alpha = warmupAlpha;
-
-    // --- Stage 2: EMA smoothing ---
-    this._smoothed = {
-      x: this._alpha * raw.x + (1 - this._alpha) * this._smoothed.x,
-      y: this._alpha * raw.y + (1 - this._alpha) * this._smoothed.y,
-    };
-
-    return { x: this._smoothed.x, y: this._smoothed.y };
+    // First frame or normal movement — accept
+    this._smoothed = raw;
+    return raw;
   }
 
-  /** Clear all history — call after recalibration */
+  /** Clear state — call after recalibration */
   reset() {
     this._smoothed = null;
-    this._history = [];
-    this._frameCount = 0;
     this._consecutiveRejects = 0;
-    this._alpha = this._baseAlpha;
-  }
-
-  /** Live-tune the base smoothness (0 = max smooth, 1 = no smoothing) */
-  setAlpha(alpha) {
-    this._baseAlpha = Math.max(0.05, Math.min(1, alpha));
-  }
-
-  /** Get the current base alpha */
-  getAlpha() {
-    return this._baseAlpha;
   }
 }
