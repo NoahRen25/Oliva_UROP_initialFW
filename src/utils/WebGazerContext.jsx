@@ -185,6 +185,10 @@ export function WebGazerProvider({ children }) {
         let allFound = true;
 
         if (video) {
+          // Set width/height attributes to match the camera resolution.
+          // The tfjs face detector reads these attributes (not CSS) for input sizing.
+          video.width = video.videoWidth || 640;
+          video.height = video.videoHeight || 480;
           video.style.display = 'block';
           video.style.position = 'fixed';
           video.style.top = '160px';
