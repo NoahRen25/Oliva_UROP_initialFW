@@ -11,6 +11,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import StorageIcon from "@mui/icons-material/Storage";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import PrivacyTipIcon from "@mui/icons-material/PrivacyTip";
+import ScienceIcon from "@mui/icons-material/Science";
 
 export default function Home() {
   const menuItems = [
@@ -75,6 +76,13 @@ export default function Home() {
       path: "/privacy",
       icon: <PrivacyTipIcon fontSize="large" />,
       color: "#607d8b",
+    },
+    {
+      title: "Researcher View",
+      description: "Analyze sessions with audio playback, stats, and image comparison",
+      path: "/researcher",
+      icon: <ScienceIcon fontSize="large" />,
+      color: "#283593",
     },
   ];
 

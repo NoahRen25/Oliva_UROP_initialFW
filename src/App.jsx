@@ -14,7 +14,7 @@ import { WebGazerProvider, useWebGazer } from "./utils/WebGazerContext";
 import VoiceRecorder from "./components/VoiceRecorder";
 import TranscriptHistory from "./Webpages/TranscriptHistory";
 import ReadPromptButton from "./components/ReadPromptButton";
-
+import ResearcherView from "./Webpages/ResearcherView";
 import Home from "./Webpages/Home";
 import IndividualRate from "./Webpages/IndividualRate";
 import PairwiseRate from "./Webpages/PairwiseRate";
@@ -34,6 +34,7 @@ import ComboRatingFlow from "./Webpages/ComboRatingFlow";
 import ComboResultsPage from "./Webpages/ComboResultsPage";
 import PrivacySettings from "./Webpages/PrivacySettings";
 import ConsentModal from "./components/ConsentModal";
+import SimulatedSession from "./Webpages/SimulatedSession";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
@@ -114,6 +115,8 @@ function NavigationWrapper() {
           <Route path="/results" element={<ResultsPage />} />
           <Route path="/combo-results" element={<ComboResultsPage />} />
           <Route path="/privacy" element={<PrivacySettings />} />
+          <Route path="/researcher" element={<ResearcherView />} />
+          <Route path="/researcher/simulate" element={<SimulatedSession />} />
         </Routes>
       </Box>
     </Router>

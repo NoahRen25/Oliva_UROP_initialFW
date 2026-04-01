@@ -1,771 +1,1090 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
-import { useResults } from "../Results";
+import { useNavigate } from "react-router-dom";
 import {
-  Container, Typography, Box, Paper, Card, CardMedia, CardContent,
-  Chip, IconButton, Tooltip, Select, MenuItem, FormControl,
-  InputLabel, Slider, Divider, Avatar, LinearProgress, Badge,
-  Table, TableBody, TableCell, TableHead, TableRow, Button, Alert,
+  Container, Box, Typography, Tabs, Tab, Paper, FormControl,
+  Select, MenuItem, InputLabel, Button, IconButton, Chip,
+  Card, CardMedia, CardContent, Grid, Divider, Tooltip,
+  Table, TableBody, TableCell, TableHead, TableRow,
+  ToggleButton, ToggleButtonGroup, Alert, Checkbox,
 } from "@mui/material";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import StopIcon from "@mui/icons-material/Stop";
 import DownloadIcon from "@mui/icons-material/Download";
-import GraphicEqIcon from "@mui/icons-material/GraphicEq";
+import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import PersonIcon from "@mui/icons-material/Person";
 import BarChartIcon from "@mui/icons-material/BarChart";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import SpeedIcon from "@mui/icons-material/Speed";
-import TouchAppIcon from "@mui/icons-material/TouchApp";
-import TimelineIcon from "@mui/icons-material/Timeline";
-import InfoIcon from "@mui/icons-material/Info";
-import FilterListIcon from "@mui/icons-material/FilterList";
-import ExportCSVButton from "../components/ExportCSVButton";
+import ViewListIcon from "@mui/icons-material/ViewList";
+import GridViewIcon from "@mui/icons-material/GridView";
+import SummarizeIcon from "@mui/icons-material/Summarize";
+import InsightsIcon from "@mui/icons-material/Insights";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import CheckBoxIcon from "@mui/icons-material/CheckBox";
+import SelectAllIcon from "@mui/icons-material/SelectAll";
 
-// ─── Audio player mini-component ─────────────────────────────────
-function AudioPlayer({ url, label }) {
-  const [playing, setPlaying] = useState(false);
-  const audioRef = useRef(null);
+import { useResults } from "../Results";
+import { getImageUrl } from "../utils/supabaseImageUrl";
+import AudioModal from "../components/AudioModal";
+import StatsModal from "../components/StatsModal";
+import ImageComparisonModal from "../components/ImageComparisonModal";
+import ImageActionMenu from "../components/ImageActionMenu";
+import BackButton from "../components/BackButton";
 
-  const toggle = useCallback(() => {
-    if (playing) {
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current.currentTime = 0; audioRef.current = null; }
-      setPlaying(false);
-    } else if (url) {
-      const a = new Audio(url);
-      audioRef.current = a;
-      a.onended = () => { setPlaying(false); audioRef.current = null; };
-      a.onerror = () => { setPlaying(false); audioRef.current = null; };
-      a.play().catch(() => setPlaying(false));
-      setPlaying(true);
-    }
-  }, [playing, url]);
+// ─── Helpers ────────────────────────────────────────────────────────
 
-  const download = useCallback(() => {
-    if (!url) return;
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${label || "recording"}.webm`.replace(/\s+/g, "_");
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }, [url, label]);
+const mean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
 
-  if (!url) return <Chip label="No audio" size="small" variant="outlined" sx={{ opacity: 0.4 }} />;
 
-  return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-      <Tooltip title={playing ? "Stop" : "Play"}>
-        <IconButton
-          size="small"
-          onClick={toggle}
-          sx={{ color: playing ? "error.main" : "success.main" }}
-        >
-          {playing ? <StopIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Download">
-        <IconButton size="small" onClick={download} sx={{ color: "grey.600" }}>
-          <DownloadIcon fontSize="small" />
-        </IconButton>
-      </Tooltip>
-    </Box>
-  );
+const DEMO_IMAGE_LOOKUP = {
+  "GPT Moon":   "GPTMoonFlags.png",
+  "Flux Moon":  "FluxMoonFlags.png",
+  "Nano Moon":  "NanoMoonFlags.png",
+  "GPT Ship":   "GPTShip.png",
+  "Flux Ship":  "FluxShip.png",
+  "Nano Ship":  "NanoShip.png",
+  "GPT Flag":   "GPTFlag.png",
+  "Flux Flag":  "FluxFlag.png",
+  "Nano Flag":  "NanoFlag.png",
+};
+
+function resolveImageUrl(name) {
+  if (!name) return null;
+
+  // Already a full URL
+  if (typeof name === "string" && (name.startsWith("http://") || name.startsWith("https://"))) {
+    return name;
+  }
+
+  // Convert to string in case it's a number (individual mode uses index as imageId)
+  const str = String(name);
+
+  // Pure numeric — this is an index, not a filename; can't resolve
+  if (/^\d+$/.test(str)) return null;
+
+  // Generated images: "folder/filename.ext" pattern
+  // e.g. "flux_2_pro/generated_001.png", "gptimage15/img.png", "nano_banana_pro/gen.png"
+  if (str.includes("/")) {
+    return getImageUrl("generated-images", str);
+  }
+
+  // Memorability images: "target_NNNNNN" pattern (grid / combo flows)
+  if (str.startsWith("target_")) {
+    const filename = str.endsWith(".jpg") ? str : `${str}.jpg`;
+    return getImageUrl("mem-images", filename);
+  }
+
+  // Demo images by exact filename: "GPTMoonFlags.png" etc.
+  if (str.endsWith(".png") || str.endsWith(".jpg")) {
+    return getImageUrl("demo-images", str);
+  }
+
+  // Demo images by human-readable alt text: "GPT Moon", "Flux Ship" etc.
+  // (Best-Worst stores bestName/worstName as the alt text, not the filename)
+  if (DEMO_IMAGE_LOOKUP[str]) {
+    return getImageUrl("demo-images", DEMO_IMAGE_LOOKUP[str]);
+  }
+
+  return null;
 }
 
-// ─── Score distribution mini-bar ──────────────────────────────────
-function MiniHistogram({ scores, maxScore = 10 }) {
-  const buckets = {};
-  for (let i = 1; i <= maxScore; i++) buckets[i] = 0;
-  scores.forEach((s) => {
-    const k = Math.round(s);
-    if (k >= 1 && k <= maxScore) buckets[k]++;
-  });
-  const maxCount = Math.max(...Object.values(buckets), 1);
+function buildImageStats(sessions, mode) {
+  const imageMap = {};
 
-  return (
-    <Box sx={{ display: "flex", alignItems: "flex-end", gap: "2px", height: 40 }}>
-      {Object.entries(buckets).map(([k, count]) => (
-        <Tooltip key={k} title={`Score ${k}: ${count} rating${count !== 1 ? "s" : ""}`}>
-          <Box
-            sx={{
-              width: 8,
-              height: `${Math.max((count / maxCount) * 100, 4)}%`,
-              bgcolor: count > 0 ? "#1976d2" : "#e0e0e0",
-              borderRadius: "2px 2px 0 0",
-              transition: "height 0.3s",
-              cursor: "default",
-            }}
-          />
-        </Tooltip>
-      ))}
-    </Box>
-  );
-}
-
-// ─── Stat chip ────────────────────────────────────────────────────
-function StatChip({ icon, label, value, color = "default" }) {
-  return (
-    <Chip
-      icon={icon}
-      label={`${label}: ${value}`}
-      size="small"
-      variant="outlined"
-      color={color}
-      sx={{ fontWeight: "medium" }}
-    />
-  );
-}
-
-// ─── Main Component ──────────────────────────────────────────────
-export default function ResearcherView() {
-  const {
-    individualSessions,
-    pairwiseSessions,
-    videoPairwiseSessions,
-    rankedSessions,
-    bestWorstSessions,
-    selectionSessions,
-    fixedSessions,
-    groupSessionsByLayout,
-    pressureCookerSessions,
-  } = useResults();
-
-  const [selectedMode, setSelectedMode] = useState("all");
-  const [selectedUser, setSelectedUser] = useState("all");
-
-  // ── Aggregate all sessions into a unified shape ──────────────
-  const allSessions = useMemo(() => {
-    const sessions = [];
-
-    // Individual
-    individualSessions.forEach((s) => {
-      sessions.push({
-        ...s,
-        mode: "individual",
-        modeLabel: "Individual",
-        items: (s.scores || []).map((sc, i) => ({
-          type: "score",
-          imageName: sc.imageName,
-          imageSrc: sc.imageSrc || null,
-          prompt: sc.prompt,
-          score: sc.score,
-          timeSpent: sc.timeSpent,
-          moves: sc.interactionCount || 0,
-          pageKey: sc.imageId === 0 || sc.imageId === "0" ? "benchmark" : i,
-          isBenchmark: sc.imageId === 0 || sc.imageId === "0",
-        })),
-      });
-    });
-
-    // Pairwise
-    pairwiseSessions.forEach((s) => {
-      sessions.push({
-        ...s,
-        mode: "pairwise",
-        modeLabel: "Pairwise",
-        items: (s.choices || []).map((c) => ({
-          type: "pairwise",
-          winner: c.winnerName,
-          loser: c.loserName,
-          winnerSide: c.winnerSide,
-          prompt: c.prompt,
-          pageKey: c.pairId,
-        })),
-      });
-    });
-
-    // Video Pairwise
-    videoPairwiseSessions.forEach((s) => {
-      sessions.push({
-        ...s,
-        mode: "video_pairwise",
-        modeLabel: "Video Pairwise",
-        items: (s.choices || []).map((c) => ({
-          type: "pairwise",
-          winner: c.winnerName,
-          loser: c.loserName,
-          winnerSide: c.winnerSide,
-          prompt: c.prompt,
-          pageKey: c.pairId,
-        })),
-      });
-    });
-
-    // Ranked
-    rankedSessions.forEach((s) => {
-      sessions.push({
-        ...s,
-        mode: "ranked",
-        modeLabel: "Ranked",
-        items: (s.rankings || []).map((r) => ({
-          type: "ranked",
-          imageName: r.imageName,
-          rank: r.rank,
-          groupId: r.groupId,
-          prompt: r.groupPrompt,
-          pageKey: r.groupId,
-        })),
-      });
-    });
-
-    // Best-Worst
-    bestWorstSessions.forEach((s) => {
-      sessions.push({
-        ...s,
-        mode: "best_worst",
-        modeLabel: "Best-Worst",
-        items: (s.trials || []).map((t) => ({
-          type: "best_worst",
-          bestName: t.bestName,
-          worstName: t.worstName,
-          prompt: t.prompt,
-          responseTime: t.responseTime,
-          pageKey: t.trialId,
-        })),
-      });
-    });
-
-    // Selection
-    selectionSessions.forEach((s) => {
-      sessions.push({
-        ...s,
-        mode: "selection",
-        modeLabel: "Selection",
-        items: (s.selections || []).map((sel, i) => ({
-          type: "selection",
-          imageName: sel.imageName,
-          selected: sel.selected,
-          prompt: sel.imagePrompt,
-          pageKey: 1,
-        })),
-      });
-    });
-
-    // Fixed (Combo)
-    fixedSessions.forEach((s) => {
-      sessions.push({
-        ...s,
-        mode: "combo",
-        modeLabel: "Combo Protocol",
-        items: (s.scores || []).map((sc) => ({
-          type: "score",
-          imageName: sc.imageName,
-          score: sc.score,
-          position: sc.position,
-          moves: sc.interactionCount || 0,
-          clickOrder: sc.clickOrder,
-          pageKey: parseInt((sc.position || "P1").replace(/P(\d).*/, "$1"), 10),
-        })),
-      });
-    });
-
-    // Layout groups
-    Object.entries(groupSessionsByLayout || {}).forEach(([layoutId, layoutSessions]) => {
-      (layoutSessions || []).forEach((s) => {
-        sessions.push({
-          ...s,
-          mode: `layout_${layoutId}`,
-          modeLabel: `Grid: ${layoutId}`,
-          items: (s.scores || []).map((sc) => ({
-            type: "score",
-            imageName: sc.imageName,
-            score: sc.score,
-            position: sc.position,
-            moves: sc.interactionCount || 0,
-            clickOrder: sc.clickOrder,
-            pageKey: parseInt((sc.position || "P1").replace(/P(\d).*/, "$1"), 10),
-          })),
+  if (mode === "individual" || mode === "group") {
+    sessions.forEach((session) => {
+      (session.scores || []).forEach((score) => {
+        const key = score.imageName || score.imageId || "unknown";
+        if (!imageMap[key]) {
+          imageMap[key] = {
+            name: key,
+            src: score.src || score.imageSrc || resolveImageUrl(key),
+            scores: [],
+            times: [],
+            interactions: [],
+            clickOrders: [],
+            memorabilityScore: score.memorabilityScore ?? score.actualMemScore ?? null,
+            sessionCount: 0,
+            perSession: [],
+            audioEntries: [],
+          };
+        }
+        const entry = imageMap[key];
+        // If we didn't have a src yet but this score has one, use it
+        if (!entry.src && (score.src || score.imageSrc)) {
+          entry.src = score.src || score.imageSrc;
+        }
+        if (score.score != null) entry.scores.push(Number(score.score));
+        if (score.timeSpent != null) entry.times.push(Number(score.timeSpent));
+        if (score.interactionCount != null) entry.interactions.push(Number(score.interactionCount));
+        if (score.clickOrder != null) entry.clickOrders.push(score.clickOrder);
+        entry.sessionCount++;
+        entry.perSession.push({
+          sessionId: session.id,
+          username: session.username,
+          score: score.score,
+          time: score.timeSpent,
+          interactions: score.interactionCount,
+          clickOrder: score.clickOrder,
         });
-      });
-    });
 
-    return sessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  }, [
-    individualSessions, pairwiseSessions, videoPairwiseSessions,
-    rankedSessions, bestWorstSessions, selectionSessions,
-    fixedSessions, groupSessionsByLayout, pressureCookerSessions,
-  ]);
-
-  // ── Derived data ────────────────────────────────────────────
-  const modes = useMemo(() => {
-    const set = new Set(allSessions.map((s) => s.mode));
-    return Array.from(set).sort();
-  }, [allSessions]);
-
-  const users = useMemo(() => {
-    const set = new Set(allSessions.map((s) => s.username));
-    return Array.from(set).sort();
-  }, [allSessions]);
-
-  const filtered = useMemo(() => {
-    return allSessions.filter((s) => {
-      if (selectedMode !== "all" && s.mode !== selectedMode) return false;
-      if (selectedUser !== "all" && s.username !== selectedUser) return false;
-      return true;
-    });
-  }, [allSessions, selectedMode, selectedUser]);
-
-  // ── Aggregate stats ─────────────────────────────────────────
-  const aggregateStats = useMemo(() => {
-    const allScores = [];
-    const allTimes = [];
-    const allMoves = [];
-    const imageScoreMap = {};
-
-    filtered.forEach((s) => {
-      (s.items || []).forEach((item) => {
-        if (item.type === "score" && item.score != null) {
-          allScores.push(item.score);
-          if (item.timeSpent) allTimes.push(parseFloat(item.timeSpent));
-          if (item.moves) allMoves.push(item.moves);
-          const key = item.imageName || "unknown";
-          if (!imageScoreMap[key]) imageScoreMap[key] = [];
-          imageScoreMap[key].push(item.score);
+        // Audio entries
+        const pageKey = score.imageId === 0 || score.imageId === "0" ? "benchmark" : score.pageKey;
+        if (session.pageAudioUrls) {
+          Object.keys(session.pageAudioUrls).forEach((pk) => {
+            entry.audioEntries.push({
+              sessionId: session.id,
+              username: session.username,
+              pageKey: pk,
+              audioUrl: session.pageAudioUrls[pk],
+              isCurrent: String(pk) === String(pageKey),
+            });
+          });
         }
       });
     });
-
-    const mean = (arr) => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2) : "N/A";
-    const std = (arr) => {
-      if (arr.length < 2) return "0.00";
-      const m = arr.reduce((a, b) => a + b, 0) / arr.length;
-      return Math.sqrt(arr.map((v) => (v - m) ** 2).reduce((a, b) => a + b, 0) / arr.length).toFixed(2);
-    };
-
-    return {
-      totalSessions: filtered.length,
-      totalRatings: allScores.length,
-      uniqueUsers: new Set(filtered.map((s) => s.username)).size,
-      meanScore: mean(allScores),
-      stdScore: std(allScores),
-      meanTime: mean(allTimes),
-      meanMoves: mean(allMoves),
-      scores: allScores,
-      imageScoreMap,
-    };
-  }, [filtered]);
-
-  // ── CSV export data ─────────────────────────────────────────
-  const exportData = useMemo(() => {
-    return filtered.flatMap((s) =>
-      (s.items || []).map((item) => ({
-        Mode: s.modeLabel,
-        Username: s.username,
-        Timestamp: s.timestamp,
-        Image: item.imageName || item.winner || item.bestName || "",
-        Score: item.score ?? "",
-        Rank: item.rank ?? "",
-        Winner: item.winner || "",
-        Loser: item.loser || "",
-        Selected: item.selected != null ? (item.selected ? "Yes" : "No") : "",
-        Position: item.position || "",
-        Moves: item.moves ?? "",
-        ClickOrder: item.clickOrder || "",
-        TimeSpent: item.timeSpent || "",
-        Prompt: item.prompt || "",
-      }))
-    );
-  }, [filtered]);
-
-  if (allSessions.length === 0) {
-    return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Alert severity="info" sx={{ borderRadius: 3 }}>
-          No experiment sessions found. Complete some rating flows first, then return here to see the researcher dashboard.
-        </Alert>
-      </Container>
-    );
   }
 
-  return (
-    <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
-      {/* ═══════ HEADER ═══════ */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3, mb: 3, borderRadius: 3,
-          background: "linear-gradient(135deg, #1a237e 0%, #283593 50%, #3949ab 100%)",
-          color: "white",
-        }}
-      >
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
-          <Box>
-            <Typography variant="h4" fontWeight="bold">
-              Researcher Dashboard
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8, mt: 0.5 }}>
-              Aggregated view of all participant sessions with recordings and analytics
-            </Typography>
-          </Box>
-          <ExportCSVButton
-            data={exportData}
-            filename={`researcher_export_${new Date().toISOString().split("T")[0]}.csv`}
-            label="Export All"
-            variant="contained"
-          />
-        </Box>
-      </Paper>
+  if (mode === "pairwise") {
+    sessions.forEach((session) => {
+      (session.choices || []).forEach((choice) => {
+        [choice.winnerName, choice.loserName].forEach((name) => {
+          if (!name || name === "TIMEOUT") return;
+          if (!imageMap[name]) {
+            imageMap[name] = {
+              name,
+              src: resolveImageUrl(name),
+              wins: 0,
+              losses: 0,
+              sessionCount: 0,
+              perSession: [],
+              audioEntries: [],
+            };
+          }
+          const entry = imageMap[name];
+          if (name === choice.winnerName) entry.wins++;
+          else entry.losses++;
+          entry.sessionCount++;
+          entry.perSession.push({
+            sessionId: session.id,
+            username: session.username,
+            result: name === choice.winnerName ? "Win" : "Loss",
+            opponent: name === choice.winnerName ? choice.loserName : choice.winnerName,
+            pairId: choice.pairId,
+          });
+        });
 
-      {/* ═══════ FILTERS ═══════ */}
-      <Paper sx={{ p: 2, mb: 3, borderRadius: 2, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
-        <FilterListIcon color="action" />
-        <FormControl size="small" sx={{ minWidth: 180 }}>
-          <InputLabel>Mode</InputLabel>
-          <Select value={selectedMode} label="Mode" onChange={(e) => setSelectedMode(e.target.value)}>
-            <MenuItem value="all">All Modes ({allSessions.length})</MenuItem>
-            {modes.map((m) => {
-              const label = allSessions.find((s) => s.mode === m)?.modeLabel || m;
-              const count = allSessions.filter((s) => s.mode === m).length;
-              return <MenuItem key={m} value={m}>{label} ({count})</MenuItem>;
-            })}
-          </Select>
-        </FormControl>
+        // Audio
+        if (session.pageAudioUrls) {
+          [choice.winnerName, choice.loserName].forEach((name) => {
+            if (!name || !imageMap[name]) return;
+            Object.keys(session.pageAudioUrls).forEach((pk) => {
+              imageMap[name].audioEntries.push({
+                sessionId: session.id,
+                username: session.username,
+                pageKey: pk,
+                audioUrl: session.pageAudioUrls[pk],
+                isCurrent: String(pk) === String(choice.pairId),
+              });
+            });
+          });
+        }
+      });
+    });
+  }
 
-        <FormControl size="small" sx={{ minWidth: 160 }}>
-          <InputLabel>User</InputLabel>
-          <Select value={selectedUser} label="User" onChange={(e) => setSelectedUser(e.target.value)}>
-            <MenuItem value="all">All Users ({users.length})</MenuItem>
-            {users.map((u) => (
-              <MenuItem key={u} value={u}>{u}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+  if (mode === "ranked") {
+    sessions.forEach((session) => {
+      (session.rankings || []).forEach((r) => {
+        const key = r.imageName || r.imageId || "unknown";
+        if (!imageMap[key]) {
+          imageMap[key] = {
+            name: key,
+            src: r.src || resolveImageUrl(key),
+            scores: [],
+            ranks: [],
+            sessionCount: 0,
+            perSession: [],
+            audioEntries: [],
+          };
+        }
+        const entry = imageMap[key];
+        if (!entry.src && r.src) entry.src = r.src;
+        if (r.rank != null) entry.ranks.push(Number(r.rank));
+        entry.scores.push(r.rank != null ? 4 - Number(r.rank) : 0); // invert for "score"
+        entry.sessionCount++;
+        entry.perSession.push({
+          sessionId: session.id,
+          username: session.username,
+          score: r.rank,
+          groupId: r.groupId,
+        });
 
-        <Chip label={`${filtered.length} session${filtered.length !== 1 ? "s" : ""} shown`} color="primary" variant="outlined" />
-      </Paper>
+        if (session.pageAudioUrls) {
+          Object.keys(session.pageAudioUrls).forEach((pk) => {
+            entry.audioEntries.push({
+              sessionId: session.id,
+              username: session.username,
+              pageKey: pk,
+              audioUrl: session.pageAudioUrls[pk],
+              isCurrent: String(pk) === String(r.groupId),
+            });
+          });
+        }
+      });
+    });
+  }
 
-      {/* ═══════ AGGREGATE STATS ═══════ */}
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }, gap: 2, mb: 3 }}>
-        {[
-          { icon: <PersonIcon />, label: "Users", value: aggregateStats.uniqueUsers, color: "#1976d2" },
-          { icon: <VisibilityIcon />, label: "Sessions", value: aggregateStats.totalSessions, color: "#2e7d32" },
-          { icon: <BarChartIcon />, label: "Total Ratings", value: aggregateStats.totalRatings, color: "#ed6c02" },
-          { icon: <TimelineIcon />, label: "Mean Score", value: aggregateStats.meanScore, color: "#9c27b0" },
-        ].map((stat) => (
-          <Paper
-            key={stat.label}
-            elevation={0}
-            sx={{
-              p: 2, borderRadius: 2, border: "1px solid",
-              borderColor: `${stat.color}30`,
-              bgcolor: `${stat.color}08`,
-              display: "flex", alignItems: "center", gap: 2,
-            }}
-          >
-            <Avatar sx={{ bgcolor: stat.color, width: 44, height: 44 }}>{stat.icon}</Avatar>
-            <Box>
-              <Typography variant="h5" fontWeight="bold">{stat.value}</Typography>
-              <Typography variant="caption" color="text.secondary">{stat.label}</Typography>
-            </Box>
-          </Paper>
-        ))}
-      </Box>
+  if (mode === "selection") {
+    sessions.forEach((session) => {
+      (session.selections || []).forEach((sel) => {
+        const key = sel.imageName || sel.imageId || "unknown";
+        if (!imageMap[key]) {
+          imageMap[key] = {
+            name: key,
+            src: resolveImageUrl(key),
+            selections: 0,
+            sessionCount: 0,
+            perSession: [],
+            audioEntries: [],
+          };
+        }
+        const entry = imageMap[key];
+        if (sel.selected) entry.selections++;
+        entry.sessionCount++;
+        entry.perSession.push({
+          sessionId: session.id,
+          username: session.username,
+          selected: sel.selected,
+        });
 
-      {/* Score Distribution (if we have scores) */}
-      {aggregateStats.scores.length > 0 && (
-        <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            Overall Score Distribution ({aggregateStats.totalRatings} ratings, σ = {aggregateStats.stdScore})
-          </Typography>
-          <MiniHistogram scores={aggregateStats.scores} maxScore={10} />
-        </Paper>
-      )}
+        if (session.pageAudioUrls) {
+          Object.keys(session.pageAudioUrls).forEach((pk) => {
+            entry.audioEntries.push({
+              sessionId: session.id,
+              username: session.username,
+              pageKey: pk,
+              audioUrl: session.pageAudioUrls[pk],
+              isCurrent: true,
+            });
+          });
+        }
+      });
+    });
+  }
 
-      {/* ═══════ SESSION CARDS ═══════ */}
-      {filtered.map((session) => (
-        <SessionCard key={`${session.mode}-${session.id}`} session={session} />
-      ))}
-    </Container>
-  );
+  return Object.values(imageMap);
 }
 
-// ─── Session Card ─────────────────────────────────────────────────
-function SessionCard({ session }) {
-  const [expanded, setExpanded] = useState(false);
+function getSessionList(sessions) {
+  return sessions.map((s) => ({
+    id: s.id,
+    label: `User ${s.username} — ${new Date(s.timestamp).toLocaleString()}`,
+    username: s.username,
+  }));
+}
 
-  const hasAudio = session.pageAudioUrls && Object.keys(session.pageAudioUrls).length > 0;
+// ─── Aggregate Summary Panel ────────────────────────────────────────
 
-  // Aggregate item stats
-  const scores = (session.items || []).filter((i) => i.score != null).map((i) => i.score);
-  const meanScore = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : null;
-  const totalItems = (session.items || []).length;
+function AggregateSummary({ imageStats, mode }) {
+  if (!imageStats.length) return null;
+
+  const isRating = mode === "individual" || mode === "group";
+  const isPairwise = mode === "pairwise";
+
+  const allScores = imageStats.flatMap((s) => s.scores || []);
+  const totalSessions = new Set(imageStats.flatMap((s) => s.perSession?.map((p) => p.sessionId) || [])).size;
 
   return (
-    <Paper
-      elevation={expanded ? 3 : 1}
-      sx={{
-        mb: 2, borderRadius: 2, overflow: "hidden",
-        transition: "box-shadow 0.2s, border 0.2s",
-        border: expanded ? "1px solid #1976d2" : "1px solid #e0e0e0",
-      }}
-    >
-      {/* ── Session Header ── */}
-      <Box
-        onClick={() => setExpanded(!expanded)}
-        sx={{
-          p: 2, cursor: "pointer",
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          flexWrap: "wrap", gap: 1,
-          bgcolor: expanded ? "#e3f2fd" : "#fafafa",
-          transition: "background 0.2s",
-          "&:hover": { bgcolor: "#e3f2fd" },
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
-          <Chip label={session.modeLabel} size="small" color="primary" variant="outlined" />
-          <Typography fontWeight="bold">User: {session.username}</Typography>
-          <Typography variant="caption" color="text.secondary">
-            {new Date(session.timestamp).toLocaleString()}
-          </Typography>
-        </Box>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-          {meanScore && (
-            <StatChip
-              icon={<BarChartIcon sx={{ fontSize: 16 }} />}
-              label="Avg"
-              value={meanScore}
-              color="primary"
-            />
-          )}
-          <Chip label={`${totalItems} item${totalItems !== 1 ? "s" : ""}`} size="small" variant="outlined" />
-          {hasAudio && (
-            <Badge variant="dot" color="success">
-              <GraphicEqIcon sx={{ fontSize: 20, color: "success.main" }} />
-            </Badge>
-          )}
-          <Typography variant="body2" sx={{ ml: 1 }}>
-            {expanded ? "▲" : "▼"}
-          </Typography>
-        </Box>
+    <Paper sx={{ p: 2.5, mb: 3, bgcolor: "#f8f9fe", borderRadius: 2, border: "1px solid #e8eaf6" }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+        <InsightsIcon sx={{ color: "#3949ab" }} />
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1a237e" }}>
+          Aggregate Summary
+        </Typography>
       </Box>
-
-      {/* ── Expanded Content ── */}
-      {expanded && (
-        <Box sx={{ p: 2 }}>
-          {/* Audio recordings section */}
-          {hasAudio && (
-            <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2, bgcolor: "#f9fbe7" }}>
-              <Typography variant="subtitle2" sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
-                <GraphicEqIcon fontSize="small" color="success" />
-                Session Recordings
+      <Grid container spacing={2}>
+        <Grid item xs={6} sm={3}>
+          <Typography variant="caption" color="text.secondary">Total Sessions</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>{totalSessions}</Typography>
+        </Grid>
+        <Grid item xs={6} sm={3}>
+          <Typography variant="caption" color="text.secondary">Unique Images</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>{imageStats.length}</Typography>
+        </Grid>
+        {isRating && allScores.length > 0 && (
+          <>
+            <Grid item xs={6} sm={3}>
+              <Typography variant="caption" color="text.secondary">Global Mean Score</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: "#1976d2" }}>
+                {mean(allScores).toFixed(2)}
               </Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-                {Object.entries(session.pageAudioUrls).map(([pageKey, url]) => (
-                  <Box key={pageKey} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Chip label={`Page ${pageKey}`} size="small" variant="outlined" />
-                    <AudioPlayer url={url} label={`${session.modeLabel}_User${session.username}_Page${pageKey}`} />
-                  </Box>
-                ))}
-              </Box>
-            </Paper>
-          )}
-
-          {/* Items table/grid based on mode */}
-          {session.items && session.items.length > 0 && (
-            <ItemsDisplay items={session.items} mode={session.mode} audioUrls={session.pageAudioUrls} />
-          )}
-
-          {/* Session metadata if available */}
-          {session.metadata && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="caption" color="text.secondary">
-                {session.metadata.browser} · {session.metadata.platform} ·
-                Window {session.metadata.screenSize} · {session.metadata.pixelRatio}x DPR
-                {session.metadata.isMobile && " · Mobile"}
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <Typography variant="caption" color="text.secondary">Total Ratings</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>{allScores.length}</Typography>
+            </Grid>
+          </>
+        )}
+        {isPairwise && (
+          <>
+            <Grid item xs={6} sm={3}>
+              <Typography variant="caption" color="text.secondary">Total Comparisons</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                {Math.floor(imageStats.reduce((a, s) => a + (s.wins || 0) + (s.losses || 0), 0) / 2)}
               </Typography>
-            </Box>
-          )}
-        </Box>
-      )}
+            </Grid>
+          </>
+        )}
+      </Grid>
     </Paper>
   );
 }
 
-// ─── Items Display (adapts to mode type) ──────────────────────────
-function ItemsDisplay({ items, mode, audioUrls }) {
-  const hasScores = items.some((i) => i.score != null);
-  const hasPairwise = items.some((i) => i.type === "pairwise");
-  const hasRanked = items.some((i) => i.type === "ranked");
-  const hasBestWorst = items.some((i) => i.type === "best_worst");
-  const hasSelection = items.some((i) => i.type === "selection");
+// ─── Image Card for Grid View ───────────────────────────────────────
 
-  if (hasScores) {
-    return (
-      <Table size="small">
-        <TableHead>
-          <TableRow sx={{ bgcolor: "#f5f5f5" }}>
-            <TableCell><strong>Image</strong></TableCell>
-            {items[0]?.position && <TableCell align="center"><strong>Position</strong></TableCell>}
-            <TableCell align="right"><strong>Score</strong></TableCell>
-            {items[0]?.moves != null && <TableCell align="right"><strong>Moves</strong></TableCell>}
-            {items[0]?.clickOrder && <TableCell align="center"><strong>Click Order</strong></TableCell>}
-            {items[0]?.timeSpent && <TableCell align="right"><strong>Time (s)</strong></TableCell>}
-            <TableCell align="center"><strong>Audio</strong></TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {items.map((item, i) => (
-            <TableRow key={i} sx={{ bgcolor: item.isBenchmark ? "#fff8e1" : "inherit" }}>
-              <TableCell sx={{ fontSize: "0.85rem", wordBreak: "break-word" }}>
-                {item.isBenchmark && <Chip label="BM" size="small" sx={{ mr: 0.5, bgcolor: "#fff3e0" }} />}
-                {item.imageName}
-              </TableCell>
-              {item.position !== undefined && <TableCell align="center" sx={{ fontSize: "0.8rem", color: "text.secondary" }}>{item.position}</TableCell>}
-              <TableCell align="right">
-                <ScoreBadge score={item.score} />
-              </TableCell>
-              {item.moves != null && <TableCell align="right">{item.moves}</TableCell>}
-              {item.clickOrder && <TableCell align="center">{item.clickOrder}</TableCell>}
-              {item.timeSpent && <TableCell align="right">{item.timeSpent}</TableCell>}
-              <TableCell align="center">
-                <AudioPlayer
-                  url={audioUrls?.[item.pageKey]}
-                  label={`${item.imageName || "item"}_${i}`}
-                />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    );
-  }
+function ResearcherImageCard({ imageData, mode, onViewAudio, onViewStats, onCompare, selectionMode, isSelected, onToggleSelect }) {
+  const hasAudio = imageData.audioEntries?.some((e) => e.audioUrl);
+  const [imgError, setImgError] = useState(false);
 
-  if (hasPairwise) {
-    return (
-      <Table size="small">
-        <TableHead>
-          <TableRow sx={{ bgcolor: "#f5f5f5" }}>
-            <TableCell><strong>Pair</strong></TableCell>
-            <TableCell><strong>Winner</strong></TableCell>
-            <TableCell><strong>Loser</strong></TableCell>
-            <TableCell><strong>Side</strong></TableCell>
-            <TableCell align="center"><strong>Audio</strong></TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {items.map((item, i) => (
-            <TableRow key={i}>
-              <TableCell>{item.pageKey}</TableCell>
-              <TableCell sx={{ color: "green", fontWeight: "bold", wordBreak: "break-word" }}>{item.winner}</TableCell>
-              <TableCell sx={{ color: "text.secondary", wordBreak: "break-word" }}>{item.loser}</TableCell>
-              <TableCell><Chip label={item.winnerSide} size="small" variant="outlined" /></TableCell>
-              <TableCell align="center">
-                <AudioPlayer url={audioUrls?.[item.pageKey]} label={`pair_${item.pageKey}`} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    );
-  }
-
-  if (hasRanked) {
-    return (
-      <Table size="small">
-        <TableHead>
-          <TableRow sx={{ bgcolor: "#f5f5f5" }}>
-            <TableCell><strong>Group</strong></TableCell>
-            <TableCell><strong>Image</strong></TableCell>
-            <TableCell><strong>Rank</strong></TableCell>
-            <TableCell align="center"><strong>Audio</strong></TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {items.map((item, i) => (
-            <TableRow key={i}>
-              <TableCell>{item.groupId}</TableCell>
-              <TableCell sx={{ wordBreak: "break-word" }}>{item.imageName}</TableCell>
-              <TableCell>
-                <Chip label={`#${item.rank}`} size="small" color={item.rank === 1 ? "success" : item.rank === 2 ? "primary" : "default"} />
-              </TableCell>
-              <TableCell align="center">
-                <AudioPlayer url={audioUrls?.[item.pageKey]} label={`group_${item.groupId}`} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    );
-  }
-
-  if (hasBestWorst) {
-    return (
-      <Table size="small">
-        <TableHead>
-          <TableRow sx={{ bgcolor: "#f5f5f5" }}>
-            <TableCell><strong>Trial</strong></TableCell>
-            <TableCell><strong>Best</strong></TableCell>
-            <TableCell><strong>Worst</strong></TableCell>
-            <TableCell><strong>Time (s)</strong></TableCell>
-            <TableCell align="center"><strong>Audio</strong></TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {items.map((item, i) => (
-            <TableRow key={i}>
-              <TableCell>{item.pageKey}</TableCell>
-              <TableCell sx={{ color: "green", fontWeight: "bold" }}>{item.bestName}</TableCell>
-              <TableCell sx={{ color: "text.secondary" }}>{item.worstName}</TableCell>
-              <TableCell>{item.responseTime}</TableCell>
-              <TableCell align="center">
-                <AudioPlayer url={audioUrls?.[item.pageKey]} label={`trial_${item.pageKey}`} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    );
-  }
-
-  if (hasSelection) {
-    return (
-      <Table size="small">
-        <TableHead>
-          <TableRow sx={{ bgcolor: "#f5f5f5" }}>
-            <TableCell><strong>Image</strong></TableCell>
-            <TableCell align="center"><strong>Selected</strong></TableCell>
-            <TableCell align="center"><strong>Audio</strong></TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {items.map((item, i) => (
-            <TableRow key={i}>
-              <TableCell sx={{ wordBreak: "break-word" }}>{item.imageName}</TableCell>
-              <TableCell align="center">
-                <Chip label={item.selected ? "Yes" : "No"} size="small" color={item.selected ? "primary" : "default"} />
-              </TableCell>
-              <TableCell align="center">
-                <AudioPlayer url={audioUrls?.[item.pageKey]} label={`sel_${i}`} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    );
-  }
-
-  return <Typography color="text.secondary">No displayable items.</Typography>;
-}
-
-// ─── Score badge with color ───────────────────────────────────────
-function ScoreBadge({ score }) {
-  if (score == null) return <span>—</span>;
-  const s = Number(score);
-  let color = "#757575";
-  if (s >= 8) color = "#2e7d32";
-  else if (s >= 6) color = "#1976d2";
-  else if (s >= 4) color = "#ed6c02";
-  else color = "#d32f2f";
+  const primaryStat = useMemo(() => {
+    if (mode === "individual" || mode === "group") {
+      return imageData.scores?.length ? `Score: ${mean(imageData.scores).toFixed(1)}` : "No scores";
+    }
+    if (mode === "pairwise") {
+      const total = (imageData.wins || 0) + (imageData.losses || 0);
+      if (!total) return "No data";
+      return `Win: ${((imageData.wins / total) * 100).toFixed(0)}%`;
+    }
+    if (mode === "ranked") {
+      return imageData.ranks?.length ? `Avg Rank: ${mean(imageData.ranks).toFixed(1)}` : "No ranks";
+    }
+    if (mode === "selection") {
+      const rate = imageData.sessionCount ? ((imageData.selections || 0) / imageData.sessionCount * 100) : 0;
+      return `Selected: ${rate.toFixed(0)}%`;
+    }
+    return "";
+  }, [imageData, mode]);
 
   return (
-    <Chip
-      label={s}
-      size="small"
+    <Card
+      onClick={selectionMode ? onToggleSelect : undefined}
       sx={{
-        bgcolor: `${color}18`,
-        color,
-        fontWeight: "bold",
-        minWidth: 36,
+        position: "relative",
+        borderRadius: 2,
+        overflow: "hidden",
+        transition: "box-shadow 0.2s, transform 0.2s",
+        cursor: selectionMode ? "pointer" : "default",
+        outline: isSelected ? "3px solid #1976d2" : "none",
+        outlineOffset: -3,
+        "&:hover": { boxShadow: 6, transform: "translateY(-2px)" },
       }}
-    />
+    >
+      {/* Selection checkbox */}
+      {selectionMode && (
+        <Checkbox
+          checked={!!isSelected}
+          onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
+          icon={<CheckBoxOutlineBlankIcon />}
+          checkedIcon={<CheckBoxIcon />}
+          sx={{
+            position: "absolute",
+            top: 4,
+            left: 4,
+            zIndex: 3,
+            bgcolor: "rgba(255,255,255,0.9)",
+            borderRadius: 1,
+            p: 0.5,
+            "&:hover": { bgcolor: "white" },
+          }}
+        />
+      )}
+
+      {!selectionMode && (
+        <ImageActionMenu
+          onViewAudio={onViewAudio}
+          onViewStats={onViewStats}
+          onCompare={onCompare}
+          hasAudio={hasAudio}
+        />
+      )}
+
+      {imageData.src && !imgError ? (
+        <CardMedia
+          component="img"
+          image={imageData.src}
+          alt={imageData.name}
+          onError={() => setImgError(true)}
+          sx={{ height: 140, objectFit: "contain", bgcolor: "#f5f5f5" }}
+        />
+      ) : (
+        <Box
+          sx={{
+            height: 140,
+            bgcolor: "#e8eaf6",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 0.5,
+          }}
+        >
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: "50%",
+              bgcolor: "#c5cae9",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "1.2rem",
+              fontWeight: 700,
+              color: "#3949ab",
+            }}
+          >
+            {(imageData.name || "?").charAt(0).toUpperCase()}
+          </Box>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ px: 1, textAlign: "center", fontSize: "0.65rem", lineHeight: 1.2, maxWidth: "90%" }}
+          >
+            {imageData.name}
+          </Typography>
+        </Box>
+      )}
+
+      <CardContent sx={{ py: 1.5, px: 2 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 600,
+            display: "block",
+            textOverflow: "ellipsis",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            mb: 0.5,
+          }}
+        >
+          {imageData.name}
+        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Chip
+            label={primaryStat}
+            size="small"
+            color="primary"
+            variant="outlined"
+            sx={{ fontSize: "0.7rem", height: 22 }}
+          />
+          <Typography variant="caption" color="text.secondary">
+            n={imageData.sessionCount}
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Table View ─────────────────────────────────────────────────────
+
+function ImageTableView({ imageStats, mode, onViewAudio, onViewStats }) {
+  const isRating = mode === "individual" || mode === "group";
+  const isPairwise = mode === "pairwise";
+  const isRanked = mode === "ranked";
+  const isSelection = mode === "selection";
+
+  const sorted = useMemo(() => {
+    return [...imageStats].sort((a, b) => {
+      if (isRating) return mean(b.scores || []) - mean(a.scores || []);
+      if (isPairwise) {
+        const aRate = a.wins / Math.max(a.wins + a.losses, 1);
+        const bRate = b.wins / Math.max(b.wins + b.losses, 1);
+        return bRate - aRate;
+      }
+      if (isRanked) return mean(a.ranks || []) - mean(b.ranks || []);
+      if (isSelection) return (b.selections || 0) / Math.max(b.sessionCount, 1) - (a.selections || 0) / Math.max(a.sessionCount, 1);
+      return 0;
+    });
+  }, [imageStats, mode]);
+
+  return (
+    <Table size="small">
+      <TableHead>
+        <TableRow sx={{ bgcolor: "#f5f5f5" }}>
+          <TableCell sx={{ fontWeight: 700 }}>Image</TableCell>
+          <TableCell align="center" sx={{ fontWeight: 700 }}>Sessions</TableCell>
+          {isRating && <TableCell align="right" sx={{ fontWeight: 700 }}>Mean Score</TableCell>}
+          {isRating && <TableCell align="right" sx={{ fontWeight: 700 }}>Avg Time</TableCell>}
+          {isPairwise && <TableCell align="right" sx={{ fontWeight: 700 }}>Wins</TableCell>}
+          {isPairwise && <TableCell align="right" sx={{ fontWeight: 700 }}>Losses</TableCell>}
+          {isPairwise && <TableCell align="right" sx={{ fontWeight: 700 }}>Win Rate</TableCell>}
+          {isRanked && <TableCell align="right" sx={{ fontWeight: 700 }}>Avg Rank</TableCell>}
+          {isSelection && <TableCell align="right" sx={{ fontWeight: 700 }}>Selection Rate</TableCell>}
+          <TableCell align="center" sx={{ fontWeight: 700 }}>Actions</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {sorted.map((img) => {
+          const hasAudio = img.audioEntries?.some((e) => e.audioUrl);
+          return (
+            <TableRow key={img.name} hover>
+              <TableCell>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  {img.src ? (
+                    <Box
+                      component="img"
+                      src={img.src}
+                      alt={img.name}
+                      sx={{
+                        width: 44,
+                        height: 44,
+                        objectFit: "contain",
+                        borderRadius: 1,
+                        bgcolor: "#f5f5f5",
+                        border: "1px solid #e0e0e0",
+                        flexShrink: 0,
+                      }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 1,
+                        bgcolor: "#e8eaf6",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        fontSize: "0.85rem",
+                        fontWeight: 700,
+                        color: "#3949ab",
+                      }}
+                    >
+                      {(img.name || "?").charAt(0).toUpperCase()}
+                    </Box>
+                  )}
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {img.name}
+                  </Typography>
+                </Box>
+              </TableCell>
+              <TableCell align="center">{img.sessionCount}</TableCell>
+              {isRating && (
+                <TableCell align="right" sx={{ fontWeight: 600, color: "#1976d2" }}>
+                  {img.scores?.length ? mean(img.scores).toFixed(2) : "—"}
+                </TableCell>
+              )}
+              {isRating && (
+                <TableCell align="right">
+                  {img.times?.length ? `${mean(img.times).toFixed(1)}s` : "—"}
+                </TableCell>
+              )}
+              {isPairwise && <TableCell align="right" sx={{ color: "#2e7d32", fontWeight: 600 }}>{img.wins || 0}</TableCell>}
+              {isPairwise && <TableCell align="right" sx={{ color: "#d32f2f" }}>{img.losses || 0}</TableCell>}
+              {isPairwise && (
+                <TableCell align="right" sx={{ fontWeight: 600 }}>
+                  {img.wins + img.losses > 0
+                    ? `${((img.wins / (img.wins + img.losses)) * 100).toFixed(0)}%`
+                    : "—"}
+                </TableCell>
+              )}
+              {isRanked && (
+                <TableCell align="right" sx={{ fontWeight: 600, color: "#7b1fa2" }}>
+                  {img.ranks?.length ? mean(img.ranks).toFixed(1) : "—"}
+                </TableCell>
+              )}
+              {isSelection && (
+                <TableCell align="right" sx={{ fontWeight: 600, color: "#2e7d32" }}>
+                  {img.sessionCount > 0
+                    ? `${(((img.selections || 0) / img.sessionCount) * 100).toFixed(0)}%`
+                    : "—"}
+                </TableCell>
+              )}
+              <TableCell align="center">
+                <Tooltip title="View Stats">
+                  <IconButton size="small" onClick={() => onViewStats(img)}>
+                    <BarChartIcon fontSize="small" sx={{ color: "#1976d2" }} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={hasAudio ? "View Audio" : "No audio"}>
+                  <span>
+                    <IconButton size="small" disabled={!hasAudio} onClick={() => onViewAudio(img)}>
+                      <BarChartIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
+// ─── PDF Export ──────────────────────────────────────────────────────
+
+function generateReportText(mode, sessions, imageStats) {
+  const lines = [];
+  lines.push(`RESEARCHER REPORT — ${mode.toUpperCase()} MODE`);
+  lines.push(`Generated: ${new Date().toLocaleString()}`);
+  lines.push(`Total Sessions: ${sessions.length}`);
+  lines.push(`Unique Images: ${imageStats.length}`);
+  lines.push("");
+
+  const isRating = mode === "individual" || mode === "group";
+  const isPairwise = mode === "pairwise";
+
+  if (isRating) {
+    const allScores = imageStats.flatMap((s) => s.scores || []);
+    lines.push(`Global Mean Score: ${mean(allScores).toFixed(2)}`);
+    lines.push(`Total Ratings: ${allScores.length}`);
+    lines.push("");
+    lines.push("IMAGE BREAKDOWN:");
+    lines.push("─".repeat(60));
+    imageStats
+      .sort((a, b) => mean(b.scores || []) - mean(a.scores || []))
+      .forEach((img) => {
+        lines.push(`  ${img.name}`);
+        lines.push(`    Mean: ${mean(img.scores || []).toFixed(2)}, Sessions: ${img.sessionCount}, Avg Time: ${img.times?.length ? mean(img.times).toFixed(1) + "s" : "—"}`);
+      });
+  }
+
+  if (isPairwise) {
+    lines.push("IMAGE WIN RATES:");
+    lines.push("─".repeat(60));
+    imageStats
+      .sort((a, b) => (b.wins / Math.max(b.wins + b.losses, 1)) - (a.wins / Math.max(a.wins + a.losses, 1)))
+      .forEach((img) => {
+        const total = (img.wins || 0) + (img.losses || 0);
+        const rate = total ? ((img.wins / total) * 100).toFixed(0) : "—";
+        lines.push(`  ${img.name}: ${img.wins}W / ${img.losses}L (${rate}%)`);
+      });
+  }
+
+  lines.push("");
+  lines.push("PER-SESSION DATA:");
+  lines.push("─".repeat(60));
+  sessions.forEach((s) => {
+    lines.push(`  Session ${s.id} — User: ${s.username} — ${new Date(s.timestamp).toLocaleString()}`);
+  });
+
+  return lines.join("\n");
+}
+
+// ─── Main ResearcherView ────────────────────────────────────────────
+
+const MODE_TABS = [
+  { id: "individual", label: "Individual" },
+  { id: "pairwise", label: "Pairwise" },
+  { id: "ranked", label: "Ranked" },
+  { id: "selection", label: "Selection" },
+  { id: "group", label: "Group" },
+];
+
+export default function ResearcherView() {
+  const {
+    individualSessions,
+    pairwiseSessions,
+    rankedSessions,
+    selectionSessions,
+    groupSessions,
+    videoPairwiseSessions,
+    fixedSessions,
+    groupSessionsByLayout,
+  } = useResults();
+
+  const navigate = useNavigate();
+
+  const [activeMode, setActiveMode] = useState("individual");
+  // Session filter
+  const [selectedSession, setSelectedSession] = useState("all");
+  // View mode
+  const [viewMode, setViewMode] = useState("grid");
+
+  // Image selection for simulated session
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedImages, setSelectedImages] = useState(new Set());
+
+  // Modal state
+  const [audioModal, setAudioModal] = useState({ open: false, imageName: "", entries: [] });
+  const [statsModal, setStatsModal] = useState({ open: false, imageName: "", src: "", stats: null, mode: "" });
+  const [comparisonModal, setComparisonModal] = useState({ open: false, images: [], leftIdx: 0, rightIdx: 1 });
+
+  // Get sessions for active mode
+  const allSessions = useMemo(() => {
+    switch (activeMode) {
+      case "individual": return individualSessions;
+      case "pairwise": return [...pairwiseSessions, ...videoPairwiseSessions];
+      case "ranked": return rankedSessions;
+      case "selection": return selectionSessions;
+      case "group": {
+        const layoutSessions = Object.values(groupSessionsByLayout || {}).flat();
+        return [...groupSessions, ...layoutSessions, ...fixedSessions];
+      }
+      default: return [];
+    }
+  }, [activeMode, individualSessions, pairwiseSessions, videoPairwiseSessions, rankedSessions, selectionSessions, groupSessions, groupSessionsByLayout, fixedSessions]);
+
+  // Filter by selected session
+  const filteredSessions = useMemo(() => {
+    if (selectedSession === "all") return allSessions;
+    return allSessions.filter((s) => String(s.id) === String(selectedSession));
+  }, [allSessions, selectedSession]);
+
+  // Build image stats
+  const imageStats = useMemo(() => {
+    return buildImageStats(filteredSessions, activeMode);
+  }, [filteredSessions, activeMode]);
+
+  // Session list for selector
+  const sessionOptions = useMemo(() => getSessionList(allSessions), [allSessions]);
+
+  // Modal handlers
+  const handleViewAudio = useCallback((imageData) => {
+    setAudioModal({
+      open: true,
+      imageName: imageData.name,
+      entries: imageData.audioEntries || [],
+    });
+  }, []);
+
+  const handleViewStats = useCallback((imageData) => {
+    setStatsModal({
+      open: true,
+      imageName: imageData.name,
+      src: imageData.src || "",
+      stats: imageData,
+      mode: activeMode,
+    });
+  }, [activeMode]);
+
+  const handleCompare = useCallback((imageData) => {
+    const idx = imageStats.findIndex((s) => s.name === imageData.name);
+    const compImages = imageStats.map((s) => ({
+      name: s.name,
+      src: s.src || "",
+      stats: s,
+    }));
+    setComparisonModal({
+      open: true,
+      images: compImages,
+      leftIdx: idx >= 0 ? idx : 0,
+      rightIdx: idx < imageStats.length - 1 ? idx + 1 : 0,
+    });
+  }, [imageStats]);
+
+  // PDF export
+  const handleExportReport = useCallback(() => {
+    const text = generateReportText(activeMode, filteredSessions, imageStats);
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `researcher_report_${activeMode}_${new Date().toISOString().split("T")[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [activeMode, filteredSessions, imageStats]);
+
+  // Open comparison tool
+  const handleOpenComparison = useCallback(() => {
+    const compImages = imageStats.map((s) => ({
+      name: s.name,
+      src: s.src || "",
+      stats: s,
+    }));
+    if (compImages.length < 2) return;
+    setComparisonModal({
+      open: true,
+      images: compImages,
+      leftIdx: 0,
+      rightIdx: Math.min(1, compImages.length - 1),
+    });
+  }, [imageStats]);
+
+  // Image selection handlers
+  const toggleImageSelection = useCallback((imageName) => {
+    setSelectedImages((prev) => {
+      const next = new Set(prev);
+      if (next.has(imageName)) next.delete(imageName);
+      else next.add(imageName);
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (selectedImages.size === imageStats.length) {
+      setSelectedImages(new Set());
+    } else {
+      setSelectedImages(new Set(imageStats.map((s) => s.name)));
+    }
+  }, [imageStats, selectedImages.size]);
+
+  const handleStartSimulation = useCallback(() => {
+    const selected = imageStats.filter((s) => selectedImages.has(s.name));
+    if (selected.length === 0) return;
+    navigate("/researcher/simulate", {
+      state: { mode: activeMode, images: selected },
+    });
+  }, [imageStats, selectedImages, activeMode, navigate]);
+
+  const handleToggleSelectionMode = useCallback(() => {
+    setSelectionMode((prev) => {
+      if (prev) setSelectedImages(new Set()); // clear on exit
+      return !prev;
+    });
+  }, []);
+
+  return (
+    <Container maxWidth="xl" sx={{ mt: 2, mb: 6 }}>
+      <BackButton />
+
+      {/* Header */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 800, color: "#1a237e" }}>
+            Researcher View
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Analyze sessions, audio, and statistics across all rating modes
+          </Typography>
+        </Box>
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+          <Button
+            variant={selectionMode ? "contained" : "outlined"}
+            startIcon={<SelectAllIcon />}
+            onClick={handleToggleSelectionMode}
+            size="small"
+            color={selectionMode ? "secondary" : "inherit"}
+          >
+            {selectionMode ? "Cancel Selection" : "Select Images"}
+          </Button>
+          {selectionMode && (
+            <>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleSelectAll}
+              >
+                {selectedImages.size === imageStats.length ? "Deselect All" : "Select All"}
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<PlayCircleOutlineIcon />}
+                onClick={handleStartSimulation}
+                disabled={selectedImages.size === 0}
+                size="small"
+                color="success"
+              >
+                Simulate ({selectedImages.size})
+              </Button>
+            </>
+          )}
+          {!selectionMode && (
+            <>
+              <Button
+                variant="outlined"
+                startIcon={<CompareArrowsIcon />}
+                onClick={handleOpenComparison}
+                disabled={imageStats.length < 2}
+                size="small"
+              >
+                Compare
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<DownloadIcon />}
+                onClick={handleExportReport}
+                disabled={filteredSessions.length === 0}
+                size="small"
+                sx={{ bgcolor: "#1a237e" }}
+              >
+                Export Report
+              </Button>
+            </>
+          )}
+        </Box>
+      </Box>
+
+      {/* Mode Tabs */}
+      <Paper sx={{ mb: 3, borderRadius: 2, overflow: "hidden" }}>
+        <Tabs
+          value={activeMode}
+          onChange={(_, v) => { setActiveMode(v); setSelectedSession("all"); setSelectionMode(false); setSelectedImages(new Set()); }}
+          variant="fullWidth"
+          sx={{
+            bgcolor: "#f5f5f5",
+            "& .MuiTab-root": { fontWeight: 600, textTransform: "none", minHeight: 48 },
+            "& .Mui-selected": { color: "#1a237e" },
+          }}
+        >
+          {MODE_TABS.map((tab) => (
+            <Tab key={tab.id} value={tab.id} label={tab.label} />
+          ))}
+        </Tabs>
+      </Paper>
+
+      {/* Controls Row */}
+      <Box sx={{ display: "flex", gap: 2, mb: 3, alignItems: "center", flexWrap: "wrap" }}>
+        {/* Session Selector */}
+        <FormControl size="small" sx={{ minWidth: 280 }}>
+          <InputLabel>Session</InputLabel>
+          <Select
+            value={selectedSession}
+            label="Session"
+            onChange={(e) => setSelectedSession(e.target.value)}
+          >
+            <MenuItem value="all">
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <InsightsIcon fontSize="small" />
+                All Sessions ({allSessions.length})
+              </Box>
+            </MenuItem>
+            <Divider />
+            {sessionOptions.map((opt) => (
+              <MenuItem key={opt.id} value={opt.id}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <PersonIcon fontSize="small" sx={{ color: "text.secondary" }} />
+                  {opt.label}
+                </Box>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {/* View Toggle */}
+        <ToggleButtonGroup
+          value={viewMode}
+          exclusive
+          onChange={(_, v) => { if (v) setViewMode(v); }}
+          size="small"
+        >
+          <ToggleButton value="grid">
+            <Tooltip title="Grid View">
+              <GridViewIcon fontSize="small" />
+            </Tooltip>
+          </ToggleButton>
+          <ToggleButton value="table">
+            <Tooltip title="Table View">
+              <ViewListIcon fontSize="small" />
+            </Tooltip>
+          </ToggleButton>
+        </ToggleButtonGroup>
+
+        {/* Info chips */}
+        <Box sx={{ flex: 1 }} />
+        <Chip label={`${filteredSessions.length} session(s)`} size="small" variant="outlined" />
+        <Chip label={`${imageStats.length} image(s)`} size="small" variant="outlined" />
+      </Box>
+
+      {/* Aggregate Summary */}
+      {selectedSession === "all" && !selectionMode && (
+        <AggregateSummary imageStats={imageStats} mode={activeMode} />
+      )}
+
+      {/* Selection mode bar */}
+      {selectionMode && (
+        <Paper
+          sx={{
+            p: 2,
+            mb: 2,
+            bgcolor: "#e8eaf6",
+            border: "1px solid #c5cae9",
+            borderRadius: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <PlayCircleOutlineIcon sx={{ color: "#283593" }} />
+            <Typography variant="body2">
+              <strong>{selectedImages.size}</strong> of {imageStats.length} images selected.
+              Click images to select them, then press <strong>Simulate</strong> to preview as a participant would see them.
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button size="small" variant="outlined" onClick={handleSelectAll}>
+              {selectedImages.size === imageStats.length ? "Deselect All" : "Select All"}
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              color="success"
+              startIcon={<PlayCircleOutlineIcon />}
+              disabled={selectedImages.size === 0}
+              onClick={handleStartSimulation}
+            >
+              Simulate ({selectedImages.size})
+            </Button>
+          </Box>
+        </Paper>
+      )}
+
+      {/* Content */}
+      {filteredSessions.length === 0 ? (
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: 2 }}>
+          <SummarizeIcon sx={{ fontSize: 48, color: "action.disabled", mb: 1 }} />
+          <Typography color="text.secondary">
+            No sessions found for {activeMode} mode.
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Complete some rating sessions to see data here.
+          </Typography>
+        </Paper>
+      ) : viewMode === "grid" ? (
+        <Grid container spacing={2}>
+          {imageStats.map((imgData) => (
+            <Grid item xs={6} sm={4} md={3} lg={2.4} key={imgData.name}>
+              <ResearcherImageCard
+                imageData={imgData}
+                mode={activeMode}
+                onViewAudio={() => handleViewAudio(imgData)}
+                onViewStats={() => handleViewStats(imgData)}
+                onCompare={() => handleCompare(imgData)}
+                selectionMode={selectionMode}
+                isSelected={selectedImages.has(imgData.name)}
+                onToggleSelect={() => toggleImageSelection(imgData.name)}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      ) : (
+        <Paper sx={{ borderRadius: 2, overflow: "hidden" }}>
+          <ImageTableView
+            imageStats={imageStats}
+            mode={activeMode}
+            onViewAudio={handleViewAudio}
+            onViewStats={handleViewStats}
+          />
+        </Paper>
+      )}
+
+      {/* Modals */}
+      <AudioModal
+        open={audioModal.open}
+        onClose={() => setAudioModal({ open: false, imageName: "", entries: [] })}
+        imageName={audioModal.imageName}
+        audioEntries={audioModal.entries}
+      />
+
+      <StatsModal
+        open={statsModal.open}
+        onClose={() => setStatsModal({ open: false, imageName: "", src: "", stats: null, mode: "" })}
+        imageName={statsModal.imageName}
+        imageSrc={statsModal.src}
+        stats={statsModal.stats}
+        mode={statsModal.mode}
+      />
+
+      <ImageComparisonModal
+        open={comparisonModal.open}
+        onClose={() => setComparisonModal({ open: false, images: [], leftIdx: 0, rightIdx: 1 })}
+        images={comparisonModal.images}
+        initialLeft={comparisonModal.leftIdx}
+        initialRight={comparisonModal.rightIdx}
+      />
+    </Container>
   );
 }
