@@ -11,28 +11,48 @@
 import { createClient } from "@supabase/supabase-js";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// --------------- resolve project root ---------------
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PROJECT_ROOT = path.resolve(__dirname, ".."); // scripts/ -> project root
 
 // --------------- config ---------------
 
+function cleanEnvValue(val) {
+  if (!val) return undefined;
+  // Strip quotes, whitespace, trailing slashes
+  return val.trim().replace(/^["']|["']$/g, "").replace(/\/+$/, "").trim();
+}
+
 const SUPABASE_URL =
-  process.env.SUPABASE_URL ||
-  process.env.VITE_SUPABASE_URL ||
+  cleanEnvValue(process.env.SUPABASE_URL) ||
+  cleanEnvValue(process.env.VITE_SUPABASE_URL) ||
   (() => {
     try {
-      const env = fs.readFileSync(path.resolve(process.cwd(), ".env"), "utf8");
+      const env = fs.readFileSync(path.join(PROJECT_ROOT, ".env"), "utf8");
       const match = env.match(/VITE_SUPABASE_URL=(.+)/);
-      return match?.[1]?.trim();
+      return cleanEnvValue(match?.[1]);
     } catch {
       return undefined;
     }
   })();
 
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SERVICE_ROLE_KEY = cleanEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error(
     "Missing env vars. Set SUPABASE_URL (or VITE_SUPABASE_URL in .env) and SUPABASE_SERVICE_ROLE_KEY."
   );
+  process.exit(1);
+}
+
+// Sanity check the URL
+if (!SUPABASE_URL.startsWith("https://")) {
+  console.error(`Invalid SUPABASE_URL: "${SUPABASE_URL}"`);
+  console.error("It should look like: https://your-project-id.supabase.co");
   process.exit(1);
 }
 
@@ -51,7 +71,10 @@ const MIME_TYPES = {
 
 function walkDir(dir) {
   const results = [];
-  if (!fs.existsSync(dir)) return results;
+  if (!fs.existsSync(dir)) {
+    console.warn(`  WARNING: directory not found — ${dir}`);
+    return results;
+  }
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
@@ -83,11 +106,51 @@ async function uploadFile(bucket, storagePath, localPath) {
   return true;
 }
 
+// --------------- ensure buckets exist ---------------
+
+const BUCKETS = [
+  { name: "generated-images", public: true },
+  { name: "mem-images", public: true },
+  { name: "demo-images", public: true },
+];
+
+async function ensureBuckets() {
+  console.log("Ensuring buckets exist...");
+
+  for (const bucket of BUCKETS) {
+    // Try to create each bucket; if it already exists, that's fine
+    const { error } = await supabase.storage.createBucket(bucket.name, {
+      public: bucket.public,
+    });
+
+    if (error) {
+      if (error.message.includes("already exists")) {
+        console.log(`  EXISTS  ${bucket.name}`);
+      } else {
+        console.error(
+          `  FAIL creating ${bucket.name}: ${error.message}`
+        );
+        console.error(
+          "\n  Check that your SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are correct."
+        );
+        console.error(`  URL being used: "${SUPABASE_URL}"`);
+        console.error(
+          `  Key being used: "${SERVICE_ROLE_KEY.slice(0, 10)}...${SERVICE_ROLE_KEY.slice(-4)}"\n`
+        );
+        process.exit(1);
+      }
+    } else {
+      console.log(`  CREATED ${bucket.name}`);
+    }
+  }
+  console.log("");
+}
+
 // --------------- upload jobs ---------------
 
 async function uploadGeneratedImages() {
   console.log("\n--- generated-images bucket ---");
-  const baseDir = path.resolve("public/images");
+  const baseDir = path.join(PROJECT_ROOT, "public", "images");
   const folders = ["flux_2_pro", "gptimage15", "nano_banana_pro"];
   let count = 0;
 
@@ -95,7 +158,7 @@ async function uploadGeneratedImages() {
     const dir = path.join(baseDir, folder);
     const files = walkDir(dir);
     for (const file of files) {
-      const rel = path.relative(baseDir, file); // e.g. flux_2_pro/generated_001.png
+      const rel = path.relative(baseDir, file);
       const ok = await uploadFile("generated-images", rel, file);
       if (ok) count++;
     }
@@ -105,12 +168,12 @@ async function uploadGeneratedImages() {
 
 async function uploadMemImages() {
   console.log("\n--- mem-images bucket ---");
-  const baseDir = path.resolve("public/mem_images");
+  const baseDir = path.join(PROJECT_ROOT, "public", "mem_images");
   const files = walkDir(baseDir);
   let count = 0;
 
   for (const file of files) {
-    const rel = path.relative(baseDir, file); // e.g. target_000000.jpg
+    const rel = path.relative(baseDir, file);
     const ok = await uploadFile("mem-images", rel, file);
     if (ok) count++;
   }
@@ -119,12 +182,12 @@ async function uploadMemImages() {
 
 async function uploadDemoImages() {
   console.log("\n--- demo-images bucket ---");
-  const baseDir = path.resolve("src/images");
+  const baseDir = path.join(PROJECT_ROOT, "src", "images");
   const files = walkDir(baseDir);
   let count = 0;
 
   for (const file of files) {
-    const rel = path.relative(baseDir, file); // e.g. GPTMoonFlags.png
+    const rel = path.relative(baseDir, file);
     const ok = await uploadFile("demo-images", rel, file);
     if (ok) count++;
   }
@@ -135,7 +198,11 @@ async function uploadDemoImages() {
 
 async function main() {
   console.log("Uploading images to Supabase Storage...");
-  console.log(`URL: ${SUPABASE_URL}\n`);
+  console.log(`URL: ${SUPABASE_URL}`);
+  console.log(`Key: ${SERVICE_ROLE_KEY.slice(0, 10)}...${SERVICE_ROLE_KEY.slice(-4)}`);
+  console.log(`Project root: ${PROJECT_ROOT}\n`);
+
+  await ensureBuckets();
 
   await uploadGeneratedImages();
   await uploadMemImages();
