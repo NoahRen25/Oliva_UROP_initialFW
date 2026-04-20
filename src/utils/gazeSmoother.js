@@ -20,28 +20,22 @@ export class GazeSmoother {
     this._historySize = historySize;
     this._warmupFrames = warmupFrames;
 
-    this._smoothed = null;       // last smoothed output { x, y }
-    this._history = [];          // ring buffer of recent raw points
-    this._frameCount = 0;        // frames since last reset
+    this._smoothed = null;
+    this._history = [];
+    this._frameCount = 0;
     this._consecutiveRejects = 0;
   }
 
-  /**
-   * Process a raw gaze point through the smoothing pipeline.
-   * @returns {{ x: number, y: number } | null} — smoothed point, or null if rejected
-   */
   process(x, y) {
     if (x == null || y == null || isNaN(x) || isNaN(y)) return null;
 
     const raw = { x, y };
 
-    // --- Stage 1: Outlier / blink rejection ---
     if (this._smoothed) {
       const dist = Math.hypot(raw.x - this._smoothed.x, raw.y - this._smoothed.y);
 
       if (dist > this._outlierThreshold) {
         this._consecutiveRejects++;
-        // If 3+ consecutive rejects, the user genuinely moved — accept & reset
         if (this._consecutiveRejects >= 3) {
           this._consecutiveRejects = 0;
           this._smoothed = raw;
@@ -49,13 +43,12 @@ export class GazeSmoother {
           this._frameCount = 1;
           return raw;
         }
-        return null; // reject this frame
+        return null;
       }
     }
 
     this._consecutiveRejects = 0;
 
-    // --- Warm-up: first frame accepted directly ---
     if (!this._smoothed) {
       this._smoothed = raw;
       this._history = [raw];
@@ -65,13 +58,11 @@ export class GazeSmoother {
 
     this._frameCount++;
 
-    // Maintain ring buffer
     this._history.push(raw);
     if (this._history.length > this._historySize) {
       this._history.shift();
     }
 
-    // --- Stage 3: Adaptive velocity dampening ---
     const velocity = this._history.length >= 2
       ? Math.hypot(
           raw.x - this._history[this._history.length - 2].x,
@@ -79,19 +70,15 @@ export class GazeSmoother {
         )
       : 0;
 
-    // High velocity (saccade) → increase alpha for responsiveness
-    // Low velocity (fixation) → decrease alpha for stability
-    const velocityFactor = Math.min(velocity / 150, 1); // normalize 0..1
+    const velocityFactor = Math.min(velocity / 150, 1);
     const adaptiveAlpha = this._baseAlpha + (1 - this._baseAlpha) * velocityFactor * 0.5;
 
-    // During warm-up, use higher alpha for faster convergence
     const warmupAlpha = this._frameCount <= this._warmupFrames
       ? 1 - (1 - adaptiveAlpha) * (this._frameCount / this._warmupFrames)
       : adaptiveAlpha;
 
     this._alpha = warmupAlpha;
 
-    // --- Stage 2: EMA smoothing ---
     this._smoothed = {
       x: this._alpha * raw.x + (1 - this._alpha) * this._smoothed.x,
       y: this._alpha * raw.y + (1 - this._alpha) * this._smoothed.y,
@@ -100,7 +87,6 @@ export class GazeSmoother {
     return { x: this._smoothed.x, y: this._smoothed.y };
   }
 
-  /** Clear all history — call after recalibration */
   reset() {
     this._smoothed = null;
     this._history = [];
@@ -109,12 +95,10 @@ export class GazeSmoother {
     this._alpha = this._baseAlpha;
   }
 
-  /** Live-tune the base smoothness (0 = max smooth, 1 = no smoothing) */
   setAlpha(alpha) {
     this._baseAlpha = Math.max(0.05, Math.min(1, alpha));
   }
 
-  /** Get the current base alpha */
   getAlpha() {
     return this._baseAlpha;
   }

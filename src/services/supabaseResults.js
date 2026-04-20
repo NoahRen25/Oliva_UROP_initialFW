@@ -121,6 +121,38 @@ export async function insertBestWorstTrials(sessionId, trials) {
 }
 
 // =====================
+// GAZE SESSIONS
+// =====================
+
+export async function insertGazeSession(sessionId, mode, username, gazeData) {
+  if (!isConfigured()) return null;
+  const { error } = await supabase.from("gaze_sessions").insert({
+    session_id: sessionId,
+    mode,
+    username,
+    start_time: gazeData?.startTime ?? null,
+    end_time: gazeData?.endTime ?? null,
+    images: gazeData?.images ?? {},
+  });
+  if (error) console.error("insertGazeSession error:", error.message);
+  return error ? null : sessionId;
+}
+
+export async function fetchGazeSession(sessionId) {
+  if (!isConfigured()) return null;
+  const { data, error } = await supabase
+    .from("gaze_sessions")
+    .select("*")
+    .eq("session_id", sessionId)
+    .maybeSingle();
+  if (error) {
+    console.error("fetchGazeSession error:", error.message);
+    return null;
+  }
+  return data;
+}
+
+// =====================
 // TRANSCRIPTS
 // =====================
 

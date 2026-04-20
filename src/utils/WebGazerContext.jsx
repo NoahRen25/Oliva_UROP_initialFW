@@ -417,8 +417,8 @@ export function WebGazerProvider({ children }) {
     localStorage.removeItem(WEBGAZER_DEFAULT_KEY);
     localStorage.removeItem(CALIBRATION_DATA_KEY);
     localStorage.removeItem(CALIBRATION_TIMESTAMP_KEY);
-    setIsCalibrated(false);
     smootherRef.current.reset();
+    setIsCalibrated(false);
     console.log('WebGazer: All calibration data cleared from localStorage');
   }, []);
 

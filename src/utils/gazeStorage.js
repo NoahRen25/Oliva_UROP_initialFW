@@ -1,3 +1,5 @@
+import { insertGazeSession } from '../services/supabaseResults';
+
 const GAZE_STORAGE_KEY = 'app_gaze_sessions';
 
 export function saveGazeSession(sessionId, mode, username, gazeData) {
@@ -11,6 +13,10 @@ export function saveGazeSession(sessionId, mode, username, gazeData) {
     images: gazeData.images,
   });
   localStorage.setItem(GAZE_STORAGE_KEY, JSON.stringify(sessions));
+
+  insertGazeSession(sessionId, mode, username, gazeData).catch((err) => {
+    console.warn('Gaze session Supabase upload failed; kept local copy:', err);
+  });
 }
 
 export function getGazeSessions() {

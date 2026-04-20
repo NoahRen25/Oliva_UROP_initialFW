@@ -8,7 +8,10 @@ export default function useGazeTracker({ debugMode = false } = {}) {
   const gazeDataRef = useRef(new Map());
   const currentlyGazedRef = useRef(null);
   const sessionStartRef = useRef(null);
+  const sessionStartWallRef = useRef(null);
+  const sessionStartedRef = useRef(false);
   const lastGazeTimeRef = useRef(null);
+  const currentFixationStartRef = useRef(null);
   const rectsRef = useRef(new Map());
   const rectsDirtyRef = useRef(true);
   const debugModeRef = useRef(debugMode);
@@ -36,7 +39,17 @@ export default function useGazeTracker({ debugMode = false } = {}) {
   }, []);
 
   const registerImage = useCallback((imageId, ref) => {
-    registryRef.current.set(imageId, { ref });
+    const existing = registryRef.current.get(imageId);
+    if (existing?.observer) existing.observer.disconnect();
+
+    let observer = null;
+    if (ref && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => {
+        rectsDirtyRef.current = true;
+      });
+      observer.observe(ref);
+    }
+    registryRef.current.set(imageId, { ref, observer });
     rectsDirtyRef.current = true;
     if (!gazeDataRef.current.has(imageId)) {
       gazeDataRef.current.set(imageId, {
@@ -51,6 +64,7 @@ export default function useGazeTracker({ debugMode = false } = {}) {
 
   const unregisterImage = useCallback((imageId) => {
     const entry = registryRef.current.get(imageId);
+    if (entry?.observer) entry.observer.disconnect();
     if (entry?.ref) {
       entry.ref.classList.remove('gaze-debug-highlight');
     }
@@ -63,8 +77,11 @@ export default function useGazeTracker({ debugMode = false } = {}) {
 
   const startSession = useCallback(() => {
     sessionStartRef.current = performance.now();
+    sessionStartWallRef.current = Date.now();
+    sessionStartedRef.current = true;
     lastGazeTimeRef.current = null;
     currentlyGazedRef.current = null;
+    currentFixationStartRef.current = null;
     gazeDataRef.current = new Map();
   }, []);
 
@@ -74,8 +91,8 @@ export default function useGazeTracker({ debugMode = false } = {}) {
       images[id] = { ...data, coordinates: [...data.coordinates] };
     }
     return {
-      startTime: sessionStartRef.current
-        ? new Date(Date.now() - (performance.now() - sessionStartRef.current)).toISOString()
+      startTime: sessionStartWallRef.current
+        ? new Date(sessionStartWallRef.current).toISOString()
         : null,
       endTime: new Date().toISOString(),
       images,
@@ -86,16 +103,14 @@ export default function useGazeTracker({ debugMode = false } = {}) {
     gazeDataRef.current = new Map();
     currentlyGazedRef.current = null;
     lastGazeTimeRef.current = null;
+    currentFixationStartRef.current = null;
     sessionStartRef.current = performance.now();
+    sessionStartWallRef.current = Date.now();
   }, []);
 
   useEffect(() => {
-    if (!isTracking || currentGaze.x == null || currentGaze.y == null) {
-      return;
-    }
-    if (!sessionStartRef.current) {
-      sessionStartRef.current = performance.now();
-    }
+    if (!sessionStartedRef.current) return;
+    if (!isTracking || currentGaze.x == null || currentGaze.y == null) return;
 
     const now = performance.now();
     const elapsed = now - sessionStartRef.current;
@@ -103,30 +118,40 @@ export default function useGazeTracker({ debugMode = false } = {}) {
     refreshRects();
 
     let hitImageId = null;
-    for (const [id, rect] of rectsRef.current) {
-      if (
-        currentGaze.x >= rect.left &&
-        currentGaze.x <= rect.right &&
-        currentGaze.y >= rect.top &&
-        currentGaze.y <= rect.bottom
-      ) {
-        hitImageId = id;
-        break;
+    if (typeof document !== 'undefined' && document.elementFromPoint) {
+      const el = document.elementFromPoint(currentGaze.x, currentGaze.y);
+      if (el) {
+        for (const [id, entry] of registryRef.current) {
+          if (entry.ref && (entry.ref === el || entry.ref.contains(el))) {
+            hitImageId = id;
+            break;
+          }
+        }
       }
     }
-
-    const timeDelta = lastGazeTimeRef.current != null
-      ? now - lastGazeTimeRef.current
-      : 0;
-    lastGazeTimeRef.current = now;
+    if (hitImageId == null) {
+      for (const [id, rect] of rectsRef.current) {
+        if (
+          currentGaze.x >= rect.left &&
+          currentGaze.x <= rect.right &&
+          currentGaze.y >= rect.top &&
+          currentGaze.y <= rect.bottom
+        ) {
+          hitImageId = id;
+          break;
+        }
+      }
+    }
 
     const prevGazed = currentlyGazedRef.current;
 
     if (prevGazed && prevGazed !== hitImageId) {
       const prevData = gazeDataRef.current.get(prevGazed);
-      if (prevData) {
+      if (prevData && currentFixationStartRef.current != null) {
+        prevData.totalGazeTime += now - currentFixationStartRef.current;
         prevData.gazeExits += 1;
       }
+      currentFixationStartRef.current = null;
     }
 
     if (hitImageId) {
@@ -144,14 +169,11 @@ export default function useGazeTracker({ debugMode = false } = {}) {
 
       if (prevGazed !== hitImageId) {
         data.gazeEntries += 1;
+        currentFixationStartRef.current = now;
       }
 
       if (data.firstGazeTime == null) {
         data.firstGazeTime = elapsed;
-      }
-
-      if (prevGazed === hitImageId && timeDelta > 0) {
-        data.totalGazeTime += timeDelta;
       }
 
       const rect = rectsRef.current.get(hitImageId);
@@ -164,6 +186,7 @@ export default function useGazeTracker({ debugMode = false } = {}) {
       }
     }
 
+    lastGazeTimeRef.current = now;
     currentlyGazedRef.current = hitImageId;
 
     // Debug mode: highlight gazed image via DOM class
