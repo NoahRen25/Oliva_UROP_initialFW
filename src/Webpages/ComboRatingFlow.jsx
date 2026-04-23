@@ -9,6 +9,9 @@ import GridRatingStep from "../components/GridRatingStep";
 import useGridRating from "../utils/useGridRating";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
 import { useMemImages } from "../data/UseMemImages";
+import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import CalibrationGate from "../components/CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
 
 const shuffleArray = (arr) => {
   const a = [...arr];
@@ -19,11 +22,12 @@ const shuffleArray = (arr) => {
   return a;
 };
 
-export default function ComboRatingFlow() {
+function ComboRatingFlowInner() {
   const navigate = useNavigate();
   const { addFixedSession, setCurrentRatingPage } = useResults();
   const { rows, ready } = useMemImages();
   const grid = useGridRating();
+  const { startSession, getGazeData } = useGazeTracking();
 
   const [step, setStep] = useState(0);
   const [username, setUsername] = useState("");
@@ -114,6 +118,7 @@ export default function ComboRatingFlow() {
 
       const { transcripts: pageTranscripts, audioUrls: pageAudioUrls } = collectPageTranscripts();
       addFixedSession(username, scores, { pageTranscripts, pageAudioUrls });
+      saveGazeSession(Date.now().toString(), "combo", username, getGazeData());
       navigate("/grid-results");
     } else {
       setCurrentPage((p) => p + 1);
@@ -139,7 +144,7 @@ export default function ComboRatingFlow() {
       {step === 1 && (
         <InstructionScreen
           variant="combo"
-          onNext={() => { window.scrollTo(0, 0); setStep(2); setCurrentRatingPage(1); }}
+          onNext={() => { window.scrollTo(0, 0); setStep(2); setCurrentRatingPage(1); startSession(); }}
         />
       )}
 
@@ -162,5 +167,15 @@ export default function ComboRatingFlow() {
         />
       )}
     </Container>
+  );
+}
+
+export default function ComboRatingFlow() {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <ComboRatingFlowInner />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }

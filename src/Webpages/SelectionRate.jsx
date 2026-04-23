@@ -9,13 +9,18 @@ import ModeInstructionScreen from "../components/ModeInstructionScreen";
 import { getSelectionBatch } from "../utils/ImageLoader";
 import { preloadImages } from "../utils/preloadImages";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
+import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import GazeTrackedImage from "../components/GazeTrackedImage";
+import CalibrationGate from "../components/CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
 
 
-export default function SelectionRate() {
+function SelectionRateInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
   const { addSelectionSession, setActivePrompt, setCurrentRatingPage } = useResults();
+  const { startSession, getGazeData } = useGazeTracking();
 
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
@@ -62,6 +67,7 @@ export default function SelectionRate() {
     }));
     const { transcripts: pageTranscripts, audioUrls: pageAudioUrls } = collectPageTranscripts();
     addSelectionSession(username, taskPrompt, selections, { pageTranscripts, pageAudioUrls });
+    saveGazeSession(Date.now().toString(), "selection", username, getGazeData());
     navigate("/mode-results");
   };
 
@@ -82,7 +88,7 @@ export default function SelectionRate() {
         <ModeInstructionScreen
           mode="selection"
           prompt={taskPrompt}
-          onNext={() => setStep(2)}
+          onNext={() => { setStep(2); startSession(); }}
         />
       )}
 
@@ -122,7 +128,8 @@ export default function SelectionRate() {
                   }}
                 >
                   <CardActionArea onClick={() => toggleSelect(img.id)}>
-                    <CardMedia
+                    <GazeTrackedImage
+                      imageId={img.id}
                       component="img"
                       image={img.src}
                       sx={{
@@ -185,5 +192,15 @@ export default function SelectionRate() {
         </>
       )}
     </Container>
+  );
+}
+
+export default function SelectionRate() {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <SelectionRateInner />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }

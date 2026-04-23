@@ -15,6 +15,10 @@ import PromptDisplay from "../components/PromptDisplay";
 import { getRankedBatch } from "../utils/ImageLoader";
 import { preloadImages } from "../utils/preloadImages";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
+import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import GazeTrackedImage from "../components/GazeTrackedImage";
+import CalibrationGate from "../components/CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
 
 
 // ─── Swap Mode Panel ────────────────────────────────────────────────
@@ -143,7 +147,8 @@ function SwapRankPanel({ images, order, setOrder }) {
                 <DragIndicatorIcon />
               </Box>
 
-              <CardMedia
+              <GazeTrackedImage
+                imageId={img.id}
                 component="img"
                 image={img.src}
                 sx={{ objectFit: "contain", height: "30vh", pointerEvents: "none" }}
@@ -194,7 +199,8 @@ function SelectRankPanel({ images, currentRanks, handleChange, error }) {
         {images.map((img, index) => (
           <Grid item xs={12} md={4} key={img.id}>
             <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-              <CardMedia
+              <GazeTrackedImage
+                imageId={img.id}
                 component="img"
                 image={img.src}
                 sx={{ objectFit: "contain", height: "30vh" }}
@@ -227,12 +233,13 @@ function SelectRankPanel({ images, currentRanks, handleChange, error }) {
 }
 
 // ─── Main Component ─────────────────────────────────────────────────
-export default function RankedRate() {
+function RankedRateInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
 
   const { addRankedSession, setActivePrompt, setCurrentRatingPage } = useResults();
+  const { startSession, getGazeData } = useGazeTracking();
 
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
@@ -328,6 +335,7 @@ export default function RankedRate() {
       window.speechSynthesis.cancel();
       const { transcripts: pageTranscripts, audioUrls: pageAudioUrls } = collectPageTranscripts();
       addRankedSession(username, updated, { pageTranscripts, pageAudioUrls });
+      saveGazeSession(Date.now().toString(), "ranked", username, getGazeData());
       navigate("/mode-results");
     }
   };
@@ -384,7 +392,7 @@ export default function RankedRate() {
         <ModeInstructionScreen
           mode="ranked"
           prompt={configPrompt || "Per-group prompts will be shown"}
-          onNext={() => setStep(2)}
+          onNext={() => { setStep(2); startSession(); }}
         />
       )}
 
@@ -444,5 +452,15 @@ export default function RankedRate() {
         </>
       )}
     </Container>
+  );
+}
+
+export default function RankedRate() {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <RankedRateInner />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }

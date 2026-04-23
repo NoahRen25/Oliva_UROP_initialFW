@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
 
+// Storage keys for manual calibration persistence
+// We use a custom key in addition to WebGazer's default for redundancy
+const CALIBRATION_DATA_KEY = 'webgazerCalibrationData';
+const CALIBRATION_TIMESTAMP_KEY = 'webgazerCalibrationTimestamp';
+const WEBGAZER_DEFAULT_KEY = 'webgazerGlobalData';
+
 const WebGazerContext = createContext(null);
 let webgazerLoaderPromise = null;
 
@@ -80,9 +86,11 @@ export function useWebGazer() {
 export function WebGazerProvider({ children }) {
   const [isInitialized, setIsInitialized] = useState(false);
   // Initialize isCalibrated from localStorage to persist across sessions
+  // Check both our custom key and WebGazer's default key
   const [isCalibrated, setIsCalibrated] = useState(() => {
-    const hasData = localStorage.getItem('webgazerGlobalData');
-    return !!hasData;
+    const hasCustomData = localStorage.getItem(CALIBRATION_DATA_KEY);
+    const hasDefaultData = localStorage.getItem(WEBGAZER_DEFAULT_KEY);
+    return !!(hasCustomData || hasDefaultData);
   });
   const [isTracking, setIsTracking] = useState(false);
   const [currentGaze, setCurrentGaze] = useState({ x: null, y: null });
@@ -94,8 +102,9 @@ export function WebGazerProvider({ children }) {
 
   // Check if webgazer has existing calibration data in localStorage
   const checkCalibration = useCallback(() => {
-    const hasData = localStorage.getItem('webgazerGlobalData');
-    const calibrated = !!hasData;
+    const hasCustomData = localStorage.getItem(CALIBRATION_DATA_KEY);
+    const hasDefaultData = localStorage.getItem(WEBGAZER_DEFAULT_KEY);
+    const calibrated = !!(hasCustomData || hasDefaultData);
     setIsCalibrated(calibrated);
     return calibrated;
   }, []);
@@ -257,7 +266,14 @@ export function WebGazerProvider({ children }) {
       // This ensures we recognize existing calibration data after reinit
       const hasExistingCalibration = checkCalibration();
       if (hasExistingCalibration) {
-        console.log('WebGazer: Loaded existing calibration data from localStorage');
+        // Ensure our custom data is synced to WebGazer's expected key
+        // WebGazer automatically loads from 'webgazerGlobalData' when 
+        // saveDataAcrossSessions(true) is called before begin()
+        const customData = localStorage.getItem(CALIBRATION_DATA_KEY);
+        if (customData) {
+          localStorage.setItem(WEBGAZER_DEFAULT_KEY, customData);
+        }
+        console.log('WebGazer: Existing calibration data found in localStorage');
       }
       setError(null);
     } catch (err) {
@@ -276,18 +292,96 @@ export function WebGazerProvider({ children }) {
     }
   }, []);
 
+  // Manually save calibration data to localStorage
+  const saveCalibrationData = useCallback(() => {
+    if (!webgazerRef.current) {
+      console.warn('WebGazer: Cannot save - webgazer not initialized');
+      return false;
+    }
+
+    try {
+      // Try to use storePoints to force WebGazer to save its internal state
+      // storePoints(async, precision) - async=false for synchronous, precision=true for full precision
+      if (typeof webgazerRef.current.storePoints === 'function') {
+        webgazerRef.current.storePoints(false, true);
+      }
+
+      // Check if WebGazer has saved data to localStorage
+      const webgazerData = localStorage.getItem(WEBGAZER_DEFAULT_KEY);
+      if (webgazerData) {
+        // Copy to our custom key for redundancy
+        localStorage.setItem(CALIBRATION_DATA_KEY, webgazerData);
+        localStorage.setItem(CALIBRATION_TIMESTAMP_KEY, Date.now().toString());
+        console.log('WebGazer: Calibration data manually saved to localStorage');
+        return true;
+      }
+
+      // If no data in default key, try to get stored points and save manually
+      if (typeof webgazerRef.current.getStoredPoints === 'function') {
+        const storedPoints = webgazerRef.current.getStoredPoints();
+        if (storedPoints && (storedPoints.length > 0 || Object.keys(storedPoints).length > 0)) {
+          const dataToStore = JSON.stringify(storedPoints);
+          localStorage.setItem(CALIBRATION_DATA_KEY, dataToStore);
+          localStorage.setItem(CALIBRATION_TIMESTAMP_KEY, Date.now().toString());
+          // Also set to WebGazer's key for compatibility
+          localStorage.setItem(WEBGAZER_DEFAULT_KEY, dataToStore);
+          console.log('WebGazer: Calibration data saved via getStoredPoints()');
+          return true;
+        }
+      }
+
+      console.warn('WebGazer: No calibration data found to save');
+    } catch (e) {
+      console.error('WebGazer: Failed to save calibration data:', e);
+    }
+    return false;
+  }, []);
+
+  // Manually load calibration data from localStorage
+  const loadCalibrationData = useCallback(() => {
+    try {
+      // Try to load from our custom key first (more reliable)
+      let data = localStorage.getItem(CALIBRATION_DATA_KEY);
+
+      // Fallback to WebGazer's default key
+      if (!data) {
+        data = localStorage.getItem(WEBGAZER_DEFAULT_KEY);
+      }
+
+      if (data) {
+        // Ensure data is in WebGazer's expected key
+        localStorage.setItem(WEBGAZER_DEFAULT_KEY, data);
+
+        // Note: WebGazer reads from localStorage when initialized with saveDataAcrossSessions(true)
+        // If WebGazer is already running, the data will be used on next reinit
+        console.log('WebGazer: Calibration data synced to localStorage');
+        return true;
+      }
+    } catch (e) {
+      console.error('WebGazer: Failed to load calibration data:', e);
+    }
+    return false;
+  }, []);
+
+  // Check if stored calibration data exists
+  const hasStoredCalibration = useCallback(() => {
+    return !!(
+      localStorage.getItem(CALIBRATION_DATA_KEY) ||
+      localStorage.getItem(WEBGAZER_DEFAULT_KEY)
+    );
+  }, []);
+
   // Mark calibration as complete and ensure data is saved
   const completeCalibration = useCallback(() => {
     setIsCalibrated(true);
-    // WebGazer should auto-save with saveDataAcrossSessions(true)
-    // But we log for debugging purposes
-    const hasData = localStorage.getItem('webgazerGlobalData');
-    if (hasData) {
-      console.log('WebGazer: Calibration data confirmed in localStorage');
+    // Explicitly save calibration data to localStorage
+    const saved = saveCalibrationData();
+    if (saved) {
+      console.log('WebGazer: Calibration completed and data saved');
     } else {
-      console.warn('WebGazer: Calibration data not yet in localStorage - will save on end()');
+      console.warn('WebGazer: Calibration completed but data save may have failed');
     }
-  }, []);
+  }, [saveCalibrationData]);
 
   // Pause tracking
   const pauseTracking = useCallback(() => {
@@ -324,8 +418,12 @@ export function WebGazerProvider({ children }) {
     if (webgazerRef.current) {
       webgazerRef.current.clearData();
     }
-    localStorage.removeItem('webgazerGlobalData');
+    // Clear both WebGazer's default key and our custom keys
+    localStorage.removeItem(WEBGAZER_DEFAULT_KEY);
+    localStorage.removeItem(CALIBRATION_DATA_KEY);
+    localStorage.removeItem(CALIBRATION_TIMESTAMP_KEY);
     setIsCalibrated(false);
+    console.log('WebGazer: All calibration data cleared from localStorage');
   }, []);
 
   // Stop camera and release resources WITHOUT clearing calibration data
@@ -347,11 +445,34 @@ export function WebGazerProvider({ children }) {
         video.srcObject.getTracks().forEach(track => track.stop());
       }
 
-      // Explicitly trigger a save before ending by calling storePoints
-      // This ensures calibration data is persisted to localStorage
+      // Explicitly save calibration data before ending
+      // This ensures data is persisted even if end() doesn't save properly
       try {
-        // WebGazer's end() should save if saveDataAcrossSessions is true,
-        // but we call it with async:false to ensure synchronous save
+        if (webgazerRef.current) {
+          // Try to force WebGazer to save its internal state using storePoints
+          if (typeof webgazerRef.current.storePoints === 'function') {
+            webgazerRef.current.storePoints(false, true);
+          }
+
+          // Check if data was saved, if so copy to our custom key
+          let data = localStorage.getItem(WEBGAZER_DEFAULT_KEY);
+
+          // If no data in default key, try to get stored points directly
+          if (!data && typeof webgazerRef.current.getStoredPoints === 'function') {
+            const storedPoints = webgazerRef.current.getStoredPoints();
+            if (storedPoints && (storedPoints.length > 0 || Object.keys(storedPoints).length > 0)) {
+              data = JSON.stringify(storedPoints);
+              localStorage.setItem(WEBGAZER_DEFAULT_KEY, data);
+            }
+          }
+
+          if (data) {
+            localStorage.setItem(CALIBRATION_DATA_KEY, data);
+            localStorage.setItem(CALIBRATION_TIMESTAMP_KEY, Date.now().toString());
+            console.log('WebGazer: Calibration data saved before stopping camera');
+          }
+        }
+        // WebGazer's end() should also save if saveDataAcrossSessions is true
         webgazerRef.current.end();
       } catch (e) {
         console.warn('WebGazer end() error:', e);
@@ -389,14 +510,77 @@ export function WebGazerProvider({ children }) {
   // Cleanup on unmount - stop camera but preserve calibration data
   useEffect(() => {
     mountedRef.current = true;
+
+    // Save calibration data when user navigates away or closes tab
+    const handleBeforeUnload = () => {
+      if (webgazerRef.current && mountedRef.current) {
+        try {
+          // Try to force WebGazer to save its internal state using storePoints
+          if (typeof webgazerRef.current.storePoints === 'function') {
+            webgazerRef.current.storePoints(false, true);
+          }
+
+          // Check if data was saved, if so copy to our custom key
+          let data = localStorage.getItem(WEBGAZER_DEFAULT_KEY);
+
+          // If no data in default key, try to get stored points directly
+          if (!data && typeof webgazerRef.current.getStoredPoints === 'function') {
+            const storedPoints = webgazerRef.current.getStoredPoints();
+            if (storedPoints && (storedPoints.length > 0 || Object.keys(storedPoints).length > 0)) {
+              data = JSON.stringify(storedPoints);
+              localStorage.setItem(WEBGAZER_DEFAULT_KEY, data);
+            }
+          }
+
+          if (data) {
+            localStorage.setItem(CALIBRATION_DATA_KEY, data);
+            localStorage.setItem(CALIBRATION_TIMESTAMP_KEY, Date.now().toString());
+          }
+        } catch (e) {
+          console.warn('WebGazer: Failed to save on beforeunload:', e);
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
       mountedRef.current = false;
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+
       // Cleanup throttled gaze updater
       if (throttledGazeRef.current) {
         throttledGazeRef.current.cleanup();
         throttledGazeRef.current = null;
       }
       if (webgazerRef.current) {
+        // Save calibration data before cleanup
+        try {
+          // Try to force WebGazer to save its internal state using storePoints
+          if (typeof webgazerRef.current.storePoints === 'function') {
+            webgazerRef.current.storePoints(false, true);
+          }
+
+          // Check if data was saved, if so copy to our custom key
+          let data = localStorage.getItem(WEBGAZER_DEFAULT_KEY);
+
+          // If no data in default key, try to get stored points directly
+          if (!data && typeof webgazerRef.current.getStoredPoints === 'function') {
+            const storedPoints = webgazerRef.current.getStoredPoints();
+            if (storedPoints && (storedPoints.length > 0 || Object.keys(storedPoints).length > 0)) {
+              data = JSON.stringify(storedPoints);
+              localStorage.setItem(WEBGAZER_DEFAULT_KEY, data);
+            }
+          }
+
+          if (data) {
+            localStorage.setItem(CALIBRATION_DATA_KEY, data);
+            localStorage.setItem(CALIBRATION_TIMESTAMP_KEY, Date.now().toString());
+          }
+        } catch (e) {
+          console.warn('WebGazer: Failed to save on unmount:', e);
+        }
+
         // Stop camera tracks
         const video = document.getElementById('webgazerVideoFeed');
         if (video && video.srcObject) {
@@ -423,6 +607,10 @@ export function WebGazerProvider({ children }) {
     clearCalibration,
     stopCamera,
     endWebGazer,
+    // Manual calibration storage functions
+    saveCalibrationData,
+    loadCalibrationData,
+    hasStoredCalibration,
   };
 
   return (

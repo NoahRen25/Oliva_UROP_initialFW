@@ -13,9 +13,13 @@ import { getIndividualBatch } from "../utils/ImageLoader";
 import SpeedWarning from "../components/SpeedWarning";
 import { preloadImages } from "../utils/preloadImages";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
+import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import GazeTrackedImage from "../components/GazeTrackedImage";
+import CalibrationGate from "../components/CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
 
 
-export default function IndividualRate() {
+function IndividualRateInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
@@ -24,6 +28,7 @@ export default function IndividualRate() {
     addIndividualSession, checkEngagement, setShowSpeedWarning,
     resetEngagement, setActivePrompt, setCurrentRatingPage,
   } = useResults();
+  const { startSession, getGazeData } = useGazeTracking();
 
   const [activeStep, setActiveStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
@@ -115,6 +120,7 @@ export default function IndividualRate() {
     } else {
       const { transcripts: pageTranscripts, audioUrls: pageAudioUrls } = collectPageTranscripts();
       addIndividualSession(username, updatedScores, { pageTranscripts, pageAudioUrls });
+      saveGazeSession(Date.now().toString(), "individual", username, getGazeData());
       setActiveStep(4);
     }
     startTimer();
@@ -162,7 +168,7 @@ export default function IndividualRate() {
         <ModeInstructionScreen
           mode="individual"
           prompt={configPrompt || "Per-image prompts will be shown"}
-          onNext={() => { setActiveStep(2); startTimer(); }}
+          onNext={() => { setActiveStep(2); startTimer(); startSession(); }}
         />
       )}
 
@@ -192,7 +198,8 @@ export default function IndividualRate() {
                 itemPrompt={imagePrompt}
               />
             </Box>
-            <CardMedia
+            <GazeTrackedImage
+              imageId={currentImg.id}
               component="img"
               image={currentImg.src}
               sx={{ objectFit: "contain", height: "auto", maxHeight: "60vh" }}
@@ -242,5 +249,15 @@ export default function IndividualRate() {
         </Paper>
       )}
     </Container>
+  );
+}
+
+export default function IndividualRate() {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <IndividualRateInner />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }
