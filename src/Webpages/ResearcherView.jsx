@@ -27,6 +27,7 @@ import StatsModal from "../components/StatsModal";
 import ImageComparisonModal from "../components/ImageComparisonModal";
 import ImageActionMenu from "../components/ImageActionMenu";
 import BackButton from "../components/BackButton";
+import GazeAnalyticsSection from "./GazeAnalyticsSection";
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -695,6 +696,7 @@ export default function ResearcherView() {
 
   const navigate = useNavigate();
 
+  const [viewSection, setViewSection] = useState("ratings"); // "ratings" | "gaze"
   const [activeMode, setActiveMode] = useState("individual");
   // Session filter
   const [selectedSession, setSelectedSession] = useState("all");
@@ -907,6 +909,28 @@ export default function ResearcherView() {
         </Box>
       </Box>
 
+      {/* Section Toggle */}
+      <Paper sx={{ mb: 3, borderRadius: 2, overflow: "hidden" }}>
+        <Tabs
+          value={viewSection}
+          onChange={(_, v) => setViewSection(v)}
+          variant="fullWidth"
+          sx={{
+            bgcolor: "#1a237e",
+            "& .MuiTab-root": { fontWeight: 700, textTransform: "none", minHeight: 56, color: "rgba(255,255,255,0.7)" },
+            "& .Mui-selected": { color: "#fff" },
+            "& .MuiTabs-indicator": { backgroundColor: "#fff", height: 3 },
+          }}
+        >
+          <Tab value="ratings" label="Ratings & Audio" />
+          <Tab value="gaze" label="Gaze Analytics" />
+        </Tabs>
+      </Paper>
+
+      {viewSection === "gaze" && <GazeAnalyticsSection />}
+
+      {viewSection === "ratings" && (
+      <>
       {/* Mode Tabs */}
       <Paper sx={{ mb: 3, borderRadius: 2, overflow: "hidden" }}>
         <Tabs
@@ -1059,6 +1083,8 @@ export default function ResearcherView() {
             onViewStats={handleViewStats}
           />
         </Paper>
+      )}
+      </>
       )}
 
       {/* Modals */}
