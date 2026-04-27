@@ -137,6 +137,33 @@ export async function fetchTranscripts() {
   return data || [];
 }
 
+// ─── Gaze Sessions ──────────────────────────────────────────────
+
+export async function insertGazeSession({ sessionId, mode, username, startTime, endTime, images }) {
+  const { error } = await supabase.from("gaze_sessions").insert({
+    session_id: sessionId,
+    mode,
+    username,
+    start_time: startTime,
+    end_time: endTime,
+    images,
+  });
+  if (error) console.error("insertGazeSession:", error.message);
+}
+
+export async function fetchGazeSessions(mode) {
+  const query = supabase
+    .from("gaze_sessions")
+    .select("*")
+    .order("created_at", { ascending: false });
+  const { data, error } = mode ? await query.eq("mode", mode) : await query;
+  if (error) {
+    console.error("fetchGazeSessions:", error.message);
+    return [];
+  }
+  return data || [];
+}
+
 // ─── Fetch helpers (sessions + child data) ──────────────────────
 
 function shapeScores(raw) {
