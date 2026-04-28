@@ -5,6 +5,7 @@ import ProgressBar from "./ProgressBar";
 import ModeInstructionScreen from "./ModeInstructionScreen";
 import PromptDisplay from "./PromptDisplay";
 import useRatingFlow from "../utils/useRatingFlow";
+import { useGazePage } from "./GazeTrackingProvider";
 
 /**
  * PairwiseFlow — Generic pairwise comparison component.
@@ -28,6 +29,7 @@ export default function PairwiseFlow({
   headerContent,
   canProceed = true,
   onPairChange,
+  gazeFormat = "pairwise-2",
 }) {
   const flow = useRatingFlow({ mode });
 
@@ -35,6 +37,12 @@ export default function PairwiseFlow({
   const [selectedSide, setSelectedSide] = useState(null);
   const [choices, setChoices] = useState([]);
   const [isFinished, setIsFinished] = useState(false);
+
+  const gazePageKey =
+    flow.step === 2 && !isFinished && pairs.length > 0
+      ? `pair-${currentPairIndex + 1}`
+      : null;
+  useGazePage(gazePageKey, gazeFormat);
 
   // Track active prompt & page
   useEffect(() => {

@@ -29,11 +29,6 @@ function countRatings(session) {
   return 0;
 }
 
-function isPressureCookerDupe(session) {
-  return session.mode === "pressure-cooker" ||
-    session.meta?.mode === "pressure-cooker";
-}
-
 // ---------------------------------------------------------------------------
 // 1. Overview Metrics
 // ---------------------------------------------------------------------------
@@ -46,20 +41,15 @@ export function computeOverviewMetrics({
   rankedSessions = [],
   bestWorstSessions = [],
   selectionSessions = [],
-  pressureCookerSessions = [],
 }) {
-  // Filter pairwise to exclude pressure-cooker duplicates
-  const purePairwise = pairwiseSessions.filter((s) => !isPressureCookerDupe(s));
-
   const byMode = {
     individual: individualSessions.length,
     group: groupSessions.length,
     fixed: fixedSessions.length,
-    pairwise: purePairwise.length,
+    pairwise: pairwiseSessions.length,
     ranked: rankedSessions.length,
     bestWorst: bestWorstSessions.length,
     selection: selectionSessions.length,
-    pressureCooker: pressureCookerSessions.length,
   };
 
   const totalSessions = Object.values(byMode).reduce((a, b) => a + b, 0);
@@ -68,11 +58,10 @@ export function computeOverviewMetrics({
     ...individualSessions,
     ...groupSessions,
     ...fixedSessions,
-    ...purePairwise,
+    ...pairwiseSessions,
     ...rankedSessions,
     ...bestWorstSessions,
     ...selectionSessions,
-    ...pressureCookerSessions,
   ];
 
   const totalRatings = allSessions.reduce((sum, s) => sum + countRatings(s), 0);
@@ -107,19 +96,15 @@ export function buildSessionTimeline({
   rankedSessions = [],
   bestWorstSessions = [],
   selectionSessions = [],
-  pressureCookerSessions = [],
 }) {
-  const purePairwise = pairwiseSessions.filter((s) => !isPressureCookerDupe(s));
-
   const modeMap = {
     individual: individualSessions,
     group: groupSessions,
     fixed: fixedSessions,
-    pairwise: purePairwise,
+    pairwise: pairwiseSessions,
     ranked: rankedSessions,
     bestWorst: bestWorstSessions,
     selection: selectionSessions,
-    pressureCooker: pressureCookerSessions,
   };
 
   // Flatten into { date, mode } entries
@@ -137,7 +122,7 @@ export function buildSessionTimeline({
   const dateMap = {};
   for (const { date, mode } of entries) {
     if (!dateMap[date]) {
-      dateMap[date] = { date, individual: 0, group: 0, fixed: 0, pairwise: 0, ranked: 0, bestWorst: 0, selection: 0, pressureCooker: 0, total: 0 };
+      dateMap[date] = { date, individual: 0, group: 0, fixed: 0, pairwise: 0, ranked: 0, bestWorst: 0, selection: 0, total: 0 };
     }
     dateMap[date][mode]++;
     dateMap[date].total++;
@@ -155,7 +140,7 @@ export function buildSessionTimeline({
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const key = toDateKey(d);
     filled.push(
-      dateMap[key] || { date: key, individual: 0, group: 0, fixed: 0, pairwise: 0, ranked: 0, bestWorst: 0, selection: 0, pressureCooker: 0, total: 0 }
+      dateMap[key] || { date: key, individual: 0, group: 0, fixed: 0, pairwise: 0, ranked: 0, bestWorst: 0, selection: 0, total: 0 }
     );
   }
 
@@ -174,19 +159,15 @@ export function buildModeBreakdown({
   rankedSessions = [],
   bestWorstSessions = [],
   selectionSessions = [],
-  pressureCookerSessions = [],
 }) {
-  const purePairwise = pairwiseSessions.filter((s) => !isPressureCookerDupe(s));
-
   const modes = [
     { key: "individual", label: "Individual", sessions: individualSessions, hasScores: true },
     { key: "group", label: "Group", sessions: groupSessions, hasScores: true },
     { key: "fixed", label: "Fixed", sessions: fixedSessions, hasScores: true },
-    { key: "pairwise", label: "Pairwise", sessions: purePairwise, hasScores: false },
+    { key: "pairwise", label: "Pairwise", sessions: pairwiseSessions, hasScores: false },
     { key: "ranked", label: "Ranked", sessions: rankedSessions, hasScores: false },
     { key: "bestWorst", label: "Best-Worst", sessions: bestWorstSessions, hasScores: false },
     { key: "selection", label: "Selection", sessions: selectionSessions, hasScores: false },
-    { key: "pressureCooker", label: "Pressure Cooker", sessions: pressureCookerSessions, hasScores: false },
   ];
 
   return modes
@@ -210,9 +191,7 @@ export function buildModeBreakdown({
         }
       }
 
-      // Outlier detection
-      const outlierMode = m.key === "pressureCooker" ? "pressure-cooker" : m.key;
-      const withOutliers = detectOutliers(m.sessions, outlierMode);
+      const withOutliers = detectOutliers(m.sessions, m.key);
       const outlierCount = withOutliers.filter(
         (s) => s.outlierReasons && s.outlierReasons.length > 0
       ).length;
@@ -289,15 +268,11 @@ export function buildQualityReport({
   individualSessions = [],
   groupSessions = [],
   pairwiseSessions = [],
-  pressureCookerSessions = [],
 }) {
-  const purePairwise = pairwiseSessions.filter((s) => !isPressureCookerDupe(s));
-
   const checks = [
     { sessions: individualSessions, mode: "individual" },
     { sessions: groupSessions, mode: "group" },
-    { sessions: purePairwise, mode: "pairwise" },
-    { sessions: pressureCookerSessions, mode: "pressure-cooker" },
+    { sessions: pairwiseSessions, mode: "pairwise" },
   ];
 
   let totalSessions = 0;

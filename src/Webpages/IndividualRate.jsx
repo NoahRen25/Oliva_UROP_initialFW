@@ -13,7 +13,7 @@ import { getIndividualBatch } from "../utils/ImageLoader";
 import SpeedWarning from "../components/SpeedWarning";
 import { preloadImages } from "../utils/preloadImages";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
-import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
 import GazeTrackedImage from "../components/GazeTrackedImage";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
@@ -28,7 +28,7 @@ function IndividualRateInner() {
     addIndividualSession, checkEngagement, setShowSpeedWarning,
     resetEngagement, setActivePrompt, setCurrentRatingPage,
   } = useResults();
-  const { startSession, getGazeData } = useGazeTracking();
+  const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
 
   const [activeStep, setActiveStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
@@ -128,9 +128,22 @@ function IndividualRateInner() {
 
   const incrementMoves = () => setInteractionCount((prev) => prev + 1);
 
-  if (!benchmarkImage || imagesToRate.length === 0) return null;
-
   const currentImg = activeStep === 2 ? benchmarkImage : imagesToRate[currentImageIndex];
+  const pageKey =
+    activeStep === 2
+      ? "benchmark"
+      : activeStep === 3
+      ? `image-${currentImageIndex + 1}`
+      : null;
+  useGazePage(pageKey, "individual-1");
+
+  useEffect(() => {
+    if (currentImg) {
+      tagImageOnPage(currentImg.id, currentImg.filename || currentImg.alt);
+    }
+  }, [currentImg, tagImageOnPage]);
+
+  if (!benchmarkImage || imagesToRate.length === 0) return null;
   const globalPrompt = configPrompt || "Rate this image";
   const imagePrompt = currentImg ? currentImg.prompt : "";
 

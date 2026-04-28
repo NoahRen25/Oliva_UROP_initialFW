@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
 
-import { getGazeSessions } from "../utils/gazeStorage";
+import { fetchGazeSessions } from "../services/supabaseResults";
 import {
   buildDwellChart,
   buildGazeTimeline,
@@ -13,15 +13,17 @@ import GazeDwellChart from "../components/analytics/GazeDwellChart";
 import GazeTimeline from "../components/analytics/GazeTimeline";
 import GazeHeatmap from "../components/analytics/GazeHeatmap";
 import GazeExport from "../components/analytics/GazeExport";
+import PageFormatExplorer from "../components/analytics/PageFormatExplorer";
 
 export default function GazeAnalyticsSection() {
-  const [gazeSessions, setGazeSessions] = useState(() => getGazeSessions());
+  const [gazeSessions, setGazeSessions] = useState([]);
   const [selectedMode, setSelectedMode] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState("");
 
-  // Re-read whenever the page regains focus, in case a new session just landed
+  const refresh = () => fetchGazeSessions().then(setGazeSessions);
+
   useEffect(() => {
-    const refresh = () => setGazeSessions(getGazeSessions());
+    refresh();
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
   }, []);
@@ -78,6 +80,8 @@ export default function GazeAnalyticsSection() {
         gazeSession={selectedSession}
         gazeSessions={filteredSessions}
       />
+
+      <PageFormatExplorer gazeSessions={filteredSessions} />
 
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 3 }}>
         <GazeDwellChart data={dwellData} />

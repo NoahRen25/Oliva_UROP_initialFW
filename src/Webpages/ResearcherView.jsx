@@ -26,8 +26,9 @@ import AudioModal from "../components/AudioModal";
 import StatsModal from "../components/StatsModal";
 import ImageComparisonModal from "../components/ImageComparisonModal";
 import ImageActionMenu from "../components/ImageActionMenu";
-import BackButton from "../components/BackButton";
 import GazeAnalyticsSection from "./GazeAnalyticsSection";
+import SelectedImagesHeatmapModal from "../components/analytics/SelectedImagesHeatmapModal";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -709,8 +710,9 @@ export default function ResearcherView() {
 
   // Modal state
   const [audioModal, setAudioModal] = useState({ open: false, imageName: "", entries: [] });
-  const [statsModal, setStatsModal] = useState({ open: false, imageName: "", src: "", stats: null, mode: "" });
+  const [statsModal, setStatsModal] = useState({ open: false, imageName: "", src: "", stats: null, mode: "", imagesLookup: {} });
   const [comparisonModal, setComparisonModal] = useState({ open: false, images: [], leftIdx: 0, rightIdx: 1 });
+  const [heatmapModal, setHeatmapModal] = useState({ open: false, images: [] });
 
   // Get sessions for active mode
   const allSessions = useMemo(() => {
@@ -751,14 +753,21 @@ export default function ResearcherView() {
   }, []);
 
   const handleViewStats = useCallback((imageData) => {
+    // Build a name -> src lookup so the stats modal can render
+    // opposing-image thumbnails for pairwise per-session rows.
+    const lookup = {};
+    for (const s of imageStats) {
+      if (s?.name && s.src) lookup[s.name] = s.src;
+    }
     setStatsModal({
       open: true,
       imageName: imageData.name,
       src: imageData.src || "",
       stats: imageData,
       mode: activeMode,
+      imagesLookup: lookup,
     });
-  }, [activeMode]);
+  }, [activeMode, imageStats]);
 
   const handleCompare = useCallback((imageData) => {
     const idx = imageStats.findIndex((s) => s.name === imageData.name);
@@ -831,6 +840,15 @@ export default function ResearcherView() {
     });
   }, [imageStats, selectedImages, activeMode, navigate]);
 
+  const handleViewHeatmaps = useCallback(() => {
+    const selected = imageStats.filter((s) => selectedImages.has(s.name));
+    if (selected.length === 0) return;
+    setHeatmapModal({
+      open: true,
+      images: selected.map((s) => ({ name: String(s.name), src: s.src || "" })),
+    });
+  }, [imageStats, selectedImages]);
+
   const handleToggleSelectionMode = useCallback(() => {
     setSelectionMode((prev) => {
       if (prev) setSelectedImages(new Set()); // clear on exit
@@ -840,8 +858,6 @@ export default function ResearcherView() {
 
   return (
     <Container maxWidth="xl" sx={{ mt: 2, mb: 6 }}>
-      <BackButton />
-
       {/* Header */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
         <Box>
@@ -870,6 +886,15 @@ export default function ResearcherView() {
                 onClick={handleSelectAll}
               >
                 {selectedImages.size === imageStats.length ? "Deselect All" : "Select All"}
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<VisibilityIcon />}
+                onClick={handleViewHeatmaps}
+                disabled={selectedImages.size === 0}
+                size="small"
+              >
+                View Heatmaps ({selectedImages.size})
               </Button>
               <Button
                 variant="contained"
@@ -1034,6 +1059,15 @@ export default function ResearcherView() {
             </Button>
             <Button
               size="small"
+              variant="outlined"
+              startIcon={<VisibilityIcon />}
+              disabled={selectedImages.size === 0}
+              onClick={handleViewHeatmaps}
+            >
+              View Heatmaps ({selectedImages.size})
+            </Button>
+            <Button
+              size="small"
               variant="contained"
               color="success"
               startIcon={<PlayCircleOutlineIcon />}
@@ -1097,11 +1131,12 @@ export default function ResearcherView() {
 
       <StatsModal
         open={statsModal.open}
-        onClose={() => setStatsModal({ open: false, imageName: "", src: "", stats: null, mode: "" })}
+        onClose={() => setStatsModal({ open: false, imageName: "", src: "", stats: null, mode: "", imagesLookup: {} })}
         imageName={statsModal.imageName}
         imageSrc={statsModal.src}
         stats={statsModal.stats}
         mode={statsModal.mode}
+        imagesLookup={statsModal.imagesLookup}
       />
 
       <ImageComparisonModal
@@ -1110,6 +1145,13 @@ export default function ResearcherView() {
         images={comparisonModal.images}
         initialLeft={comparisonModal.leftIdx}
         initialRight={comparisonModal.rightIdx}
+        mode={activeMode}
+      />
+
+      <SelectedImagesHeatmapModal
+        open={heatmapModal.open}
+        onClose={() => setHeatmapModal({ open: false, images: [] })}
+        selectedImageData={heatmapModal.images}
       />
     </Container>
   );

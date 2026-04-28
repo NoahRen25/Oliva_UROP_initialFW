@@ -139,16 +139,30 @@ export async function fetchTranscripts() {
 
 // ─── Gaze Sessions ──────────────────────────────────────────────
 
-export async function insertGazeSession({ sessionId, mode, username, startTime, endTime, images }) {
-  const { error } = await supabase.from("gaze_sessions").insert({
+export async function insertGazeSession({ sessionId, mode, username, startTime, endTime, images, pages }) {
+  const row = {
     session_id: sessionId,
     mode,
     username,
     start_time: startTime,
     end_time: endTime,
     images,
-  });
+  };
+  if (pages !== undefined) row.pages = pages;
+  const { error } = await supabase.from("gaze_sessions").insert(row);
   if (error) console.error("insertGazeSession:", error.message);
+}
+
+function shapeGazeSession(raw) {
+  return {
+    sessionId: raw.session_id,
+    mode: raw.mode,
+    username: raw.username,
+    startTime: raw.start_time,
+    endTime: raw.end_time,
+    images: raw.images,
+    pages: raw.pages || {},
+  };
 }
 
 export async function fetchGazeSessions(mode) {
@@ -161,7 +175,7 @@ export async function fetchGazeSessions(mode) {
     console.error("fetchGazeSessions:", error.message);
     return [];
   }
-  return data || [];
+  return (data || []).map(shapeGazeSession);
 }
 
 // ─── Fetch helpers (sessions + child data) ──────────────────────

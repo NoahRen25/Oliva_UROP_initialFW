@@ -3,17 +3,17 @@ import {
   BrowserRouter as Router, Routes, Route, Link, useLocation,
 } from "react-router-dom";
 import {
-  AppBar, Toolbar, Button, Typography, ThemeProvider, createTheme,
+  AppBar, Toolbar, Typography, ThemeProvider, createTheme,
   CssBaseline, Box,
 } from "@mui/material";
-import HomeIcon from "@mui/icons-material/Home";
-import HistoryEduIcon from "@mui/icons-material/HistoryEdu";
 
 import { ResultsProvider, useResults } from "./Results";
 import { WebGazerProvider, useWebGazer } from "./utils/WebGazerContext";
+import { AuthProvider } from "./utils/AuthContext";
+import LoginButton from "./components/LoginButton";
+import AdminMenu from "./components/AdminMenu";
 import VoiceRecorder from "./components/VoiceRecorder";
 import TranscriptHistory from "./Webpages/TranscriptHistory";
-import ReadPromptButton from "./components/ReadPromptButton";
 import ResearcherView from "./Webpages/ResearcherView";
 import Home from "./Webpages/Home";
 import IndividualRate from "./Webpages/IndividualRate";
@@ -22,10 +22,8 @@ import RankedRate from "./Webpages/RankedRate";
 import BestWorstRate from "./Webpages/BestWorstRate";
 import SelectionRate from "./Webpages/SelectionRate";
 import VideoPairwiseRate from "./Webpages/VideoPairwiseRate";
-import PressureCooker from "./Webpages/PressureCooker";
 import WebGazerCalibration from "./Webpages/WebGazerCalibration";
 import WebGazerGazeTest from "./Webpages/WebGazerGazeTest";
-import DatasetManager from "./Webpages/DatasetManager";
 import ResultsPage from "./Webpages/ResultsPage";
 import ModeResultsPage from "./Webpages/ModeResultsPage";
 import LayoutRatingFlow from "./components/LayoutRatingFlow";
@@ -35,16 +33,15 @@ import ComboResultsPage from "./Webpages/ComboResultsPage";
 import PrivacySettings from "./Webpages/PrivacySettings";
 import ConsentModal from "./components/ConsentModal";
 import SimulatedSession from "./Webpages/SimulatedSession";
+import SetPassword from "./Webpages/SetPassword";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
 });
 
 function NavigationWrapper() {
-  const { addTranscript, consentGiven, acceptConsent } = useResults();
+  const { consentGiven, acceptConsent, addTranscript } = useResults();
 
-  // Global refs for per-page transcript + audio data.
-  // VoiceRecorder writes to these continuously; rating flows read via collectPageTranscripts()
   const pendingPageTranscriptsRef = useRef({});
   const pendingPageAudioRef = useRef({});
   const pendingPageAudioBlobsRef = useRef({});
@@ -59,36 +56,32 @@ function NavigationWrapper() {
     <Router>
       <ConsentModal open={!consentGiven} onAccept={acceptConsent} />
       <WebGazerAutoStop />
+      <WebGazerVideoToggle />
+      <FloatingVoiceRecorder onSave={(text, dur) => addTranscript(text, dur)} />
       <AppBar position="fixed" color="default" elevation={1}>
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
-            OlivaGroupFW
-          </Typography>
-          <ReadPromptButton />
-          <VoiceRecorder onSave={(text, dur) => addTranscript(text, dur)} />
-          <Button
-            startIcon={<HistoryEduIcon />}
-            component={Link}
-            to="/transcripts"
-            color="inherit"
-            sx={{ mr: 1 }}
-          >
-            History
-          </Button>
-          <Button
-            startIcon={<HomeIcon />}
+          <Typography
+            variant="h6"
             component={Link}
             to="/"
-            color="inherit"
+            sx={{
+              flexGrow: 1,
+              fontWeight: "bold",
+              color: "inherit",
+              textDecoration: "none",
+            }}
           >
-            Home
-          </Button>
+            OlivaGroupFW
+          </Typography>
+          <AdminMenu />
+          <LoginButton />
         </Toolbar>
       </AppBar>
 
       <Box sx={{ paddingTop: "80px", minHeight: "100vh" }}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/set-password" element={<SetPassword />} />
           <Route path="/transcripts" element={<TranscriptHistory />} />
 
           {/* Results */}
@@ -105,12 +98,10 @@ function NavigationWrapper() {
           <Route path="/ranked-rate" element={<RankedRate />} />
           <Route path="/best-worst-rate" element={<BestWorstRate />} />
           <Route path="/combo-rate" element={<ComboRatingFlow />} />
-          <Route path="/pressure-cooker" element={<PressureCooker />} />
 
           {/* Tools */}
           <Route path="/webgazer-calibration" element={<WebGazerCalibration />} />
           <Route path="/webgazer-gaze-test" element={<WebGazerGazeTest />} />
-          <Route path="/dataset-manager" element={<DatasetManager />} />
           <Route path="/rate" element={<LayoutRatingFlow mode="manual" />} />
           <Route path="/results" element={<ResultsPage />} />
           <Route path="/combo-results" element={<ComboResultsPage />} />
@@ -132,8 +123,33 @@ const KEEP_WEBGAZER_ROUTES = [
   '/selection-rate',
   '/rate',
   '/combo-rate',
-  '/pressure-cooker',
 ];
+
+function FloatingVoiceRecorder({ onSave }) {
+  const location = useLocation();
+  const onRatingRoute = KEEP_WEBGAZER_ROUTES.some((r) =>
+    location.pathname.startsWith(r)
+  );
+  if (!onRatingRoute) return null;
+  return (
+    <Box
+      sx={{
+        position: 'fixed',
+        bottom: 16,
+        right: 16,
+        zIndex: 1300,
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(8px)',
+        borderRadius: 999,
+        boxShadow: 3,
+        px: 1.5,
+        py: 0.5,
+      }}
+    >
+      <VoiceRecorder onSave={onSave} />
+    </Box>
+  );
+}
 
 function WebGazerAutoStop() {
   const location = useLocation();
@@ -151,15 +167,36 @@ function WebGazerAutoStop() {
   return null;
 }
 
+// Show the webcam preview only on calibration / gaze-test pages; hide it
+// once the user reaches a rating page so it doesn't sit in the corner.
+const SHOW_VIDEO_ROUTES = ['/webgazer-calibration', '/webgazer-gaze-test'];
+
+function WebGazerVideoToggle() {
+  const location = useLocation();
+  const { showVideo, isInitialized } = useWebGazer();
+
+  useEffect(() => {
+    if (!isInitialized) return;
+    const shouldShow = SHOW_VIDEO_ROUTES.some(route =>
+      location.pathname.startsWith(route)
+    );
+    showVideo(shouldShow);
+  }, [location.pathname, showVideo, isInitialized]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <ThemeProvider theme={lightTheme}>
       <CssBaseline />
-      <ResultsProvider>
-        <WebGazerProvider>
-          <NavigationWrapper />
-        </WebGazerProvider>
-      </ResultsProvider>
+      <AuthProvider>
+        <ResultsProvider>
+          <WebGazerProvider>
+            <NavigationWrapper />
+          </WebGazerProvider>
+        </ResultsProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

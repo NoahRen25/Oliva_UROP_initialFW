@@ -1,27 +1,13 @@
-const GAZE_STORAGE_KEY = 'app_gaze_sessions';
+import { insertGazeSession } from "../services/supabaseResults";
 
 export function saveGazeSession(sessionId, mode, username, gazeData) {
-  const sessions = getGazeSessions();
-  sessions.push({
+  return insertGazeSession({
     sessionId,
     mode,
     username,
     startTime: gazeData.startTime,
     endTime: gazeData.endTime,
     images: gazeData.images,
+    pages: gazeData.pages || {},
   });
-  localStorage.setItem(GAZE_STORAGE_KEY, JSON.stringify(sessions));
-}
-
-export function getGazeSessions() {
-  try {
-    const data = localStorage.getItem(GAZE_STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function clearGazeSessions() {
-  localStorage.removeItem(GAZE_STORAGE_KEY);
 }

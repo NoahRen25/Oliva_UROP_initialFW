@@ -65,18 +65,16 @@ export default function UnifiedUploadPage() {
   };
 
   const handleStart = () => {
-    const state = { uploadConfig: { ...config, username } };
+    const uploadConfig = { ...config, username };
 
-    // Check if it's a grid type
+    let returnTo;
     if (GRID_DEFINITIONS[config.type]) {
-      // Navigate to the grid rating flow
-      navigate("/rate/grid", { state });
+      returnTo = "/rate/grid";
     } else {
-      // Navigate to the specific rating mode
-      // Some types use underscores in config but hyphens in routes
-      const routeType = config.type.replace(/_/g, "-");
-      navigate(`/${routeType}-rate`, { state });
+      returnTo = `/${config.type.replace(/_/g, "-")}-rate`;
     }
+
+    navigate("/webgazer-calibration", { state: { uploadConfig, returnTo } });
   };
 
   const isGrid = config && !!GRID_DEFINITIONS[config.type];
@@ -136,7 +134,7 @@ export default function UnifiedUploadPage() {
             variant="contained" fullWidth size="large"
             disabled={!canStart} onClick={handleStart}
           >
-            Start Session
+            Next
           </Button>
         </Paper>
       )}

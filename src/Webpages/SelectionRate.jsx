@@ -9,7 +9,7 @@ import ModeInstructionScreen from "../components/ModeInstructionScreen";
 import { getSelectionBatch } from "../utils/ImageLoader";
 import { preloadImages } from "../utils/preloadImages";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
-import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
 import GazeTrackedImage from "../components/GazeTrackedImage";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
@@ -20,7 +20,7 @@ function SelectionRateInner() {
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
   const { addSelectionSession, setActivePrompt, setCurrentRatingPage } = useResults();
-  const { startSession, getGazeData } = useGazeTracking();
+  const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
 
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
@@ -29,6 +29,15 @@ function SelectionRateInner() {
 
   const imageCount = uploadConfig?.count || 9;
   const taskPrompt = uploadConfig?.prompt || "Select all images that match the description";
+
+  useGazePage(step === 2 ? "selection" : null, `selection-${imageCount}`);
+
+  useEffect(() => {
+    if (step !== 2) return;
+    for (const img of images) {
+      tagImageOnPage(img.id, img.filename || img.alt);
+    }
+  }, [step, images, tagImageOnPage]);
 
   useEffect(() => {
     const batch = getSelectionBatch(imageCount);

@@ -1,6 +1,6 @@
 /**
  * Pure data transformation functions for gaze session analytics.
- * All functions take gaze session data (from gazeStorage.getGazeSessions())
+ * All functions take gaze session data (from fetchGazeSessions())
  * and return chart-ready data structures.
  *
  * Gaze session shape:
@@ -343,4 +343,198 @@ export function flattenForExport(gazeSessions, level) {
 
   // Unknown level — return empty array
   return [];
+}
+
+// ---------------------------------------------------------------------------
+// 6. Page-level (whole viewport) helpers
+// ---------------------------------------------------------------------------
+
+/** Iterate (sessionId, pageKey, page) for every page across sessions. */
+function* pageEntries(sessions) {
+  for (const s of sessions || []) {
+    if (!s.pages) continue;
+    for (const [pageKey, page] of Object.entries(s.pages)) {
+      if (!page) continue;
+      yield { sessionId: s.sessionId, pageKey, page };
+    }
+  }
+}
+
+/**
+ * Collect the unique page formats present in `gazeSessions` along with
+ * the number of pages and total coordinate count for each.
+ */
+export function collectPageFormats(gazeSessions) {
+  const map = {};
+  for (const { page } of pageEntries(gazeSessions)) {
+    const fmt = page.format || "unknown";
+    if (!map[fmt]) map[fmt] = { format: fmt, pageCount: 0, sessionIds: new Set(), coordCount: 0 };
+    map[fmt].pageCount++;
+    map[fmt].coordCount += (page.coordinates || []).length;
+  }
+  for (const { sessionId, page } of pageEntries(gazeSessions)) {
+    const fmt = page.format || "unknown";
+    if (map[fmt]) map[fmt].sessionIds.add(sessionId);
+  }
+  return Object.values(map)
+    .map((m) => ({
+      format: m.format,
+      pageCount: m.pageCount,
+      sessionCount: m.sessionIds.size,
+      coordCount: m.coordCount,
+    }))
+    .sort((a, b) => b.pageCount - a.pageCount);
+}
+
+/**
+ * Build a viewport-space heatmap grid + median image bounding boxes for
+ * a given page format aggregated across the provided sessions. Optionally
+ * restrict to pages whose imageBoxes include any of the given imageIds.
+ *
+ * Returns { grid, maxDensity, imageBoxes, viewport, pageCount }.
+ *   - grid is a 50×50 number[][] in (row, col) order
+ *   - imageBoxes are normalized [0..1] {x, y, w, h, name?, count}
+ *   - viewport is a typical viewport AR { width, height } (median)
+ */
+export function buildPageHeatmap({
+  sessions,
+  format,
+  matchImageIds = null,
+}) {
+  const size = 50;
+  const empty = {
+    grid: Array.from({ length: size }, () => new Array(size).fill(0)),
+    maxDensity: 0,
+    imageBoxes: [],
+    viewport: { width: 1, height: 1 },
+    pageCount: 0,
+  };
+
+  if (!sessions || sessions.length === 0 || !format) return empty;
+
+  const matchSet = matchImageIds ? new Set(matchImageIds.map(String)) : null;
+
+  // Pages relevant to this format (and optional image filter)
+  const matchedPages = [];
+  for (const { page } of pageEntries(sessions)) {
+    if ((page.format || "unknown") !== format) continue;
+    if (matchSet) {
+      const has = (page.imageBoxes || []).some((b) =>
+        matchSet.has(String(b.imageId)) ||
+        (b.name && matchSet.has(String(b.name)))
+      );
+      if (!has) continue;
+    }
+    matchedPages.push(page);
+  }
+  if (matchedPages.length === 0) return empty;
+
+  // Aggregate raw coord counts per cell
+  const raw = Array.from({ length: size }, () => new Array(size).fill(0));
+  for (const page of matchedPages) {
+    for (const c of page.coordinates || []) {
+      const col = clamp(Math.floor(c.x * (size - 1)), 0, size - 1);
+      const row = clamp(Math.floor(c.y * (size - 1)), 0, size - 1);
+      raw[row][col]++;
+    }
+  }
+
+  // Gaussian blur (same kernel as buildHeatmapData)
+  const sigma = 1.5;
+  const radius = 3;
+  const blurred = Array.from({ length: size }, () => new Array(size).fill(0));
+  const kernel = [];
+  for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      const weight = Math.exp(-(dx * dx + dy * dy) / (2 * sigma * sigma));
+      kernel.push({ dx, dy, weight });
+    }
+  }
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      const v = raw[row][col];
+      if (v === 0) continue;
+      for (const { dx, dy, weight } of kernel) {
+        const nr = row + dy;
+        const nc = col + dx;
+        if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+          blurred[nr][nc] += v * weight;
+        }
+      }
+    }
+  }
+  let maxDensity = 0;
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      if (blurred[row][col] > maxDensity) maxDensity = blurred[row][col];
+    }
+  }
+
+  // Aggregate image bounding boxes — group by imageId/name and median.
+  const boxesByKey = {};
+  for (const page of matchedPages) {
+    for (const b of page.imageBoxes || []) {
+      const key = String(b.imageId ?? b.name ?? "");
+      if (!key) continue;
+      if (!boxesByKey[key]) {
+        boxesByKey[key] = { imageId: b.imageId, name: b.name || null, xs: [], ys: [], ws: [], hs: [] };
+      }
+      boxesByKey[key].xs.push(b.x);
+      boxesByKey[key].ys.push(b.y);
+      boxesByKey[key].ws.push(b.w);
+      boxesByKey[key].hs.push(b.h);
+    }
+  }
+  const median = (arr) => {
+    if (!arr.length) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const m = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[m] : (sorted[m - 1] + sorted[m]) / 2;
+  };
+  const imageBoxes = Object.values(boxesByKey).map((b) => ({
+    imageId: b.imageId,
+    name: b.name,
+    x: median(b.xs),
+    y: median(b.ys),
+    w: median(b.ws),
+    h: median(b.hs),
+    count: b.xs.length,
+  }));
+
+  // Median viewport (so the canvas can have a sensible aspect ratio)
+  const vws = matchedPages.map((p) => p.viewport?.width || 0).filter(Boolean);
+  const vhs = matchedPages.map((p) => p.viewport?.height || 0).filter(Boolean);
+  const viewport = {
+    width: vws.length ? median(vws) : 1,
+    height: vhs.length ? median(vhs) : 1,
+  };
+
+  return {
+    grid: blurred,
+    maxDensity,
+    imageBoxes,
+    viewport,
+    pageCount: matchedPages.length,
+  };
+}
+
+/**
+ * For a given image identifier (id OR name), find the page formats it
+ * appeared on across sessions. Returns sorted array of { format, count }.
+ */
+export function findFormatsForImage(sessions, imageIdent) {
+  if (!imageIdent || !sessions) return [];
+  const target = String(imageIdent);
+  const counts = {};
+  for (const { page } of pageEntries(sessions)) {
+    const has = (page.imageBoxes || []).some(
+      (b) => String(b.imageId) === target || String(b.name) === target
+    );
+    if (!has) continue;
+    const fmt = page.format || "unknown";
+    counts[fmt] = (counts[fmt] || 0) + 1;
+  }
+  return Object.entries(counts)
+    .map(([format, count]) => ({ format, count }))
+    .sort((a, b) => b.count - a.count);
 }

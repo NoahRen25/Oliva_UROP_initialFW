@@ -17,6 +17,8 @@ import StorageIcon from "@mui/icons-material/Storage";
 import PersonIcon from "@mui/icons-material/Person";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import TouchAppIcon from "@mui/icons-material/TouchApp";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import MicIcon from "@mui/icons-material/Mic";
 
 export default function ConsentModal({ open, onAccept }) {
   return (
@@ -74,6 +76,20 @@ export default function ConsentModal({ open, onAccept }) {
               secondary="Number of slider movements and response times"
             />
           </ListItem>
+          <ListItem>
+            <ListItemIcon><VisibilityIcon color="action" /></ListItemIcon>
+            <ListItemText
+              primary="Gaze Tracking Data"
+              secondary="Webcam-based eye-tracking samples while viewing images (no video is stored — only on-screen gaze coordinates)"
+            />
+          </ListItem>
+          <ListItem>
+            <ListItemIcon><MicIcon color="action" /></ListItemIcon>
+            <ListItemText
+              primary="Voice Recordings"
+              secondary="Audio you choose to record using the in-app microphone, along with its transcript"
+            />
+          </ListItem>
         </List>
 
         <Box sx={{ mt: 2, p: 2, bgcolor: "#e3f2fd", borderRadius: 2 }}>
@@ -81,9 +97,9 @@ export default function ConsentModal({ open, onAccept }) {
             How We Store Your Data:
           </Typography>
           <Typography variant="body2">
-            All data is stored locally in your browser (localStorage) and never leaves your device.
-            No data is sent to external servers. You can delete all your data at any time from
-            the Privacy Settings page.
+            Your data is sent to a secure external database. Records are
+            anonymized and used solely for academic research. They are not sold,
+            shared with advertisers, or used for any commercial purpose.
           </Typography>
         </Box>
       </DialogContent>

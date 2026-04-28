@@ -95,6 +95,22 @@
       created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
     );
 
+    -- Gaze sessions: eye-tracking data per rating session
+    CREATE TABLE IF NOT EXISTS gaze_sessions (
+      id          BIGSERIAL PRIMARY KEY,
+      session_id  TEXT NOT NULL,             -- matches Date.now().toString() from the app
+      mode        TEXT,                       -- individual, pairwise, ranked, best_worst, etc.
+      username    TEXT,
+      start_time  TIMESTAMPTZ,               -- ISO timestamp at session start
+      end_time    TIMESTAMPTZ,               -- ISO timestamp at session end
+      images      JSONB DEFAULT '[]'::jsonb, -- per-image gaze data (AOI-relative coords)
+      pages       JSONB DEFAULT '{}'::jsonb, -- per-page gaze data: viewport-normalized coords + image bounding boxes per page format
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+
+    -- For existing deployments: backfill the new pages column.
+    ALTER TABLE gaze_sessions ADD COLUMN IF NOT EXISTS pages JSONB DEFAULT '{}'::jsonb;
+
     -- Transcripts: voice recordings
     CREATE TABLE IF NOT EXISTS transcripts (
       id            BIGINT PRIMARY KEY,            -- matches Date.now() from the app
@@ -109,6 +125,9 @@
     -- 3. INDEXES
     -- =====================
 
+    CREATE INDEX IF NOT EXISTS idx_gaze_sessions_session_id ON gaze_sessions(session_id);
+    CREATE INDEX IF NOT EXISTS idx_gaze_sessions_mode ON gaze_sessions(mode);
+    CREATE INDEX IF NOT EXISTS idx_gaze_sessions_username ON gaze_sessions(username);
     CREATE INDEX IF NOT EXISTS idx_rating_scores_session ON rating_scores(session_id);
     CREATE INDEX IF NOT EXISTS idx_pairwise_choices_session ON pairwise_choices(session_id);
     CREATE INDEX IF NOT EXISTS idx_ranked_results_session ON ranked_results(session_id);
@@ -126,6 +145,7 @@
     ALTER TABLE ranked_results ENABLE ROW LEVEL SECURITY;
     ALTER TABLE best_worst_trials ENABLE ROW LEVEL SECURITY;
     ALTER TABLE transcripts ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE gaze_sessions ENABLE ROW LEVEL SECURITY;
 
     -- Anon: INSERT only (participants submit results but cannot read them)
     CREATE POLICY "anon_insert_sessions" ON sessions FOR INSERT TO anon WITH CHECK (true);
@@ -134,6 +154,7 @@
     CREATE POLICY "anon_insert_ranked_results" ON ranked_results FOR INSERT TO anon WITH CHECK (true);
     CREATE POLICY "anon_insert_best_worst_trials" ON best_worst_trials FOR INSERT TO anon WITH CHECK (true);
     CREATE POLICY "anon_insert_transcripts" ON transcripts FOR INSERT TO anon WITH CHECK (true);
+    CREATE POLICY "anon_insert_gaze_sessions" ON gaze_sessions FOR INSERT TO anon WITH CHECK (true);
 
     -- Authenticated: full access (admin can read, delete, update)
     CREATE POLICY "auth_select_sessions" ON sessions FOR SELECT TO authenticated USING (true);
@@ -149,3 +170,5 @@
     CREATE POLICY "auth_delete_best_worst_trials" ON best_worst_trials FOR DELETE TO authenticated USING (true);
     CREATE POLICY "auth_select_transcripts" ON transcripts FOR SELECT TO authenticated USING (true);
     CREATE POLICY "auth_delete_transcripts" ON transcripts FOR DELETE TO authenticated USING (true);
+    CREATE POLICY "auth_select_gaze_sessions" ON gaze_sessions FOR SELECT TO authenticated USING (true);
+    CREATE POLICY "auth_delete_gaze_sessions" ON gaze_sessions FOR DELETE TO authenticated USING (true);

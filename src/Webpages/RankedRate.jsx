@@ -15,7 +15,7 @@ import PromptDisplay from "../components/PromptDisplay";
 import { getRankedBatch } from "../utils/ImageLoader";
 import { preloadImages } from "../utils/preloadImages";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
-import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
 import GazeTrackedImage from "../components/GazeTrackedImage";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
@@ -239,7 +239,7 @@ function RankedRateInner() {
   const uploadConfig = location.state?.uploadConfig || null;
 
   const { addRankedSession, setActivePrompt, setCurrentRatingPage } = useResults();
-  const { startSession, getGazeData } = useGazeTracking();
+  const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
 
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
@@ -286,6 +286,22 @@ function RankedRateInner() {
   useEffect(() => {
     setSwapOrder([0, 1, 2]);
   }, [currentGroupIndex]);
+
+  useGazePage(
+    step === 2 && rankGroups.length > 0 && !isFinished
+      ? `group-${currentGroupIndex + 1}`
+      : null,
+    "ranked-3"
+  );
+
+  useEffect(() => {
+    if (step !== 2 || rankGroups.length === 0) return;
+    const grp = rankGroups[currentGroupIndex];
+    if (!grp) return;
+    for (const img of grp.images) {
+      tagImageOnPage(img.id, img.filename || img.alt);
+    }
+  }, [step, currentGroupIndex, rankGroups, tagImageOnPage]);
 
   const handleChange = (key) => (e) => {
     setCurrentRanks({ ...currentRanks, [key]: e.target.value });

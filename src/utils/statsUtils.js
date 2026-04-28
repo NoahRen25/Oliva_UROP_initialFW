@@ -77,7 +77,7 @@ export function detectOutliers(sessions, mode = "individual") {
       }
     }
 
-    if (mode === "pairwise" || mode === "pressure-cooker") {
+    if (mode === "pairwise") {
       const choices = session.choices || [];
       if (choices.length >= 5) {
         const times = choices.map((c) => parseFloat(c.timeSpent) || 0);

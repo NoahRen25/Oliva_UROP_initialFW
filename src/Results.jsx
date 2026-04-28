@@ -41,7 +41,6 @@ export const useResults = () => {
       selectionSessions: [],
       fixedSessions: [],
       groupSessionsByLayout: {},
-      pressureCookerSessions: [],
       taskPrompt: "",
       activePrompt: null,
       setActivePrompt: () => {},
@@ -66,7 +65,6 @@ export const ResultsProvider = ({ children }) => {
   const [rankedSessions, setRankedSessions] = useState([]);
   const [bestWorstSessions, setBestWorstSessions] = useState([]);
   const [selectionSessions, setSelectionSessions] = useState([]);
-  const [pressureCookerSessions, setPressureCookerSessions] = useState([]);
   const [videoPairwiseSessions, setVideoPairwiseSessions] = useState([]);
 
   // --- UI-only state (not persisted) ---
@@ -86,7 +84,7 @@ export const ResultsProvider = ({ children }) => {
 
     async function hydrate() {
       try {
-        const [indiv, group, fixed, pairwise, videoPw, ranked, bestWorst, pressure, trans] =
+        const [indiv, group, fixed, pairwise, videoPw, ranked, bestWorst, trans] =
           await Promise.all([
             fetchSessionsWithScores("individual"),
             fetchSessionsWithScores("group"),
@@ -95,7 +93,6 @@ export const ResultsProvider = ({ children }) => {
             fetchSessionsWithChoices("video_pairwise"),
             fetchSessionsWithRankings(),
             fetchSessionsWithBestWorst(),
-            fetchSessionsWithChoices("pressure_cooker"),
             fetchTranscripts(),
           ]);
 
@@ -108,7 +105,6 @@ export const ResultsProvider = ({ children }) => {
         setVideoPairwiseSessions(videoPw);
         setRankedSessions(ranked);
         setBestWorstSessions(bestWorst);
-        setPressureCookerSessions(pressure);
         setTranscripts(trans);
 
         // Layout group sessions
@@ -545,60 +541,6 @@ export const ResultsProvider = ({ children }) => {
     }
   };
 
-  // ─── Pressure Cooker ──────────────────────────────────────────
-  const addPressureCookerSession = (username, choices, bestStreak) => {
-    const pcId = Date.now();
-    const meta = getSessionMetadata();
-    setPressureCookerSessions((prev) => [
-      ...prev,
-      {
-        id: pcId,
-        username,
-        choices,
-        bestStreak,
-        timestamp: new Date().toISOString(),
-        metadata: meta,
-      },
-    ]);
-    insertSession({
-      id: pcId,
-      type: "pressure_cooker",
-      username,
-      timestamp: new Date().toISOString(),
-      meta: { bestStreak },
-    });
-    insertPairwiseChoices(pcId, choices);
-
-    // Also add to pairwise history
-    const pwId = pcId + 1;
-    setPairwiseSessions((prev) => [
-      ...prev,
-      {
-        id: pwId,
-        username,
-        choices,
-        timestamp: new Date().toISOString(),
-        mode: "pressure-cooker",
-        metadata: meta,
-      },
-    ]);
-    insertSession({
-      id: pwId,
-      type: "pairwise",
-      username,
-      timestamp: new Date().toISOString(),
-      meta: { mode: "pressure-cooker" },
-    });
-    insertPairwiseChoices(pwId, choices);
-  };
-
-  const clearPressureCooker = () => {
-    if (window.confirm("Delete ALL Pressure Cooker sessions?")) {
-      setPressureCookerSessions([]);
-      deleteSessionsByType("pressure_cooker");
-    }
-  };
-
   // ─── Consent ──────────────────────────────────────────────────
   const acceptConsent = () => {
     setConsentGiven(true);
@@ -620,7 +562,6 @@ export const ResultsProvider = ({ children }) => {
       setPairwiseSessions([]);
       setRankedSessions([]);
       setBestWorstSessions([]);
-      setPressureCookerSessions([]);
       setSelectionSessions([]);
       setVideoPairwiseSessions([]);
       setTranscripts([]);
@@ -708,10 +649,6 @@ export const ResultsProvider = ({ children }) => {
         deleteBestWorstSession,
         clearBestWorst,
 
-        // Pressure Cooker
-        pressureCookerSessions,
-        addPressureCookerSession,
-        clearPressureCooker,
 
         // Consent
         consentGiven,

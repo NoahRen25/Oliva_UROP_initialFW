@@ -9,7 +9,7 @@ import GridRatingStep from "../components/GridRatingStep";
 import useGridRating from "../utils/useGridRating";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
 import { useMemImages } from "../data/UseMemImages";
-import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
 
@@ -27,11 +27,16 @@ function ComboRatingFlowInner() {
   const { addFixedSession, setCurrentRatingPage } = useResults();
   const { rows, ready } = useMemImages();
   const grid = useGridRating();
-  const { startSession, getGazeData } = useGazeTracking();
+  const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
 
   const [step, setStep] = useState(0);
   const [username, setUsername] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
+
+  useGazePage(
+    step === 2 ? `combo-page-${currentPage + 1}` : null,
+    `combo-${currentPage === 3 ? "3x3" : "3x3-no-center"}`
+  );
 
   // --- 33-image selection logic (unchanged, just uses grid hook) ---
   const fixedImageSequence = useMemo(() => {
@@ -71,6 +76,25 @@ function ComboRatingFlowInner() {
       ...shuffleArray(fixedImageSequence.slice(24)),
     ];
   }, [fixedImageSequence]);
+
+  // Tag images on the current combo page so aggregate gaze views can label boxes.
+  // Note: ComboRatingFlow uses GridRatingStep which doesn't currently use
+  // GazeTrackedImage, so per-image AOI gaze data won't exist for combo —
+  // but page-level gaze + image-box snapshots still do.
+  const pageImagesForTagging = useMemo(() => {
+    if (displaySequence.length === 0) return [];
+    const isLast = currentPage === 3;
+    const startIdx = currentPage * 8;
+    const endIdx = isLast ? 33 : Math.min(startIdx + 8, displaySequence.length);
+    return displaySequence.slice(startIdx, endIdx);
+  }, [currentPage, displaySequence]);
+
+  useEffect(() => {
+    if (step !== 2) return;
+    for (const img of pageImagesForTagging) {
+      if (img) tagImageOnPage(img.id, img.id);
+    }
+  }, [step, pageImagesForTagging, tagImageOnPage]);
 
   const pageConfig = useMemo(() => {
     if (displaySequence.length === 0) {

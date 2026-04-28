@@ -20,7 +20,7 @@ import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
  *   initialRight — index into images for right panel
  */
 
-function ComparisonColumn({ image, stats, highlight }) {
+function ComparisonColumn({ image, stats, highlight, mode, h2h }) {
   if (!image) {
     return (
       <Paper sx={{ p: 3, textAlign: "center", bgcolor: "#fafafa", height: "100%" }}>
@@ -29,11 +29,17 @@ function ComparisonColumn({ image, stats, highlight }) {
     );
   }
 
+  const isPairwise = mode === "pairwise";
   const mean = (arr) => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2) : "—";
 
   const scoreMean = mean(stats?.scores || []);
   const timeMean = mean(stats?.times || []);
   const interactionMean = mean(stats?.interactions || []);
+
+  const totalPairs = (stats?.wins || 0) + (stats?.losses || 0);
+  const winRate = totalPairs > 0
+    ? `${((stats.wins / totalPairs) * 100).toFixed(0)}%`
+    : "—";
 
   return (
     <Paper
@@ -114,44 +120,58 @@ function ComparisonColumn({ image, stats, highlight }) {
 
       {/* Stats rows */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        <StatRow
-          label="Mean Score"
-          value={scoreMean}
-          highlight={highlight === "score"}
-        />
-        <StatRow
-          label="Avg Time"
-          value={timeMean !== "—" ? `${timeMean}s` : "—"}
-          highlight={highlight === "time"}
-        />
-        <StatRow
-          label="Avg Interactions"
-          value={interactionMean}
-          highlight={highlight === "interactions"}
-        />
-        <StatRow
-          label="Sessions"
-          value={stats?.sessionCount || 0}
-        />
-        {stats?.memorabilityScore != null && (
-          <StatRow
-            label="Memorability"
-            value={Number(stats.memorabilityScore).toFixed(3)}
-            highlight={highlight === "memorability"}
-          />
-        )}
-        {(stats?.wins > 0 || stats?.losses > 0) && (
-          <StatRow
-            label="Win Rate"
-            value={`${((stats.wins / Math.max(stats.wins + stats.losses, 1)) * 100).toFixed(0)}%`}
-            highlight={highlight === "winrate"}
-          />
-        )}
-        {stats?.selections != null && (
-          <StatRow
-            label="Selection Rate"
-            value={`${((stats.selections / Math.max(stats.sessionCount, 1)) * 100).toFixed(0)}%`}
-          />
+        {isPairwise ? (
+          <>
+            <StatRow
+              label="Win Rate"
+              value={winRate}
+              highlight={highlight === "winrate"}
+            />
+            <StatRow
+              label="Sessions"
+              value={stats?.sessionCount || 0}
+            />
+            <StatRow
+              label="H2H Record"
+              value={h2h || "0-0"}
+              highlight={highlight === "h2h"}
+            />
+          </>
+        ) : (
+          <>
+            <StatRow
+              label="Mean Score"
+              value={scoreMean}
+              highlight={highlight === "score"}
+            />
+            <StatRow
+              label="Avg Time"
+              value={timeMean !== "—" ? `${timeMean}s` : "—"}
+              highlight={highlight === "time"}
+            />
+            <StatRow
+              label="Avg Interactions"
+              value={interactionMean}
+              highlight={highlight === "interactions"}
+            />
+            <StatRow
+              label="Sessions"
+              value={stats?.sessionCount || 0}
+            />
+            {stats?.memorabilityScore != null && (
+              <StatRow
+                label="Memorability"
+                value={Number(stats.memorabilityScore).toFixed(3)}
+                highlight={highlight === "memorability"}
+              />
+            )}
+            {stats?.selections != null && (
+              <StatRow
+                label="Selection Rate"
+                value={`${((stats.selections / Math.max(stats.sessionCount, 1)) * 100).toFixed(0)}%`}
+              />
+            )}
+          </>
         )}
       </Box>
     </Paper>
@@ -184,7 +204,7 @@ function StatRow({ label, value, highlight }) {
   );
 }
 
-export default function ImageComparisonModal({ open, onClose, images = [], initialLeft = 0, initialRight = 1 }) {
+export default function ImageComparisonModal({ open, onClose, images = [], initialLeft = 0, initialRight = 1, mode }) {
   const [leftIdx, setLeftIdx] = useState(initialLeft);
   const [rightIdx, setRightIdx] = useState(initialRight);
   const [highlightStat, setHighlightStat] = useState(null);
@@ -205,6 +225,24 @@ export default function ImageComparisonModal({ open, onClose, images = [], initi
     const rs = mean(rightImage.stats.scores || []);
     return { leftScoreHigher: ls > rs, rightScoreHigher: rs > ls };
   }, [leftImage, rightImage]);
+
+  // Head-to-head record between left and right (pairwise only).
+  // Counts wins/losses on the left's perSession entries where opponent === right.
+  const h2h = useMemo(() => {
+    if (mode !== "pairwise" || !leftImage || !rightImage) return null;
+    const leftPS = leftImage.stats?.perSession || [];
+    let leftWins = 0;
+    let leftLosses = 0;
+    for (const ps of leftPS) {
+      if (ps.opponent !== rightImage.name) continue;
+      if (ps.result === "Win") leftWins++;
+      else if (ps.result === "Loss") leftLosses++;
+    }
+    return {
+      left: `${leftWins}-${leftLosses}`,
+      right: `${leftLosses}-${leftWins}`,
+    };
+  }, [mode, leftImage, rightImage]);
 
   return (
     <Dialog
@@ -284,10 +322,20 @@ export default function ImageComparisonModal({ open, onClose, images = [], initi
         {/* Comparison columns */}
         <Grid container spacing={3}>
           <Grid item xs={6}>
-            <ComparisonColumn image={leftImage} stats={leftImage?.stats} />
+            <ComparisonColumn
+              image={leftImage}
+              stats={leftImage?.stats}
+              mode={mode}
+              h2h={h2h?.left}
+            />
           </Grid>
           <Grid item xs={6}>
-            <ComparisonColumn image={rightImage} stats={rightImage?.stats} />
+            <ComparisonColumn
+              image={rightImage}
+              stats={rightImage?.stats}
+              mode={mode}
+              h2h={h2h?.right}
+            />
           </Grid>
         </Grid>
       </DialogContent>

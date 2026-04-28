@@ -122,7 +122,7 @@ function WinLossBar({ wins, losses }) {
   );
 }
 
-export default function StatsModal({ open, onClose, imageName, imageSrc, stats, mode }) {
+export default function StatsModal({ open, onClose, imageName, imageSrc, stats, mode, imagesLookup }) {
   const computed = useMemo(() => {
     if (!stats) return null;
 
@@ -412,28 +412,109 @@ export default function StatsModal({ open, onClose, imageName, imageSrc, stats, 
             <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: "#0f3460" }}>
               Per-Session Breakdown
             </Typography>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ bgcolor: "#f5f5f5" }}>
-                  <TableCell><strong>User</strong></TableCell>
-                  <TableCell align="right"><strong>Score</strong></TableCell>
-                  <TableCell align="right"><strong>Time</strong></TableCell>
-                  <TableCell align="right"><strong>Interactions</strong></TableCell>
-                  <TableCell align="center"><strong>Click Order</strong></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {stats.perSession.map((ps, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{ps.username}</TableCell>
-                    <TableCell align="right">{ps.score ?? "—"}</TableCell>
-                    <TableCell align="right">{ps.time ? `${ps.time}s` : "—"}</TableCell>
-                    <TableCell align="right">{ps.interactions ?? "—"}</TableCell>
-                    <TableCell align="center">{ps.clickOrder ?? "—"}</TableCell>
+            {isPairwise ? (
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ bgcolor: "#f5f5f5" }}>
+                    <TableCell><strong>User ID</strong></TableCell>
+                    <TableCell align="center"><strong>Result</strong></TableCell>
+                    <TableCell><strong>Opposing Image</strong></TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {stats.perSession.map((ps, i) => {
+                    const opponentName = ps.opponent || "—";
+                    const opponentSrc =
+                      imagesLookup && opponentName ? imagesLookup[opponentName] : null;
+                    const isWin = ps.result === "Win";
+                    return (
+                      <TableRow key={i}>
+                        <TableCell>{ps.username ?? "—"}</TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={ps.result || "—"}
+                            size="small"
+                            sx={{
+                              height: 22,
+                              fontSize: "0.7rem",
+                              fontWeight: 600,
+                              bgcolor: isWin ? "#e8f5e9" : "#ffebee",
+                              color: isWin ? "#2e7d32" : "#c62828",
+                              border: `1px solid ${isWin ? "#a5d6a7" : "#ef9a9a"}`,
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            {opponentSrc ? (
+                              <Box
+                                component="img"
+                                src={opponentSrc}
+                                alt={opponentName}
+                                onError={(e) => { e.target.style.display = "none"; }}
+                                sx={{
+                                  width: 36,
+                                  height: 36,
+                                  objectFit: "contain",
+                                  borderRadius: 1,
+                                  bgcolor: "#f5f5f5",
+                                  border: "1px solid #e0e0e0",
+                                  flexShrink: 0,
+                                }}
+                              />
+                            ) : (
+                              <Box
+                                sx={{
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: 1,
+                                  bgcolor: "#e8eaf6",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 700,
+                                  color: "#3949ab",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {(opponentName || "?").charAt(0).toUpperCase()}
+                              </Box>
+                            )}
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {opponentName}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            ) : (
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ bgcolor: "#f5f5f5" }}>
+                    <TableCell><strong>User</strong></TableCell>
+                    <TableCell align="right"><strong>Score</strong></TableCell>
+                    <TableCell align="right"><strong>Time</strong></TableCell>
+                    <TableCell align="right"><strong>Interactions</strong></TableCell>
+                    <TableCell align="center"><strong>Click Order</strong></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {stats.perSession.map((ps, i) => (
+                    <TableRow key={i}>
+                      <TableCell>{ps.username}</TableCell>
+                      <TableCell align="right">{ps.score ?? "—"}</TableCell>
+                      <TableCell align="right">{ps.time ? `${ps.time}s` : "—"}</TableCell>
+                      <TableCell align="right">{ps.interactions ?? "—"}</TableCell>
+                      <TableCell align="center">{ps.clickOrder ?? "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </>
         )}
       </DialogContent>

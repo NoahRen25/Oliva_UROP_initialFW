@@ -18,7 +18,6 @@ const MODE_COLORS = {
   ranked: "#fb923c",
   bestWorst: "#a78bfa",
   selection: "#f472b6",
-  pressureCooker: "#ef4444",
 };
 
 const MODE_LABELS = {
@@ -29,7 +28,6 @@ const MODE_LABELS = {
   ranked: "Ranked",
   bestWorst: "Best-Worst",
   selection: "Selection",
-  pressureCooker: "Pressure Cooker",
 };
 
 export default function SessionsTimeline({ data }) {

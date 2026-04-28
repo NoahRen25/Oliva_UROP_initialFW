@@ -16,7 +16,7 @@ import ProgressBar from "../components/ProgressBar";
 import { getImageUrl } from "../utils/supabaseImageUrl";
 import { preloadImages } from "../utils/preloadImages";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
-import GazeTrackingProvider, { useGazeTracking } from "../components/GazeTrackingProvider";
+import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
 import GazeTrackedImage from "../components/GazeTrackedImage";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
@@ -63,7 +63,7 @@ const TRIALS = [
 function BestWorstRateInner() {
   const navigate = useNavigate();
   const { addBestWorstSession, setCurrentRatingPage } = useResults();
-  const { startSession, getGazeData } = useGazeTracking();
+  const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
 
   const [step, setStep] = useState(0);
   const [username, setUsername] = useState("");
@@ -72,6 +72,17 @@ function BestWorstRateInner() {
   const [worstId, setWorstId] = useState(null);
   const [trialResults, setTrialResults] = useState([]);
   const [startTime, setStartTime] = useState(null);
+
+  useGazePage(step === 1 ? `trial-${currentTrialIndex + 1}` : null, "best-worst-4");
+
+  useEffect(() => {
+    if (step !== 1) return;
+    const trial = TRIALS[currentTrialIndex];
+    if (!trial) return;
+    for (const img of trial.images) {
+      tagImageOnPage(img.id, img.alt);
+    }
+  }, [step, currentTrialIndex, tagImageOnPage]);
 
   // Preload all trial images on mount
   useEffect(() => {

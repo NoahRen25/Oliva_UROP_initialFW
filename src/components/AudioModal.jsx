@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Box, Typography, List, ListItem, ListItemText,
@@ -7,14 +7,20 @@ import {
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PauseIcon from "@mui/icons-material/Pause";
-import StopIcon from "@mui/icons-material/Stop";
 import DownloadIcon from "@mui/icons-material/Download";
 import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import CloseIcon from "@mui/icons-material/Close";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
 
 /**
- * AudioModal — Shows all audio recordings from sessions that include a specific image.
+ * AudioModal — Shows audio recordings related to a specific image.
+ *
+ * Default view shows only recordings from the page where the image appeared.
+ * Each row exposes a per-session "View All" action (next to download) that
+ * opens the rest of that one session's recordings; a Back button returns
+ * to the matching list.
  *
  * Props:
  *   open            — boolean
@@ -26,6 +32,9 @@ import CloseIcon from "@mui/icons-material/Close";
 export default function AudioModal({ open, onClose, imageName, audioEntries = [] }) {
   const [playingId, setPlayingId] = useState(null);
   const [progress, setProgress] = useState(0);
+  // null => show only matching (isCurrent) entries.
+  // sessionId => show all entries for that one session.
+  const [viewingSession, setViewingSession] = useState(null);
   const audioRef = useRef(null);
   const intervalRef = useRef(null);
 
@@ -33,6 +42,7 @@ export default function AudioModal({ open, onClose, imageName, audioEntries = []
   useEffect(() => {
     if (!open) {
       stopPlayback();
+      setViewingSession(null);
     }
   }, [open]);
 
@@ -94,8 +104,71 @@ export default function AudioModal({ open, onClose, imageName, audioEntries = []
     document.body.removeChild(a);
   }, []);
 
-  const entriesWithAudio = audioEntries.filter((e) => e.audioUrl);
-  const entriesWithout = audioEntries.filter((e) => !e.audioUrl);
+  const allWithAudio = useMemo(
+    () => audioEntries.filter((e) => e.audioUrl),
+    [audioEntries]
+  );
+  const matchingWithAudio = useMemo(
+    () => allWithAudio.filter((e) => e.isCurrent),
+    [allWithAudio]
+  );
+
+  // Count of additional (non-current) recordings per session, used to
+  // decide whether to show the inline "View All" button on each row.
+  const extraCountBySession = useMemo(() => {
+    const seen = new Set();
+    const counts = {};
+    for (const e of allWithAudio) {
+      if (e.isCurrent) continue;
+      const dedupeKey = `${e.sessionId}::${e.pageKey}::${e.audioUrl}`;
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+      const sid = String(e.sessionId);
+      counts[sid] = (counts[sid] || 0) + 1;
+    }
+    return counts;
+  }, [allWithAudio]);
+
+  // Entries to render. Default: matching only (deduped). When a session
+  // is being inspected: all of that session's entries, deduped, with
+  // matching entries pinned to the top.
+  const entriesWithAudio = useMemo(() => {
+    const dedupe = (arr) => {
+      const seen = new Set();
+      const out = [];
+      for (const e of arr) {
+        const key = `${e.sessionId}::${e.pageKey}::${e.audioUrl}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(e);
+      }
+      return out;
+    };
+    if (viewingSession == null) return dedupe(matchingWithAudio);
+
+    const sid = String(viewingSession);
+    const ofSession = allWithAudio.filter((e) => String(e.sessionId) === sid);
+    const sorted = [...ofSession].sort((a, b) => {
+      if (a.isCurrent && !b.isCurrent) return -1;
+      if (!a.isCurrent && b.isCurrent) return 1;
+      return String(a.pageKey).localeCompare(String(b.pageKey), undefined, { numeric: true });
+    });
+    return dedupe(sorted);
+  }, [viewingSession, matchingWithAudio, allWithAudio]);
+
+  const entriesWithout = useMemo(() => {
+    if (viewingSession == null) {
+      return audioEntries.filter((e) => !e.audioUrl && e.isCurrent);
+    }
+    const sid = String(viewingSession);
+    return audioEntries.filter((e) => !e.audioUrl && String(e.sessionId) === sid);
+  }, [viewingSession, audioEntries]);
+
+  const inSessionView = viewingSession != null;
+  const sessionUsername = inSessionView
+    ? entriesWithAudio[0]?.username ||
+      audioEntries.find((e) => String(e.sessionId) === String(viewingSession))?.username
+    : null;
 
   return (
     <Dialog
@@ -116,13 +189,27 @@ export default function AudioModal({ open, onClose, imageName, audioEntries = []
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          {inSessionView && (
+            <Tooltip title="Back to matching recordings">
+              <IconButton
+                size="small"
+                onClick={() => { stopPlayback(); setViewingSession(null); }}
+                sx={{ color: "rgba(255,255,255,0.85)" }}
+              >
+                <ArrowBackIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           <GraphicEqIcon sx={{ color: "#e94560" }} />
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-              Audio Recordings
+              {inSessionView ? "Session Recordings" : "Audio Recordings"}
             </Typography>
             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)" }}>
               {imageName}
+              {inSessionView
+                ? ` — Session ${viewingSession}${sessionUsername ? ` (User ${sessionUsername})` : ""}`
+                : ""}
             </Typography>
           </Box>
         </Box>
@@ -136,7 +223,9 @@ export default function AudioModal({ open, onClose, imageName, audioEntries = []
           <Box sx={{ p: 4, textAlign: "center" }}>
             <VolumeUpIcon sx={{ fontSize: 48, color: "action.disabled", mb: 1 }} />
             <Typography color="text.secondary">
-              No audio recordings available for this image.
+              {inSessionView
+                ? "No audio recordings available for this session."
+                : "No audio recorded on the page where this image appeared."}
             </Typography>
             {entriesWithout.length > 0 && (
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
@@ -150,6 +239,11 @@ export default function AudioModal({ open, onClose, imageName, audioEntries = []
               const entryId = `${entry.sessionId}-${entry.pageKey}`;
               const isPlaying = playingId === entryId;
               const isCurrent = entry.isCurrent;
+              const sid = String(entry.sessionId);
+              const extras = extraCountBySession[sid] || 0;
+              // Only offer "View All" while in the matching list — once
+              // viewing a single session, every row already belongs to it.
+              const canViewAll = !inSessionView && extras > 0;
 
               return (
                 <React.Fragment key={entryId}>
@@ -224,15 +318,28 @@ export default function AudioModal({ open, onClose, imageName, audioEntries = []
                       }
                     />
 
-                    <Tooltip title="Download recording">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDownload(entry.audioUrl, `${entry.username}_page${entry.pageKey}`)}
-                        sx={{ color: "text.secondary" }}
-                      >
-                        <DownloadIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Tooltip title="Download recording">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDownload(entry.audioUrl, `${entry.username}_page${entry.pageKey}`)}
+                          sx={{ color: "text.secondary" }}
+                        >
+                          <DownloadIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      {canViewAll && (
+                        <Tooltip title={`View all recordings from session ${entry.sessionId}`}>
+                          <IconButton
+                            size="small"
+                            onClick={() => { stopPlayback(); setViewingSession(entry.sessionId); }}
+                            sx={{ color: "text.secondary" }}
+                          >
+                            <LibraryMusicIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
                   </ListItem>
                 </React.Fragment>
               );
@@ -249,7 +356,17 @@ export default function AudioModal({ open, onClose, imageName, audioEntries = []
         )}
       </DialogContent>
 
-      <DialogActions sx={{ px: 2.5, py: 1.5, bgcolor: "#fafafa" }}>
+      <DialogActions sx={{ px: 2.5, py: 1.5, bgcolor: "#fafafa", justifyContent: "space-between" }}>
+        {inSessionView ? (
+          <Button
+            onClick={() => { stopPlayback(); setViewingSession(null); }}
+            variant="outlined"
+            size="small"
+            startIcon={<ArrowBackIcon />}
+          >
+            Back
+          </Button>
+        ) : <span />}
         <Button onClick={onClose} variant="outlined" size="small">
           Close
         </Button>

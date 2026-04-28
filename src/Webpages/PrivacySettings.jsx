@@ -26,14 +26,12 @@ export default function PrivacySettings() {
     pairwiseSessions,
     rankedSessions,
     selectionSessions,
-    pressureCookerSessions,
     transcripts,
     clearIndividual,
     clearGroup,
     clearPairwise,
     clearRanked,
     clearSelection,
-    clearPressureCooker,
     clearTranscripts,
     consentGiven,
     consentTimestamp,
@@ -47,7 +45,6 @@ export default function PrivacySettings() {
     { label: "Pairwise Sessions", count: pairwiseSessions.length, onClear: clearPairwise },
     { label: "Ranked Sessions", count: rankedSessions.length, onClear: clearRanked },
     { label: "Selection Sessions", count: selectionSessions.length, onClear: clearSelection },
-    { label: "Pressure Cooker Sessions", count: pressureCookerSessions.length, onClear: clearPressureCooker },
     { label: "Voice Transcripts", count: transcripts.length, onClear: clearTranscripts },
   ];
 

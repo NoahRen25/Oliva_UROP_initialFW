@@ -16,6 +16,16 @@ export default function useGazeTracker({ debugMode = false } = {}) {
   const rectsDirtyRef = useRef(true);
   const debugModeRef = useRef(debugMode);
 
+  // Page-level (whole-viewport) tracking. A "page" is one screen the
+  // participant sees during a rating flow (e.g., one trial in best-worst,
+  // one group in ranked). We record gaze coords as fractions of the
+  // viewport plus a snapshot of where each image lived on that page so
+  // researchers can reconstruct the layout after the fact.
+  const pagesRef = useRef(new Map());
+  const currentPageKeyRef = useRef(null);
+  const currentPageStartRef = useRef(null);
+  const pageCoordsRef = useRef([]);
+
   useEffect(() => { debugModeRef.current = debugMode; }, [debugMode]);
 
   useEffect(() => {
@@ -83,12 +93,108 @@ export default function useGazeTracker({ debugMode = false } = {}) {
     currentlyGazedRef.current = null;
     currentFixationStartRef.current = null;
     gazeDataRef.current = new Map();
+    pagesRef.current = new Map();
+    currentPageKeyRef.current = null;
+    pageCoordsRef.current = [];
+  }, []);
+
+  // Snapshot bounding boxes of currently registered images, normalized
+  // to viewport. `imageNames` lets the caller pass alt-text/filenames
+  // alongside imageIds when ids alone aren't recognizable later.
+  const snapshotImageBoxes = useCallback((imageNames = {}) => {
+    refreshRects();
+    const vw = window.innerWidth || 1;
+    const vh = window.innerHeight || 1;
+    const boxes = [];
+    for (const [imageId, rect] of rectsRef.current) {
+      if (!rect || rect.width <= 0 || rect.height <= 0) continue;
+      boxes.push({
+        imageId: String(imageId),
+        name: imageNames[imageId] != null ? String(imageNames[imageId]) : null,
+        x: rect.left / vw,
+        y: rect.top / vh,
+        w: rect.width / vw,
+        h: rect.height / vh,
+      });
+    }
+    return boxes;
+  }, [refreshRects]);
+
+  const startPage = useCallback((pageKey, format) => {
+    if (pageKey == null) return;
+    // Close any previously open page (without box snapshot — only at endPage).
+    if (currentPageKeyRef.current != null) {
+      const prev = pagesRef.current.get(currentPageKeyRef.current);
+      if (prev) {
+        prev.coordinates = [...pageCoordsRef.current];
+        prev.endTime = new Date().toISOString();
+        prev.imageBoxes = snapshotImageBoxes(prev.imageNames);
+      }
+    }
+
+    const key = String(pageKey);
+    currentPageKeyRef.current = key;
+    currentPageStartRef.current = performance.now();
+    pageCoordsRef.current = [];
+    pagesRef.current.set(key, {
+      pageKey: key,
+      format: format || null,
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      startTime: new Date().toISOString(),
+      endTime: null,
+      coordinates: [],
+      imageBoxes: [],
+      imageNames: {},
+    });
+  }, [snapshotImageBoxes]);
+
+  const endPage = useCallback(() => {
+    const key = currentPageKeyRef.current;
+    if (key == null) return;
+    const page = pagesRef.current.get(key);
+    if (page) {
+      page.coordinates = [...pageCoordsRef.current];
+      page.endTime = new Date().toISOString();
+      page.imageBoxes = snapshotImageBoxes(page.imageNames);
+    }
+    currentPageKeyRef.current = null;
+    pageCoordsRef.current = [];
+  }, [snapshotImageBoxes]);
+
+  // Optional: associate an imageId with a human-readable name (alt text
+  // or filename) for the current page, so aggregate views can label
+  // image squares later.
+  const tagImageOnPage = useCallback((imageId, name) => {
+    const key = currentPageKeyRef.current;
+    if (key == null || imageId == null) return;
+    const page = pagesRef.current.get(key);
+    if (!page) return;
+    page.imageNames[String(imageId)] = name == null ? null : String(name);
   }, []);
 
   const getGazeData = useCallback(() => {
+    // Flush any open page first.
+    if (currentPageKeyRef.current != null) {
+      const key = currentPageKeyRef.current;
+      const page = pagesRef.current.get(key);
+      if (page) {
+        page.coordinates = [...pageCoordsRef.current];
+        page.endTime = new Date().toISOString();
+        page.imageBoxes = snapshotImageBoxes(page.imageNames);
+      }
+      currentPageKeyRef.current = null;
+      pageCoordsRef.current = [];
+    }
+
     const images = {};
     for (const [id, data] of gazeDataRef.current) {
       images[id] = { ...data, coordinates: [...data.coordinates] };
+    }
+    const pages = {};
+    for (const [key, page] of pagesRef.current) {
+      // Strip imageNames helper map; bake names into imageBoxes instead.
+      const { imageNames, ...rest } = page;
+      pages[key] = { ...rest, imageBoxes: rest.imageBoxes.map((b) => ({ ...b })) };
     }
     return {
       startTime: sessionStartWallRef.current
@@ -96,11 +202,15 @@ export default function useGazeTracker({ debugMode = false } = {}) {
         : null,
       endTime: new Date().toISOString(),
       images,
+      pages,
     };
-  }, []);
+  }, [snapshotImageBoxes]);
 
   const resetGazeData = useCallback(() => {
     gazeDataRef.current = new Map();
+    pagesRef.current = new Map();
+    currentPageKeyRef.current = null;
+    pageCoordsRef.current = [];
     currentlyGazedRef.current = null;
     lastGazeTimeRef.current = null;
     currentFixationStartRef.current = null;
@@ -116,6 +226,17 @@ export default function useGazeTracker({ debugMode = false } = {}) {
     const elapsed = now - sessionStartRef.current;
 
     refreshRects();
+
+    // Record viewport-level coords for the current page.
+    if (currentPageKeyRef.current != null) {
+      const vw = window.innerWidth || 1;
+      const vh = window.innerHeight || 1;
+      pageCoordsRef.current.push({
+        x: currentGaze.x / vw,
+        y: currentGaze.y / vh,
+        t: now - (currentPageStartRef.current ?? now),
+      });
+    }
 
     let hitImageId = null;
     if (typeof document !== 'undefined' && document.elementFromPoint) {
@@ -216,6 +337,9 @@ export default function useGazeTracker({ debugMode = false } = {}) {
     registerImage,
     unregisterImage,
     startSession,
+    startPage,
+    endPage,
+    tagImageOnPage,
     getGazeData,
     resetGazeData,
     debugMode,
