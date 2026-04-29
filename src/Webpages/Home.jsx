@@ -15,7 +15,7 @@ export default function Home() {
       <Box>
         <Button
           component={Link}
-          to="/rate/upload"
+          to="/start"
           variant="contained"
           size="large"
           startIcon={<PlayArrowIcon />}

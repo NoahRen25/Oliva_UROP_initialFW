@@ -34,6 +34,9 @@ import PrivacySettings from "./Webpages/PrivacySettings";
 import ConsentModal from "./components/ConsentModal";
 import SimulatedSession from "./Webpages/SimulatedSession";
 import SetPassword from "./Webpages/SetPassword";
+import GuidedSessionWelcome from "./Webpages/GuidedSessionWelcome";
+import GroupGridRate from "./Webpages/GroupGridRate";
+import ThankYouPage from "./Webpages/ThankYouPage";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
@@ -81,6 +84,9 @@ function NavigationWrapper() {
       <Box sx={{ paddingTop: "80px", minHeight: "100vh" }}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/start" element={<GuidedSessionWelcome />} />
+          <Route path="/group-grid-rate" element={<GroupGridRate />} />
+          <Route path="/thank-you" element={<ThankYouPage />} />
           <Route path="/set-password" element={<SetPassword />} />
           <Route path="/transcripts" element={<TranscriptHistory />} />
 
@@ -123,6 +129,7 @@ const KEEP_WEBGAZER_ROUTES = [
   '/selection-rate',
   '/rate',
   '/combo-rate',
+  '/group-grid-rate',
 ];
 
 function FloatingVoiceRecorder({ onSave }) {

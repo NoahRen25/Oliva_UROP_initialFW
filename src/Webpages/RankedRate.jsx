@@ -17,6 +17,8 @@ import { preloadImages } from "../utils/preloadImages";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
 import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
 import GazeTrackedImage from "../components/GazeTrackedImage";
+import { nextGuidedNavigation } from "../utils/guidedFlow";
+import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
 
@@ -294,6 +296,8 @@ function RankedRateInner() {
     "ranked-3"
   );
 
+  useAutoVoiceRecording(step === 2 && !isFinished);
+
   useEffect(() => {
     if (step !== 2 || rankGroups.length === 0) return;
     const grp = rankGroups[currentGroupIndex];
@@ -352,7 +356,14 @@ function RankedRateInner() {
       const { transcripts: pageTranscripts, audioUrls: pageAudioUrls } = collectPageTranscripts();
       addRankedSession(username, updated, { pageTranscripts, pageAudioUrls });
       saveGazeSession(Date.now().toString(), "ranked", username, getGazeData());
-      navigate("/mode-results");
+      if (uploadConfig?.guided) {
+        const next = nextGuidedNavigation(uploadConfig);
+        navigate(next.route, {
+          state: next.uploadConfig ? { uploadConfig: next.uploadConfig } : undefined,
+        });
+      } else {
+        navigate("/mode-results");
+      }
     }
   };
 

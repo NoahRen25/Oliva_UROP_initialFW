@@ -6,6 +6,7 @@ import ModeInstructionScreen from "./ModeInstructionScreen";
 import PromptDisplay from "./PromptDisplay";
 import useRatingFlow from "../utils/useRatingFlow";
 import { useGazePage } from "./GazeTrackingProvider";
+import { nextGuidedNavigation } from "../utils/guidedFlow";
 
 /**
  * PairwiseFlow — Generic pairwise comparison component.
@@ -75,7 +76,14 @@ export default function PairwiseFlow({
       setIsFinished(true);
       const { transcripts: pageTranscripts, audioUrls: pageAudioUrls } = flow.finishSession();
       onSubmit(flow.username, newChoices, { pageTranscripts, pageAudioUrls });
-      flow.navigate(navigateTo);
+      if (flow.uploadConfig?.guided) {
+        const next = nextGuidedNavigation(flow.uploadConfig);
+        flow.navigate(next.route, {
+          state: next.uploadConfig ? { uploadConfig: next.uploadConfig } : undefined,
+        });
+      } else {
+        flow.navigate(navigateTo);
+      }
     }
   };
 

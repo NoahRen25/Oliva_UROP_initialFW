@@ -11,6 +11,7 @@ import { preloadImages } from "../utils/preloadImages";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
 import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
 import GazeTrackedImage from "../components/GazeTrackedImage";
+import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
 
@@ -31,6 +32,7 @@ function SelectionRateInner() {
   const taskPrompt = uploadConfig?.prompt || "Select all images that match the description";
 
   useGazePage(step === 2 ? "selection" : null, `selection-${imageCount}`);
+  useAutoVoiceRecording(step === 2);
 
   useEffect(() => {
     if (step !== 2) return;
