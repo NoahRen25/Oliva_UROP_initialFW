@@ -15,7 +15,12 @@ import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
 import { getImageUrl } from "../utils/supabaseImageUrl";
 import { preloadImages } from "../utils/preloadImages";
-import usePageTranscription from "../hooks/usePageTranscription";
+import collectPageTranscripts from "../utils/collectPageTranscripts";
+import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
+import GazeTrackedImage from "../components/GazeTrackedImage";
+import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
+import CalibrationGate from "../components/CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
 
 const demoImg = (filename) => getImageUrl("demo-images", filename);
 
@@ -56,9 +61,10 @@ const TRIALS = [
   },
 ];
 
-export default function BestWorstRate() {
+function BestWorstRateInner() {
   const navigate = useNavigate();
-  const { addBestWorstSession } = useResults();
+  const { addBestWorstSession, setCurrentRatingPage } = useResults();
+  const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
 
   const [step, setStep] = useState(0);
   const [username, setUsername] = useState("");
@@ -68,7 +74,17 @@ export default function BestWorstRate() {
   const [trialResults, setTrialResults] = useState([]);
   const [startTime, setStartTime] = useState(null);
 
-  const { markPage, stopAndCollect } = usePageTranscription();
+  useGazePage(step === 1 ? `trial-${currentTrialIndex + 1}` : null, "best-worst-4");
+  useAutoVoiceRecording(step === 1);
+
+  useEffect(() => {
+    if (step !== 1) return;
+    const trial = TRIALS[currentTrialIndex];
+    if (!trial) return;
+    for (const img of trial.images) {
+      tagImageOnPage(img.id, img.alt);
+    }
+  }, [step, currentTrialIndex, tagImageOnPage]);
 
   // Preload all trial images on mount
   useEffect(() => {
@@ -77,7 +93,7 @@ export default function BestWorstRate() {
 
   const startTrialTimer = () => {
     setStartTime(performance.now());
-    markPage(currentTrialIndex + 1);
+    setCurrentRatingPage(currentTrialIndex + 1);
   };
 
   const handleStart = () => {
@@ -87,6 +103,7 @@ export default function BestWorstRate() {
     setBestId(null);
     setWorstId(null);
     startTrialTimer();
+    startSession();
   };
 
   const handleSelectBest = (id) => {
@@ -125,8 +142,9 @@ export default function BestWorstRate() {
       setCurrentTrialIndex((prev) => prev + 1);
       startTrialTimer();
     } else {
-      const pageTranscripts = stopAndCollect();
-      addBestWorstSession(username, updated, { pageTranscripts });
+      const { transcripts: pageTranscripts, audioUrls: pageAudioUrls } = collectPageTranscripts();
+      addBestWorstSession(username, updated, { pageTranscripts, pageAudioUrls });
+      saveGazeSession(Date.now().toString(), "best-worst", username, getGazeData());
       setStep(2);
     }
   };
@@ -213,7 +231,8 @@ export default function BestWorstRate() {
                     transition: "0.2s",
                   }}
                 >
-                  <CardMedia
+                  <GazeTrackedImage
+                    imageId={img.id}
                     component="img"
                     image={img.src}
                     sx={{ objectFit: "contain", height: "30vh" }}
@@ -273,5 +292,15 @@ export default function BestWorstRate() {
         </Paper>
       )}
     </Container>
+  );
+}
+
+export default function BestWorstRate() {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <BestWorstRateInner />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -20,10 +20,12 @@ import TuneIcon from '@mui/icons-material/Tune';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useWebGazer } from '../utils/WebGazerContext';
-import BackButton from "../components/BackButton";
 
 export default function WebGazerGazeTest() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo ?? null;
+  const uploadConfig = location.state?.uploadConfig ?? null;
   const {
     isInitialized,
     isCalibrated,
@@ -70,24 +72,27 @@ export default function WebGazerGazeTest() {
     });
   }, [showPredictionPoint]);
 
-  // Handle recalibrate
   const handleRecalibrate = useCallback(() => {
-    navigate('/webgazer-calibration');
-  }, [navigate]);
+    clearCalibration();
+    navigate('/webgazer-calibration', { state: { uploadConfig, returnTo } });
+  }, [clearCalibration, navigate, uploadConfig, returnTo]);
 
-  // Handle clear data
+  const handleContinue = useCallback(() => {
+    if (returnTo) {
+      navigate(returnTo, { state: { uploadConfig } });
+    }
+  }, [navigate, returnTo, uploadConfig]);
+
   const handleClearData = useCallback(() => {
     if (window.confirm('This will clear all calibration data. You will need to recalibrate. Continue?')) {
-      clearCalibration();
-      navigate('/webgazer-calibration');
+      handleRecalibrate();
     }
-  }, [clearCalibration, navigate]);
+  }, [handleRecalibrate]);
 
   // Loading state
   if (isLoading) {
     return (
       <Box sx={{ p: 2 }}>
-        <BackButton />
         <Box
           sx={{
             display: 'flex',
@@ -109,7 +114,6 @@ export default function WebGazerGazeTest() {
   if (error) {
     return (
       <Container maxWidth="sm" sx={{ mt: 8 }}>
-        <BackButton />
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
@@ -124,9 +128,6 @@ export default function WebGazerGazeTest() {
   if (!isCalibrated && isInitialized) {
     return (
       <Container maxWidth="sm" sx={{ mt: 8, textAlign: 'center' }}>
-        <Box sx={{ position: 'absolute', left: 20, top: 80 }}>
-          <BackButton />
-        </Box>
         <Alert severity="warning" sx={{ mb: 3 }}>
           Eye tracker needs calibration for accurate results.
         </Alert>
@@ -144,7 +145,6 @@ export default function WebGazerGazeTest() {
 
   return (
     <Box sx={{ position: 'relative', minHeight: 'calc(100vh - 80px)', p: 2 }}>
-      <BackButton />
       {/* Gaze Point Visualization */}
       {currentGaze.x !== null && currentGaze.y !== null && (
         <Box
@@ -286,7 +286,7 @@ export default function WebGazerGazeTest() {
         elevation={2}
         sx={{
           position: 'fixed',
-          bottom: 20,
+          bottom: 80,
           left: '50%',
           transform: 'translateX(-50%)',
           p: 2,
@@ -300,6 +300,38 @@ export default function WebGazerGazeTest() {
           Look at different parts of the screen to test accuracy.
         </Typography>
       </Paper>
+
+      <Button
+        variant="outlined"
+        startIcon={<RefreshIcon />}
+        onClick={handleRecalibrate}
+        sx={{
+          position: 'fixed',
+          bottom: 24,
+          left: 24,
+          zIndex: 200,
+          backgroundColor: 'rgba(255,255,255,0.95)',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        Re-do Calibration
+      </Button>
+
+      {returnTo && (
+        <Button
+          variant="contained"
+          size="large"
+          onClick={handleContinue}
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            zIndex: 200,
+          }}
+        >
+          Continue
+        </Button>
+      )}
     </Box>
   );
 }

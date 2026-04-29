@@ -1,107 +1,110 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
-  IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-  Box,
-  Chip,
-  TableCell,
+  IconButton, Tooltip, TableCell, Box,
 } from "@mui/material";
-import MicIcon from "@mui/icons-material/Mic";
-import MicOffIcon from "@mui/icons-material/MicOff";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import StopIcon from "@mui/icons-material/Stop";
+import DownloadIcon from "@mui/icons-material/Download";
+import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 
+// ─────────────────────────────────────────────────────────────────
+// RecordingCell — Play + download the audio recording for a page
+// ─────────────────────────────────────────────────────────────────
+export function RecordingCell({ pageKey, audioUrls, label }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
 
-export default function PageTranscriptCell({ pageKey, transcripts, label }) {
-  const [open, setOpen] = useState(false);
+  const url = audioUrls?.[pageKey] || null;
+  const hasAudio = !!url;
+  const hasAny = audioUrls && Object.keys(audioUrls).length > 0;
 
-  const text = transcripts?.[pageKey] || "";
-  const hasText = text.trim().length > 0;
-  const hasAnyTranscripts = transcripts && Object.keys(transcripts).length > 0;
+  const handlePlay = useCallback(() => {
+    if (isPlaying) {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current.currentTime = 0; audioRef.current = null; }
+      setIsPlaying(false);
+      return;
+    }
+    if (!url) return;
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    audio.onended = () => { setIsPlaying(false); audioRef.current = null; };
+    audio.onerror = () => { setIsPlaying(false); audioRef.current = null; };
+    audio.play().catch(() => setIsPlaying(false));
+    setIsPlaying(true);
+  }, [isPlaying, url]);
 
-  // if session has no transcripts, show disabled mic
-  if (!hasAnyTranscripts) {
+  const handleDownload = useCallback(() => {
+    if (!url) return;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `recording_${label || `page_${pageKey}`}.webm`.replace(/\s+/g, "_");
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, [url, label, pageKey]);
+
+  if (!hasAny) {
     return (
       <TableCell align="center">
         <Tooltip title="No recording for this session">
-          <MicOffIcon sx={{ fontSize: 18, color: "action.disabled" }} />
+          <GraphicEqIcon sx={{ fontSize: 18, color: "action.disabled" }} />
         </Tooltip>
       </TableCell>
     );
   }
 
   return (
-    <TableCell align="center">
-      <Tooltip title={hasText ? "View transcript" : "No speech recorded for this page"}>
-        <IconButton
-          size="small"
-          onClick={() => setOpen(true)}
-          sx={{
-            color: hasText ? "primary.main" : "action.disabled",
-          }}
-        >
-          {hasText ? <MicIcon sx={{ fontSize: 18 }} /> : <MicOffIcon sx={{ fontSize: 18 }} />}
-        </IconButton>
-      </Tooltip>
-
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <MicIcon color="primary" />
-          <Typography variant="h6">
-            {label || `Page ${pageKey} Transcript`}
-          </Typography>
-          <Chip
-            label={hasText ? `${text.split(/\s+/).length} words` : "Empty"}
+    <TableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+      <Tooltip title={hasAudio ? (isPlaying ? "Stop" : "Play recording") : "No audio for this page"}>
+        <span>
+          <IconButton
             size="small"
-            color={hasText ? "primary" : "default"}
-            sx={{ ml: "auto" }}
-          />
-        </DialogTitle>
-
-        <DialogContent>
-          {hasText ? (
-            <Box
-              sx={{
-                p: 2,
-                bgcolor: "#f5f5f5",
-                borderRadius: 2,
-                maxHeight: 300,
-                overflowY: "auto",
-                fontFamily: "inherit",
-              }}
-            >
-              <Typography variant="body1" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.8 }}>
-                {text}
-              </Typography>
-            </Box>
-          ) : (
-            <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: "center" }}>
-              No speech was recorded during this page/step.
-            </Typography>
-          )}
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+            onClick={handlePlay}
+            disabled={!hasAudio}
+            sx={{ color: isPlaying ? "error.main" : hasAudio ? "success.main" : "action.disabled" }}
+          >
+            {isPlaying ? <StopIcon sx={{ fontSize: 18 }} /> : <PlayArrowIcon sx={{ fontSize: 18 }} />}
+          </IconButton>
+        </span>
+      </Tooltip>
+      <Tooltip title={hasAudio ? "Download .webm" : "No audio"}>
+        <span>
+          <IconButton
+            size="small"
+            onClick={handleDownload}
+            disabled={!hasAudio}
+            sx={{ color: hasAudio ? "grey.700" : "action.disabled", ml: 0.25 }}
+          >
+            <DownloadIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </span>
+      </Tooltip>
     </TableCell>
   );
 }
 
-export function PageTranscriptHeader() {
+// ─────────────────────────────────────────────────────────────────
+// RecordingHeader
+// ─────────────────────────────────────────────────────────────────
+export function RecordingHeader() {
   return (
     <TableCell align="center">
-      <Tooltip title="Voice transcripts recorded during each page">
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5 }}>
-          <MicIcon sx={{ fontSize: 16 }} />
-          <strong>Audio</strong>
-        </Box>
-      </Tooltip>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5 }}>
+        <GraphicEqIcon sx={{ fontSize: 16 }} />
+        <strong>Recording</strong>
+      </Box>
     </TableCell>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────
+// Backward-compat exports (no-op for transcript)
+// ─────────────────────────────────────────────────────────────────
+export function TranscriptHeader() { return null; }
+export function TranscriptCell() { return null; }
+export function AudioDownloadHeader() { return <RecordingHeader />; }
+export function AudioDownloadCell(props) { return <RecordingCell {...props} />; }
+export function PageTranscriptHeader() { return null; }
+
+// Default export (no-op, transcript removed)
+export default function PageTranscriptCell() { return null; }

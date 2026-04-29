@@ -17,7 +17,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { useResults } from "../Results";
 import ResultsHeader from "../components/ResultsHeader";
 import ExportCSVButton from "../components/ExportCSVButton";
-import BackButton from "../components/BackButton";
 
 const TranscriptHistory = () => {
   const { transcripts = [], clearTranscripts, delTranscript } = useResults();
@@ -36,7 +35,6 @@ const TranscriptHistory = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <BackButton />
       <ResultsHeader
         title="Recording History"
         hasData={transcripts.length > 0}

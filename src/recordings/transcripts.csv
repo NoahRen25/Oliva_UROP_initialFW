@@ -1,0 +1,6 @@
+filename,label,transcript,duration_sec,duration_fmt,language,word_count
+recording_Pair_1-2.webm,Pair 1-2,"and like the manual transcription being being from the, so I already called it the manual transcription that the computer does, like it just wasn't very accurate when I was testing. So what I changed instead is to have it finish and do like a recording and then that can be transcribed after. So you can see as soon as I started to get on this page, it started recording automatically. So that's how it'll work now is essentially.",23.0,00:23,en,79
+recording_Pair_1.webm,Pair 1,testing one two three we'll see if this actually,3.4,00:03,en,9
+recording_Pair_2.webm,Pair 2,on a lot of the images were a...,2.5,00:02,en,8
+recording_Pair_5.webm,Pair 5,"[ERROR: Failed to load audio: ffmpeg version 8.0.1 Copyright (c) 2000-2025 the FFmpeg developers
+

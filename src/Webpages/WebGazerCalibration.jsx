@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -9,12 +9,16 @@ import {
   LinearProgress,
   Alert,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useWebGazer } from '../utils/WebGazerContext';
-import BackButton from "../components/BackButton";
 
 // 9-point calibration grid positions (percentage-based)
 // Perfect 3x3 symmetrical grid: 10%/50%/90% on both axes
@@ -34,6 +38,9 @@ const CLICKS_PER_POINT = 5;
 
 export default function WebGazerCalibration() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo ?? null;
+  const uploadConfig = location.state?.uploadConfig ?? null;
   const {
     isInitialized,
     isCalibrated,
@@ -50,6 +57,7 @@ export default function WebGazerCalibration() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [activePoint, setActivePoint] = useState(null);
+  const [showDoneDialog, setShowDoneDialog] = useState(false);
 
   // Calculate progress
   const totalClicks = calibrationData.reduce((sum, pt) => sum + pt.clicks, 0);
@@ -102,17 +110,20 @@ export default function WebGazerCalibration() {
     setCalibrationData(CALIBRATION_POINTS.map((pt) => ({ ...pt, clicks: 0 })));
   }, [clearCalibration]);
 
-  // Continue to gaze test
   const handleContinue = useCallback(() => {
     completeCalibration();
-    navigate('/webgazer-gaze-test');
-  }, [completeCalibration, navigate]);
+    setShowDoneDialog(true);
+  }, [completeCalibration]);
+
+  const handleDialogContinue = useCallback(() => {
+    setShowDoneDialog(false);
+    navigate('/webgazer-gaze-test', { state: { uploadConfig, returnTo } });
+  }, [navigate, uploadConfig, returnTo]);
 
   // Loading state
   if (isLoading) {
     return (
       <Box sx={{ p: 2 }}>
-        <BackButton />
         <Box
           sx={{
             display: 'flex',
@@ -137,7 +148,6 @@ export default function WebGazerCalibration() {
   if (error) {
     return (
       <Container maxWidth="sm" sx={{ mt: 8 }}>
-        <BackButton />
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
@@ -150,7 +160,6 @@ export default function WebGazerCalibration() {
 
   return (
     <Box sx={{ position: 'relative', minHeight: 'calc(100vh - 80px)', p: 2 }}>
-      <BackButton />
       {/* Header with instructions and progress */}
       <Paper
         elevation={3}
@@ -215,8 +224,35 @@ export default function WebGazerCalibration() {
         </Box>
       </Paper>
 
-      {/* Calibration Points Grid */}
-      {calibrationData.map((point) => {
+      <Dialog open={showDoneDialog} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 'bold' }}>Calibration Done!</DialogTitle>
+        <DialogContent>
+          <DialogContentText component="div">
+            On the next screen you'll see a red dot tracking your gaze. A small
+            amount of drift is normal — eye tracking is rarely perfectly precise.
+            <Box component="ul" sx={{ pl: 3, my: 1.5 }}>
+              <li>
+                If the dot follows your gaze reasonably well, click{' '}
+                <strong>Continue</strong> in the bottom right to proceed.
+              </li>
+              <li>
+                Only click <strong>Re-do Calibration</strong> in the bottom
+                left if the tracking is <em>wildly</em> inaccurate (e.g. the
+                dot is stuck in one spot, or in a completely different region
+                from where you're looking).
+              </li>
+            </Box>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="contained" onClick={handleDialogContinue}>
+            Go to Test Screen
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Calibration Points Grid — hidden while the done dialog is open */}
+      {!showDoneDialog && calibrationData.map((point) => {
         const isPointComplete = point.clicks >= CLICKS_PER_POINT;
         const isActive = activePoint === point.id;
         const clickProgress = point.clicks / CLICKS_PER_POINT;

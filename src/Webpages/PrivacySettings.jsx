@@ -18,7 +18,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import WarningIcon from "@mui/icons-material/Warning";
 import PrivacyTipIcon from "@mui/icons-material/PrivacyTip";
-import BackButton from "../components/BackButton";
 
 export default function PrivacySettings() {
   const {
@@ -27,14 +26,12 @@ export default function PrivacySettings() {
     pairwiseSessions,
     rankedSessions,
     selectionSessions,
-    pressureCookerSessions,
     transcripts,
     clearIndividual,
     clearGroup,
     clearPairwise,
     clearRanked,
     clearSelection,
-    clearPressureCooker,
     clearTranscripts,
     consentGiven,
     consentTimestamp,
@@ -48,7 +45,6 @@ export default function PrivacySettings() {
     { label: "Pairwise Sessions", count: pairwiseSessions.length, onClear: clearPairwise },
     { label: "Ranked Sessions", count: rankedSessions.length, onClear: clearRanked },
     { label: "Selection Sessions", count: selectionSessions.length, onClear: clearSelection },
-    { label: "Pressure Cooker Sessions", count: pressureCookerSessions.length, onClear: clearPressureCooker },
     { label: "Voice Transcripts", count: transcripts.length, onClear: clearTranscripts },
   ];
 
@@ -61,7 +57,6 @@ export default function PrivacySettings() {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <BackButton />
       <Paper sx={{ p: 4 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
           <PrivacyTipIcon sx={{ fontSize: 40, color: "primary.main" }} />

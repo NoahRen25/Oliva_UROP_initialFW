@@ -2,31 +2,40 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useResults } from "../Results";
 import {
-  Typography, Container, Button, Card, CardContent, CardMedia, Paper, Box
+  Typography, Container, Button, Card, CardContent, Paper, Box
 } from "@mui/material";
 import ScoreSlider from "../components/ScoreSlider";
 import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
 import ModeInstructionScreen from "../components/ModeInstructionScreen";
+import PromptDisplay from "../components/PromptDisplay";
 import { getIndividualBatch } from "../utils/ImageLoader";
 import SpeedWarning from "../components/SpeedWarning";
 import { preloadImages } from "../utils/preloadImages";
-import usePageTranscription from "../hooks/usePageTranscription";
+import collectPageTranscripts from "../utils/collectPageTranscripts";
+import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
+import GazeTrackedImage from "../components/GazeTrackedImage";
+import { nextGuidedNavigation } from "../utils/guidedFlow";
+import CalibrationGate from "../components/CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
+import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
 
-export default function IndividualRate() {
+
+function IndividualRateInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
 
   const {
     addIndividualSession, checkEngagement, setShowSpeedWarning,
-    resetEngagement, setActivePrompt,
+    resetEngagement, setActivePrompt, setCurrentRatingPage,
   } = useResults();
+  const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
 
+  // step 0 = username (skipped in guided), 1 = instructions, 2 = rating, 3 = done
   const [activeStep, setActiveStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
   const [imagesToRate, setImagesToRate] = useState([]);
-  const [benchmarkImage, setBenchmarkImage] = useState(null);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentRating, setCurrentRating] = useState(3);
@@ -35,23 +44,25 @@ export default function IndividualRate() {
   const [interactionCount, setInteractionCount] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
 
-  const { markPage, stopAndCollect } = usePageTranscription();
-
-  const imageCount = uploadConfig?.count || 6;
+  const imageCount = uploadConfig?.count || 10;
   const configPrompt = uploadConfig?.prompt || null;
 
   useEffect(() => {
     const batch = getIndividualBatch(imageCount);
-    setBenchmarkImage(batch[0]);
-    setImagesToRate(batch.slice(1));
+    setImagesToRate(batch);
     preloadImages(batch.map((img) => img.src));
     resetEngagement();
   }, []);
 
-  // Cleanup activePrompt on unmount
+  // Cleanup activePrompt and currentRatingPage on unmount
   useEffect(() => {
-    return () => setActivePrompt(null);
-  }, [setActivePrompt]);
+    return () => {
+      setActivePrompt(null);
+      setCurrentRatingPage(null);
+    };
+  }, [setActivePrompt, setCurrentRatingPage]);
+
+  useAutoVoiceRecording(activeStep === 2);
 
   const startTimer = () => {
     setStartTime(performance.now());
@@ -59,28 +70,24 @@ export default function IndividualRate() {
   };
 
   const totalImages = imageCount;
-  const progressValue =
-    activeStep === 2 ? 0 : activeStep === 3 ? currentImageIndex + 1 : totalImages;
+  const progressValue = activeStep === 2 ? currentImageIndex + 1 : 0;
 
   // Update activePrompt on image change
   useEffect(() => {
-    if (activeStep === 2 && benchmarkImage) {
-      setActivePrompt(configPrompt || benchmarkImage.prompt);
-      markPage("benchmark");
-    } else if (activeStep === 3 && imagesToRate[currentImageIndex]) {
+    if (activeStep === 2 && imagesToRate[currentImageIndex]) {
       const img = imagesToRate[currentImageIndex];
       setActivePrompt(configPrompt || img.prompt);
-      markPage(currentImageIndex + 1);
+      setCurrentRatingPage(currentImageIndex + 1);
     } else {
       setActivePrompt(null);
     }
-  }, [activeStep, currentImageIndex, benchmarkImage, imagesToRate, configPrompt, setActivePrompt, markPage]);
+  }, [activeStep, currentImageIndex, imagesToRate, configPrompt, setActivePrompt, setCurrentRatingPage]);
 
-  const handleNext = (isBenchmark = false) => {
+  const handleNext = () => {
     if (isLocked) return;
 
     const timeSpent = (performance.now() - startTime) / 1000;
-    const img = isBenchmark ? benchmarkImage : imagesToRate[currentImageIndex];
+    const img = imagesToRate[currentImageIndex];
 
     const newScore = {
       imageId: img.id,
@@ -95,7 +102,7 @@ export default function IndividualRate() {
     setScores(updatedScores);
     setCurrentRating(3);
 
-    const stepIndex = isBenchmark ? 0 : currentImageIndex + 1;
+    const stepIndex = currentImageIndex + 1;
     const currentTimes = updatedScores.map((s) => s.timeSpent);
     const isSafeToProceed = checkEngagement(currentTimes, stepIndex);
 
@@ -105,39 +112,50 @@ export default function IndividualRate() {
       return;
     }
 
-    if (isBenchmark) {
-      setActiveStep(3);
-    } else if (currentImageIndex < imagesToRate.length - 1) {
+    if (currentImageIndex < imagesToRate.length - 1) {
       setCurrentImageIndex(currentImageIndex + 1);
     } else {
-      const pageTranscripts = stopAndCollect();
-      addIndividualSession(username, updatedScores, { pageTranscripts });
-      setActiveStep(4);
+      const { transcripts: pageTranscripts, audioUrls: pageAudioUrls } = collectPageTranscripts();
+      addIndividualSession(username, updatedScores, { pageTranscripts, pageAudioUrls });
+      saveGazeSession(Date.now().toString(), "individual", username, getGazeData());
+      if (uploadConfig?.guided) {
+        const next = nextGuidedNavigation(uploadConfig);
+        navigate(next.route, {
+          state: next.uploadConfig ? { uploadConfig: next.uploadConfig } : undefined,
+        });
+        return;
+      }
+      setActiveStep(3);
     }
     startTimer();
   };
 
   const incrementMoves = () => setInteractionCount((prev) => prev + 1);
 
-  if (!benchmarkImage || imagesToRate.length === 0) return null;
+  const currentImg = imagesToRate[currentImageIndex] || null;
+  const pageKey =
+    activeStep === 2 && currentImg ? `image-${currentImageIndex + 1}` : null;
+  useGazePage(pageKey, "individual-1");
 
-  const currentImg = activeStep === 2 ? benchmarkImage : imagesToRate[currentImageIndex];
+  useEffect(() => {
+    if (activeStep === 2 && currentImg) {
+      tagImageOnPage(currentImg.id, currentImg.filename || currentImg.alt);
+    }
+  }, [activeStep, currentImg, tagImageOnPage]);
+
+  if (imagesToRate.length === 0) return null;
   const globalPrompt = configPrompt || "Rate this image";
   const imagePrompt = currentImg ? currentImg.prompt : "";
 
   const handleBack = () => {
-    if (activeStep !== 3) return;
+    if (activeStep !== 2 || currentImageIndex === 0) return;
     setScores((prev) => {
       if (prev.length === 0) return prev;
       const last = prev[prev.length - 1];
       setCurrentRating(last.score ?? 3);
       return prev.slice(0, -1);
     });
-    if (currentImageIndex > 0) {
-      setCurrentImageIndex((idx) => Math.max(0, idx - 1));
-    } else {
-      setActiveStep(2);
-    }
+    setCurrentImageIndex((idx) => Math.max(0, idx - 1));
     setInteractionCount(0);
     startTimer();
   };
@@ -159,14 +177,14 @@ export default function IndividualRate() {
         <ModeInstructionScreen
           mode="individual"
           prompt={configPrompt || "Per-image prompts will be shown"}
-          onNext={() => { setActiveStep(2); startTimer(); }}
+          onNext={() => { setActiveStep(2); startTimer(); startSession(); }}
         />
       )}
 
-      {/* Step 2 & 3: Benchmark & Rating */}
-      {(activeStep === 2 || activeStep === 3) && (
+      {/* Step 2: Rating */}
+      {activeStep === 2 && currentImg && (
         <>
-          {activeStep === 3 && (
+          {currentImageIndex > 0 && (
             <Button variant="outlined" onClick={handleBack} sx={{ mb: 2 }}>
               Back
             </Button>
@@ -180,30 +198,15 @@ export default function IndividualRate() {
           <Card>
             <Box sx={{ p: 2, bgcolor: "#fff3e0", textAlign: "center" }}>
               <Typography variant="h6">
-                {activeStep === 2
-                  ? "Benchmark"
-                  : `Image ${currentImageIndex + 1} of ${imagesToRate.length}`}
+                {`Image ${currentImageIndex + 1} of ${imagesToRate.length}`}
               </Typography>
-              {/* Global Prompt */}
-              {configPrompt && (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 1, fontStyle: "italic" }}
-                >
-                  Task: "{globalPrompt}"
-                </Typography>
-              )}
-              {/* Image-specific Prompt */}
-              <Typography
-                variant="body1"
-                color="primary.main"
-                sx={{ mt: 1, fontWeight: "medium" }}
-              >
-                "{imagePrompt}"
-              </Typography>
+              <PromptDisplay
+                globalPrompt={configPrompt ? globalPrompt : null}
+                itemPrompt={imagePrompt}
+              />
             </Box>
-            <CardMedia
+            <GazeTrackedImage
+              imageId={currentImg.id}
               component="img"
               image={currentImg.src}
               sx={{ objectFit: "contain", height: "auto", maxHeight: "60vh" }}
@@ -219,7 +222,7 @@ export default function IndividualRate() {
                 variant="contained"
                 fullWidth
                 disabled={isLocked}
-                onClick={() => handleNext(activeStep === 2)}
+                onClick={handleNext}
                 sx={{
                   "&.Mui-disabled": {
                     backgroundColor: "rgba(0,0,0,0.12)",
@@ -229,8 +232,7 @@ export default function IndividualRate() {
               >
                 {isLocked
                   ? "Please Slow Down..."
-                  : activeStep === 3 &&
-                    currentImageIndex === imagesToRate.length - 1
+                  : currentImageIndex === imagesToRate.length - 1
                   ? "Finish"
                   : "Next"}
               </Button>
@@ -239,8 +241,8 @@ export default function IndividualRate() {
         </>
       )}
 
-      {/* Step 4: Done */}
-      {activeStep === 4 && (
+      {/* Step 3: Done */}
+      {activeStep === 3 && (
         <Paper sx={{ p: 4, textAlign: "center" }}>
           <Typography variant="h5">Success!</Typography>
           <Button
@@ -253,5 +255,15 @@ export default function IndividualRate() {
         </Paper>
       )}
     </Container>
+  );
+}
+
+export default function IndividualRate() {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <IndividualRateInner />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }

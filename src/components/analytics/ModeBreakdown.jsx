@@ -29,7 +29,6 @@ const MODE_COLORS = {
   ranked: "#fb923c",
   bestWorst: "#a78bfa",
   selection: "#f472b6",
-  pressureCooker: "#ef4444",
 };
 
 const monoFont = "'JetBrains Mono', monospace";

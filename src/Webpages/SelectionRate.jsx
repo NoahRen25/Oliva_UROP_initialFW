@@ -8,24 +8,38 @@ import UsernameEntry from "../components/UsernameEntry";
 import ModeInstructionScreen from "../components/ModeInstructionScreen";
 import { getSelectionBatch } from "../utils/ImageLoader";
 import { preloadImages } from "../utils/preloadImages";
-import usePageTranscription from "../hooks/usePageTranscription";
-import BackButton from "../components/BackButton";
+import collectPageTranscripts from "../utils/collectPageTranscripts";
+import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
+import GazeTrackedImage from "../components/GazeTrackedImage";
+import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
+import CalibrationGate from "../components/CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
 
-export default function SelectionRate() {
+
+function SelectionRateInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
-  const { addSelectionSession, setActivePrompt } = useResults();
+  const { addSelectionSession, setActivePrompt, setCurrentRatingPage } = useResults();
+  const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
 
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
   const [images, setImages] = useState([]);
   const [selected, setSelected] = useState(new Set());
 
-  const { markPage, stopAndCollect } = usePageTranscription();
-
   const imageCount = uploadConfig?.count || 9;
   const taskPrompt = uploadConfig?.prompt || "Select all images that match the description";
+
+  useGazePage(step === 2 ? "selection" : null, `selection-${imageCount}`);
+  useAutoVoiceRecording(step === 2);
+
+  useEffect(() => {
+    if (step !== 2) return;
+    for (const img of images) {
+      tagImageOnPage(img.id, img.filename || img.alt);
+    }
+  }, [step, images, tagImageOnPage]);
 
   useEffect(() => {
     const batch = getSelectionBatch(imageCount);
@@ -36,12 +50,15 @@ export default function SelectionRate() {
   useEffect(() => {
     if (step === 2) {
       setActivePrompt(taskPrompt);
-      markPage(1);
+      setCurrentRatingPage(1);
     } else {
       setActivePrompt(null);
     }
-    return () => setActivePrompt(null);
-  }, [step, taskPrompt, setActivePrompt, markPage]);
+    return () => {
+      setActivePrompt(null);
+      setCurrentRatingPage(null);
+    };
+  }, [step, taskPrompt, setActivePrompt, setCurrentRatingPage]);
 
   const toggleSelect = (id) => {
     setSelected((prev) => {
@@ -59,7 +76,9 @@ export default function SelectionRate() {
       imagePrompt: img.prompt,
       selected: selected.has(img.id),
     }));
-    addSelectionSession(username, taskPrompt, selections, { pageTranscripts: stopAndCollect() });
+    const { transcripts: pageTranscripts, audioUrls: pageAudioUrls } = collectPageTranscripts();
+    addSelectionSession(username, taskPrompt, selections, { pageTranscripts, pageAudioUrls });
+    saveGazeSession(Date.now().toString(), "selection", username, getGazeData());
     navigate("/mode-results");
   };
 
@@ -67,7 +86,6 @@ export default function SelectionRate() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2, pb: 10 }}>
-      <BackButton />
       {step === 0 && (
         <UsernameEntry
           title="Image Selection Task"
@@ -81,7 +99,7 @@ export default function SelectionRate() {
         <ModeInstructionScreen
           mode="selection"
           prompt={taskPrompt}
-          onNext={() => setStep(2)}
+          onNext={() => { setStep(2); startSession(); }}
         />
       )}
 
@@ -121,7 +139,8 @@ export default function SelectionRate() {
                   }}
                 >
                   <CardActionArea onClick={() => toggleSelect(img.id)}>
-                    <CardMedia
+                    <GazeTrackedImage
+                      imageId={img.id}
                       component="img"
                       image={img.src}
                       sx={{
@@ -184,5 +203,15 @@ export default function SelectionRate() {
         </>
       )}
     </Container>
+  );
+}
+
+export default function SelectionRate() {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <SelectionRateInner />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }

@@ -1,350 +1,359 @@
-/**
- * Supabase read/write layer for experiment results.
- * Every function is a no-op that returns gracefully when supabase is null
- * (i.e. env vars are missing), so the app still works offline via localStorage.
- */
+import { createClient } from "@supabase/supabase-js";
 
-import { supabase } from "../supabaseClient";
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-// =====================
-// HELPERS
-// =====================
+// ─── Sessions ───────────────────────────────────────────────────
 
-const isConfigured = () => !!supabase;
-
-// =====================
-// SESSIONS (parent table)
-// =====================
-
-export async function insertSession({ id, type, username, timestamp, meta = {} }) {
-  if (!isConfigured()) return null;
+export async function insertSession({ id, type, username, timestamp, meta }) {
   const { error } = await supabase
     .from("sessions")
-    .insert({ id, type, username, timestamp, meta });
-  if (error) console.error("insertSession error:", error.message);
-  return error ? null : id;
+    .upsert({ id, type, username, timestamp, meta }, { onConflict: "id" });
+  if (error) console.error("insertSession:", error.message);
 }
 
 export async function deleteSession(id) {
-  if (!isConfigured()) return;
   const { error } = await supabase.from("sessions").delete().eq("id", id);
-  if (error) console.warn("deleteSession: requires auth —", error.message);
+  if (error) console.error("deleteSession:", error.message);
 }
 
 export async function deleteSessionsByType(type) {
-  if (!isConfigured()) return;
   const { error } = await supabase.from("sessions").delete().eq("type", type);
-  if (error) console.warn("deleteSessionsByType: requires auth —", error.message);
+  if (error) console.error("deleteSessionsByType:", error.message);
 }
 
-// =====================
-// RATING SCORES
-// =====================
+export async function deleteAllSessions() {
+  const { error } = await supabase.from("sessions").delete().neq("id", 0);
+  if (error) console.error("deleteAllSessions:", error.message);
+}
+
+// ─── Rating Scores ──────────────────────────────────────────────
 
 export async function insertRatingScores(sessionId, scores) {
-  if (!isConfigured() || !scores?.length) return;
+  if (!scores?.length) return;
   const rows = scores.map((s) => ({
     session_id: sessionId,
-    image_id: s.id ?? s.imageId ?? null,
-    image_src: s.src ?? s.imageSrc ?? null,
-    filename: s.filename ?? null,
-    prompt: s.prompt ?? null,
-    category: s.category ?? null,
-    score: s.score ?? s.rating ?? null,
-    time_spent: s.timeSpent ?? null,
+    image_id: s.imageId ?? s.id,
+    image_name: s.imageName ?? s.filename,
+    filename: s.filename ?? s.imageName,
+    prompt: s.prompt,
+    score: s.score ?? s.rating,
+    rating: s.rating ?? s.score,
+    time_spent: s.timeSpent,
     interaction_count: s.interactionCount ?? 0,
-    extra: s.extra ?? {},
+    click_order: s.clickOrder,
+    memorability_score: s.memorabilityScore,
+    actual_mem_score: s.actualMemScore,
+    src: s.src || s.imageSrc,
   }));
   const { error } = await supabase.from("rating_scores").insert(rows);
-  if (error) console.error("insertRatingScores error:", error.message);
+  if (error) console.error("insertRatingScores:", error.message);
 }
 
-// =====================
-// PAIRWISE CHOICES
-// =====================
+// ─── Pairwise Choices ───────────────────────────────────────────
 
 export async function insertPairwiseChoices(sessionId, choices) {
-  if (!isConfigured() || !choices?.length) return;
+  if (!choices?.length) return;
   const rows = choices.map((c) => ({
     session_id: sessionId,
-    pair_id: c.pairId ?? c.id ?? null,
-    winner_side: c.winnerSide ?? null,
-    winner_name: c.winnerName ?? null,
-    loser_name: c.loserName ?? null,
-    response_time: c.responseTime ?? null,
-    extra: c.extra ?? {},
+    pair_id: c.pairId,
+    winner_name: c.winnerName,
+    loser_name: c.loserName,
+    winner_src: c.winnerSrc,
+    loser_src: c.loserSrc,
+    reaction_time: c.reactionTime,
+    timed_out: c.timedOut ?? false,
   }));
   const { error } = await supabase.from("pairwise_choices").insert(rows);
-  if (error) console.error("insertPairwiseChoices error:", error.message);
+  if (error) console.error("insertPairwiseChoices:", error.message);
 }
 
-// =====================
-// RANKED RESULTS
-// =====================
+// ─── Ranked Results ─────────────────────────────────────────────
 
 export async function insertRankedResults(sessionId, rankings) {
-  if (!isConfigured() || !rankings?.length) return;
+  if (!rankings?.length) return;
   const rows = rankings.map((r) => ({
     session_id: sessionId,
-    group_id: r.groupId ?? null,
-    prompt: r.prompt ?? null,
-    rank: r.rank ?? null,
-    image_id: r.imageId ?? r.id ?? null,
-    image_src: r.src ?? null,
-    filename: r.filename ?? null,
-    folder_id: r.folderId ?? null,
-    extra: r.extra ?? {},
+    image_id: r.imageId,
+    image_name: r.imageName,
+    src: r.src,
+    rank: r.rank,
+    group_id: r.groupId,
   }));
   const { error } = await supabase.from("ranked_results").insert(rows);
-  if (error) console.error("insertRankedResults error:", error.message);
+  if (error) console.error("insertRankedResults:", error.message);
 }
 
-// =====================
-// BEST-WORST TRIALS
-// =====================
+// ─── Best-Worst Trials ─────────────────────────────────────────
 
 export async function insertBestWorstTrials(sessionId, trials) {
-  if (!isConfigured() || !trials?.length) return;
-  const rows = trials.map((t) => ({
+  if (!trials?.length) return;
+  const rows = trials.map((t, i) => ({
     session_id: sessionId,
-    trial_id: t.trialId ?? null,
-    prompt: t.prompt ?? null,
-    best_id: t.bestId ?? null,
-    best_name: t.bestName ?? null,
-    worst_id: t.worstId ?? null,
-    worst_name: t.worstName ?? null,
-    response_time: t.responseTime ?? null,
-    extra: t.extra ?? {},
+    trial_index: t.trialIndex ?? i,
+    best_name: t.bestName,
+    worst_name: t.worstName,
+    best_src: t.bestSrc,
+    worst_src: t.worstSrc,
+    options: t.options || [],
+    reaction_time: t.reactionTime,
   }));
   const { error } = await supabase.from("best_worst_trials").insert(rows);
-  if (error) console.error("insertBestWorstTrials error:", error.message);
+  if (error) console.error("insertBestWorstTrials:", error.message);
 }
 
-// =====================
-// TRANSCRIPTS
-// =====================
+// ─── Transcripts ────────────────────────────────────────────────
 
-export async function insertTranscript({ id, text, duration, timestamp, length }) {
-  if (!isConfigured()) return;
+export async function insertTranscript(entry) {
   const { error } = await supabase
     .from("transcripts")
-    .insert({ id, text, duration, timestamp, length });
-  if (error) console.error("insertTranscript error:", error.message);
+    .upsert(
+      { id: entry.id, text: entry.text, duration: entry.duration, timestamp: entry.timestamp, length: entry.length },
+      { onConflict: "id" }
+    );
+  if (error) console.error("insertTranscript:", error.message);
 }
 
 export async function deleteTranscript(id) {
-  if (!isConfigured()) return;
   const { error } = await supabase.from("transcripts").delete().eq("id", id);
-  if (error) console.warn("deleteTranscript: requires auth —", error.message);
+  if (error) console.error("deleteTranscript:", error.message);
 }
 
 export async function deleteAllTranscripts() {
-  if (!isConfigured()) return;
   const { error } = await supabase.from("transcripts").delete().neq("id", 0);
-  if (error) console.warn("deleteAllTranscripts: requires auth —", error.message);
-}
-
-// =====================
-// FETCH FUNCTIONS
-// =====================
-
-export async function fetchSessionsByType(type) {
-  if (!isConfigured()) return [];
-  const { data, error } = await supabase
-    .from("sessions")
-    .select("*")
-    .eq("type", type)
-    .order("created_at", { ascending: true });
-  if (error) {
-    console.error("fetchSessionsByType error:", error.message);
-    return [];
-  }
-  return data || [];
-}
-
-export async function fetchRatingScores(sessionId) {
-  if (!isConfigured()) return [];
-  const { data, error } = await supabase
-    .from("rating_scores")
-    .select("*")
-    .eq("session_id", sessionId)
-    .order("id", { ascending: true });
-  if (error) {
-    console.error("fetchRatingScores error:", error.message);
-    return [];
-  }
-  return data || [];
-}
-
-export async function fetchPairwiseChoices(sessionId) {
-  if (!isConfigured()) return [];
-  const { data, error } = await supabase
-    .from("pairwise_choices")
-    .select("*")
-    .eq("session_id", sessionId)
-    .order("id", { ascending: true });
-  if (error) {
-    console.error("fetchPairwiseChoices error:", error.message);
-    return [];
-  }
-  return data || [];
-}
-
-export async function fetchRankedResults(sessionId) {
-  if (!isConfigured()) return [];
-  const { data, error } = await supabase
-    .from("ranked_results")
-    .select("*")
-    .eq("session_id", sessionId)
-    .order("id", { ascending: true });
-  if (error) {
-    console.error("fetchRankedResults error:", error.message);
-    return [];
-  }
-  return data || [];
-}
-
-export async function fetchBestWorstTrials(sessionId) {
-  if (!isConfigured()) return [];
-  const { data, error } = await supabase
-    .from("best_worst_trials")
-    .select("*")
-    .eq("session_id", sessionId)
-    .order("id", { ascending: true });
-  if (error) {
-    console.error("fetchBestWorstTrials error:", error.message);
-    return [];
-  }
-  return data || [];
+  if (error) console.error("deleteAllTranscripts:", error.message);
 }
 
 export async function fetchTranscripts() {
-  if (!isConfigured()) return [];
   const { data, error } = await supabase
     .from("transcripts")
     .select("*")
     .order("id", { ascending: false });
   if (error) {
-    console.error("fetchTranscripts error:", error.message);
+    console.error("fetchTranscripts:", error.message);
     return [];
   }
   return data || [];
 }
 
-// =====================
-// COMPOSITE FETCHERS
-// =====================
+// ─── Gaze Sessions ──────────────────────────────────────────────
 
-/**
- * Fetch all sessions of a type and hydrate each with its child rows.
- * Returns the same shape the app expects from localStorage.
- */
+export async function insertGazeSession({ sessionId, mode, username, startTime, endTime, images, pages }) {
+  const row = {
+    session_id: sessionId,
+    mode,
+    username,
+    start_time: startTime,
+    end_time: endTime,
+    images,
+  };
+  if (pages !== undefined) row.pages = pages;
+  const { error } = await supabase.from("gaze_sessions").insert(row);
+  if (error) console.error("insertGazeSession:", error.message);
+}
+
+function shapeGazeSession(raw) {
+  return {
+    sessionId: raw.session_id,
+    mode: raw.mode,
+    username: raw.username,
+    startTime: raw.start_time,
+    endTime: raw.end_time,
+    images: raw.images,
+    pages: raw.pages || {},
+  };
+}
+
+export async function fetchGazeSessions(mode) {
+  const query = supabase
+    .from("gaze_sessions")
+    .select("*")
+    .order("created_at", { ascending: false });
+  const { data, error } = mode ? await query.eq("mode", mode) : await query;
+  if (error) {
+    console.error("fetchGazeSessions:", error.message);
+    return [];
+  }
+  return (data || []).map(shapeGazeSession);
+}
+
+// ─── Fetch helpers (sessions + child data) ──────────────────────
+
+function shapeScores(raw) {
+  return {
+    imageId: raw.image_id,
+    imageName: raw.image_name || raw.filename,
+    filename: raw.filename || raw.image_name,
+    prompt: raw.prompt,
+    score: raw.score ?? raw.rating,
+    rating: raw.rating ?? raw.score,
+    timeSpent: raw.time_spent,
+    interactionCount: raw.interaction_count,
+    clickOrder: raw.click_order,
+    memorabilityScore: raw.memorability_score,
+    actualMemScore: raw.actual_mem_score,
+    src: raw.src,
+    id: raw.image_id,
+  };
+}
+
+function shapeChoice(raw) {
+  return {
+    pairId: raw.pair_id,
+    winnerName: raw.winner_name,
+    loserName: raw.loser_name,
+    winnerSrc: raw.winner_src,
+    loserSrc: raw.loser_src,
+    reactionTime: raw.reaction_time,
+    timedOut: raw.timed_out,
+  };
+}
+
+function shapeRanking(raw) {
+  return {
+    imageId: raw.image_id,
+    imageName: raw.image_name,
+    src: raw.src,
+    rank: raw.rank,
+    groupId: raw.group_id,
+  };
+}
+
+function shapeBestWorst(raw) {
+  return {
+    trialIndex: raw.trial_index,
+    bestName: raw.best_name,
+    worstName: raw.worst_name,
+    bestSrc: raw.best_src,
+    worstSrc: raw.worst_src,
+    options: raw.options,
+    reactionTime: raw.reaction_time,
+  };
+}
+
 export async function fetchSessionsWithScores(type) {
-  if (!isConfigured()) return [];
-  const sessions = await fetchSessionsByType(type);
-  return Promise.all(
-    sessions.map(async (s) => {
-      const dbScores = await fetchRatingScores(s.id);
-      const scores = dbScores.map((r) => ({
-        id: r.image_id,
-        src: r.image_src,
-        filename: r.filename,
-        prompt: r.prompt,
-        category: r.category,
-        score: r.score,
-        rating: r.score,
-        timeSpent: r.time_spent,
-        interactionCount: r.interaction_count,
-        ...r.extra,
-      }));
-      return {
-        id: s.id,
-        username: s.username,
-        scores,
-        timestamp: s.timestamp,
-        ...(s.meta || {}),
-      };
-    })
-  );
+  const { data: sessions, error } = await supabase
+    .from("sessions")
+    .select("*")
+    .eq("type", type)
+    .order("timestamp", { ascending: true });
+  if (error || !sessions?.length) return [];
+
+  const ids = sessions.map((s) => s.id);
+  const { data: scores } = await supabase
+    .from("rating_scores")
+    .select("*")
+    .in("session_id", ids);
+
+  const scoreMap = {};
+  (scores || []).forEach((s) => {
+    if (!scoreMap[s.session_id]) scoreMap[s.session_id] = [];
+    scoreMap[s.session_id].push(shapeScores(s));
+  });
+
+  return sessions.map((s) => ({
+    id: s.id,
+    username: s.username,
+    timestamp: s.timestamp,
+    meta: s.meta,
+    layoutId: s.meta?.layoutId,
+    prompt: s.meta?.prompt,
+    pageTranscripts: s.meta?.pageTranscripts || {},
+    pageAudioUrls: s.meta?.pageAudioUrls || {},
+    scores: scoreMap[s.id] || [],
+  }));
 }
 
 export async function fetchSessionsWithChoices(type) {
-  if (!isConfigured()) return [];
-  const sessions = await fetchSessionsByType(type);
-  return Promise.all(
-    sessions.map(async (s) => {
-      const dbChoices = await fetchPairwiseChoices(s.id);
-      const choices = dbChoices.map((c) => ({
-        pairId: c.pair_id,
-        id: c.pair_id,
-        winnerSide: c.winner_side,
-        winnerName: c.winner_name,
-        loserName: c.loser_name,
-        responseTime: c.response_time,
-        ...c.extra,
-      }));
-      return {
-        id: s.id,
-        username: s.username,
-        choices,
-        timestamp: s.timestamp,
-        ...(s.meta || {}),
-      };
-    })
-  );
+  const { data: sessions, error } = await supabase
+    .from("sessions")
+    .select("*")
+    .eq("type", type)
+    .order("timestamp", { ascending: true });
+  if (error || !sessions?.length) return [];
+
+  const ids = sessions.map((s) => s.id);
+  const { data: choices } = await supabase
+    .from("pairwise_choices")
+    .select("*")
+    .in("session_id", ids);
+
+  const choiceMap = {};
+  (choices || []).forEach((c) => {
+    if (!choiceMap[c.session_id]) choiceMap[c.session_id] = [];
+    choiceMap[c.session_id].push(shapeChoice(c));
+  });
+
+  return sessions.map((s) => ({
+    id: s.id,
+    username: s.username,
+    timestamp: s.timestamp,
+    meta: s.meta,
+    pageTranscripts: s.meta?.pageTranscripts || {},
+    pageAudioUrls: s.meta?.pageAudioUrls || {},
+    choices: choiceMap[s.id] || [],
+  }));
 }
 
 export async function fetchSessionsWithRankings() {
-  if (!isConfigured()) return [];
-  const sessions = await fetchSessionsByType("ranked");
-  return Promise.all(
-    sessions.map(async (s) => {
-      const dbRanks = await fetchRankedResults(s.id);
-      const rankings = dbRanks.map((r) => ({
-        groupId: r.group_id,
-        prompt: r.prompt,
-        rank: r.rank,
-        imageId: r.image_id,
-        id: r.image_id,
-        src: r.image_src,
-        filename: r.filename,
-        folderId: r.folder_id,
-        ...r.extra,
-      }));
-      return {
-        id: s.id,
-        username: s.username,
-        rankings,
-        timestamp: s.timestamp,
-        ...(s.meta || {}),
-      };
-    })
-  );
+  const { data: sessions, error } = await supabase
+    .from("sessions")
+    .select("*")
+    .eq("type", "ranked")
+    .order("timestamp", { ascending: true });
+  if (error || !sessions?.length) return [];
+
+  const ids = sessions.map((s) => s.id);
+  const { data: rankings } = await supabase
+    .from("ranked_results")
+    .select("*")
+    .in("session_id", ids);
+
+  const rankMap = {};
+  (rankings || []).forEach((r) => {
+    if (!rankMap[r.session_id]) rankMap[r.session_id] = [];
+    rankMap[r.session_id].push(shapeRanking(r));
+  });
+
+  return sessions.map((s) => ({
+    id: s.id,
+    username: s.username,
+    timestamp: s.timestamp,
+    meta: s.meta,
+    pageTranscripts: s.meta?.pageTranscripts || {},
+    pageAudioUrls: s.meta?.pageAudioUrls || {},
+    rankings: rankMap[s.id] || [],
+  }));
 }
 
 export async function fetchSessionsWithBestWorst() {
-  if (!isConfigured()) return [];
-  const sessions = await fetchSessionsByType("best_worst");
-  return Promise.all(
-    sessions.map(async (s) => {
-      const dbTrials = await fetchBestWorstTrials(s.id);
-      const trials = dbTrials.map((t) => ({
-        trialId: t.trial_id,
-        prompt: t.prompt,
-        bestId: t.best_id,
-        bestName: t.best_name,
-        worstId: t.worst_id,
-        worstName: t.worst_name,
-        responseTime: t.response_time,
-        ...t.extra,
-      }));
-      return {
-        id: s.id,
-        username: s.username,
-        trials,
-        timestamp: s.timestamp,
-        ...(s.meta || {}),
-      };
-    })
-  );
+  const { data: sessions, error } = await supabase
+    .from("sessions")
+    .select("*")
+    .eq("type", "best_worst")
+    .order("timestamp", { ascending: true });
+  if (error || !sessions?.length) return [];
+
+  const ids = sessions.map((s) => s.id);
+  const { data: trials } = await supabase
+    .from("best_worst_trials")
+    .select("*")
+    .in("session_id", ids);
+
+  const trialMap = {};
+  (trials || []).forEach((t) => {
+    if (!trialMap[t.session_id]) trialMap[t.session_id] = [];
+    trialMap[t.session_id].push(shapeBestWorst(t));
+  });
+
+  return sessions.map((s) => ({
+    id: s.id,
+    username: s.username,
+    timestamp: s.timestamp,
+    meta: s.meta,
+    pageTranscripts: s.meta?.pageTranscripts || {},
+    pageAudioUrls: s.meta?.pageAudioUrls || {},
+    trials: trialMap[s.id] || [],
+  }));
 }

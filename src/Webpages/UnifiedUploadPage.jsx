@@ -7,10 +7,9 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import UsernameEntry from "../components/UsernameEntry";
 import { GRID_DEFINITIONS } from "../data/gridConstants";
 import { useMemImages } from "../data/UseMemImages";
-import BackButton from "../components/BackButton";
 
 // Non-grid rating types
-const RATING_TYPES = ["individual", "pairwise", "ranked", "selection"];
+const RATING_TYPES = ["individual", "pairwise", "ranked", "selection", "video_pairwise"];
 // All valid types (grid layouts + rating modes)
 const ALL_TYPES = [...RATING_TYPES, ...Object.keys(GRID_DEFINITIONS)];
 
@@ -66,16 +65,16 @@ export default function UnifiedUploadPage() {
   };
 
   const handleStart = () => {
-    const state = { uploadConfig: { ...config, username } };
+    const uploadConfig = { ...config, username };
 
-    // Check if it's a grid type
+    let returnTo;
     if (GRID_DEFINITIONS[config.type]) {
-      // Navigate to the grid rating flow
-      navigate("/rate/grid", { state });
+      returnTo = "/rate/grid";
     } else {
-      // Navigate to the specific rating mode
-      navigate(`/${config.type}-rate`, { state });
+      returnTo = `/${config.type.replace(/_/g, "-")}-rate`;
     }
+
+    navigate("/webgazer-calibration", { state: { uploadConfig, returnTo } });
   };
 
   const isGrid = config && !!GRID_DEFINITIONS[config.type];
@@ -83,7 +82,6 @@ export default function UnifiedUploadPage() {
 
   return (
     <Container maxWidth="sm" sx={{ mt: 4 }}>
-      <BackButton />
       {step === 0 ? (
         <UsernameEntry
           title="Upload Configuration"
@@ -136,7 +134,7 @@ export default function UnifiedUploadPage() {
             variant="contained" fullWidth size="large"
             disabled={!canStart} onClick={handleStart}
           >
-            Start Session
+            Next
           </Button>
         </Paper>
       )}

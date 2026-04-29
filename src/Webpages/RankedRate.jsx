@@ -11,11 +11,19 @@ import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import UsernameEntry from "../components/UsernameEntry";
 import ProgressBar from "../components/ProgressBar";
 import ModeInstructionScreen from "../components/ModeInstructionScreen";
+import PromptDisplay from "../components/PromptDisplay";
 import { getRankedBatch } from "../utils/ImageLoader";
 import { preloadImages } from "../utils/preloadImages";
-import usePageTranscription from "../hooks/usePageTranscription";
+import collectPageTranscripts from "../utils/collectPageTranscripts";
+import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
+import GazeTrackedImage from "../components/GazeTrackedImage";
+import { nextGuidedNavigation } from "../utils/guidedFlow";
+import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
+import CalibrationGate from "../components/CalibrationGate";
+import { saveGazeSession } from "../utils/gazeStorage";
 
-// swap mode
+
+// ─── Swap Mode Panel ────────────────────────────────────────────────
 function SwapRankPanel({ images, order, setOrder }) {
   const [dragIdx, setDragIdx] = useState(null);
   const [overIdx, setOverIdx] = useState(null);
@@ -57,7 +65,7 @@ function SwapRankPanel({ images, order, setOrder }) {
     setOverIdx(null);
   };
 
-  // touch-friendly swap by tapping two images
+  // Touch-friendly swap by tapping two images
   const [tapFirst, setTapFirst] = useState(null);
 
   const handleTapSwap = (idx) => {
@@ -141,7 +149,8 @@ function SwapRankPanel({ images, order, setOrder }) {
                 <DragIndicatorIcon />
               </Box>
 
-              <CardMedia
+              <GazeTrackedImage
+                imageId={img.id}
                 component="img"
                 image={img.src}
                 sx={{ objectFit: "contain", height: "30vh", pointerEvents: "none" }}
@@ -177,7 +186,7 @@ function SwapRankPanel({ images, order, setOrder }) {
   );
 }
 
-//Select Mode 
+// ─── Select Mode Panel (Original) ───────────────────────────────────
 function SelectRankPanel({ images, currentRanks, handleChange, error }) {
   return (
     <>
@@ -192,7 +201,8 @@ function SelectRankPanel({ images, currentRanks, handleChange, error }) {
         {images.map((img, index) => (
           <Grid item xs={12} md={4} key={img.id}>
             <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-              <CardMedia
+              <GazeTrackedImage
+                imageId={img.id}
                 component="img"
                 image={img.src}
                 sx={{ objectFit: "contain", height: "30vh" }}
@@ -224,12 +234,14 @@ function SelectRankPanel({ images, currentRanks, handleChange, error }) {
   );
 }
 
-export default function RankedRate() {
+// ─── Main Component ─────────────────────────────────────────────────
+function RankedRateInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
 
-  const { addRankedSession, setActivePrompt } = useResults();
+  const { addRankedSession, setActivePrompt, setCurrentRatingPage } = useResults();
+  const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
 
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
@@ -240,10 +252,8 @@ export default function RankedRate() {
   const [allRankings, setAllRankings] = useState([]);
   const [isFinished, setIsFinished] = useState(false);
 
-  // swap mode: order[i] = index into images array
+  // Swap mode: order[i] = index into images array
   const [swapOrder, setSwapOrder] = useState([0, 1, 2]);
-
-  const { markPage, stopAndCollect } = usePageTranscription();
 
   const groupCount = uploadConfig?.count || 3;
   const configPrompt = uploadConfig?.prompt || null;
@@ -260,8 +270,9 @@ export default function RankedRate() {
     return () => {
       window.speechSynthesis.cancel();
       setActivePrompt(null);
+      setCurrentRatingPage(null);
     };
-  }, [setActivePrompt]);
+  }, [setActivePrompt, setCurrentRatingPage]);
 
   useEffect(() => {
     if (isFinished || rankGroups.length === 0 || step !== 2) {
@@ -270,13 +281,31 @@ export default function RankedRate() {
     }
     const prompt = configPrompt || rankGroups[currentGroupIndex].prompt;
     setActivePrompt(prompt);
-    markPage(currentGroupIndex + 1);
-  }, [step, currentGroupIndex, rankGroups, configPrompt, isFinished, setActivePrompt, markPage]);
+    setCurrentRatingPage(currentGroupIndex + 1);
+  }, [step, currentGroupIndex, rankGroups, configPrompt, isFinished, setActivePrompt, setCurrentRatingPage]);
 
-  // reset swap order when group changes
+  // Reset swap order when group changes
   useEffect(() => {
     setSwapOrder([0, 1, 2]);
   }, [currentGroupIndex]);
+
+  useGazePage(
+    step === 2 && rankGroups.length > 0 && !isFinished
+      ? `group-${currentGroupIndex + 1}`
+      : null,
+    "ranked-3"
+  );
+
+  useAutoVoiceRecording(step === 2 && !isFinished);
+
+  useEffect(() => {
+    if (step !== 2 || rankGroups.length === 0) return;
+    const grp = rankGroups[currentGroupIndex];
+    if (!grp) return;
+    for (const img of grp.images) {
+      tagImageOnPage(img.id, img.filename || img.alt);
+    }
+  }, [step, currentGroupIndex, rankGroups, tagImageOnPage]);
 
   const handleChange = (key) => (e) => {
     setCurrentRanks({ ...currentRanks, [key]: e.target.value });
@@ -324,9 +353,17 @@ export default function RankedRate() {
     } else {
       setIsFinished(true);
       window.speechSynthesis.cancel();
-      const pageTranscripts = stopAndCollect();
-      addRankedSession(username, updated, { pageTranscripts });
-      navigate("/mode-results");
+      const { transcripts: pageTranscripts, audioUrls: pageAudioUrls } = collectPageTranscripts();
+      addRankedSession(username, updated, { pageTranscripts, pageAudioUrls });
+      saveGazeSession(Date.now().toString(), "ranked", username, getGazeData());
+      if (uploadConfig?.guided) {
+        const next = nextGuidedNavigation(uploadConfig);
+        navigate(next.route, {
+          state: next.uploadConfig ? { uploadConfig: next.uploadConfig } : undefined,
+        });
+      } else {
+        navigate("/mode-results");
+      }
     }
   };
 
@@ -382,7 +419,7 @@ export default function RankedRate() {
         <ModeInstructionScreen
           mode="ranked"
           prompt={configPrompt || "Per-group prompts will be shown"}
-          onNext={() => setStep(2)}
+          onNext={() => { setStep(2); startSession(); }}
         />
       )}
 
@@ -412,21 +449,10 @@ export default function RankedRate() {
             </Box>
           )}
 
-          {configPrompt && (
-            <Typography
-              variant="body1" align="center"
-              sx={{ mb: 1, fontStyle: "italic", color: "text.secondary" }}
-            >
-              Task: "{globalPrompt}"
-            </Typography>
-          )}
-
-          <Typography
-            variant="h6" align="center"
-            sx={{ mb: 4, color: "primary.main", fontWeight: "medium" }}
-          >
-            "{imagePrompt}"
-          </Typography>
+          <PromptDisplay
+            globalPrompt={configPrompt ? globalPrompt : null}
+            itemPrompt={imagePrompt}
+          />
 
           {rankMode === "swap" ? (
             <SwapRankPanel
@@ -453,5 +479,15 @@ export default function RankedRate() {
         </>
       )}
     </Container>
+  );
+}
+
+export default function RankedRate() {
+  return (
+    <CalibrationGate>
+      <GazeTrackingProvider>
+        <RankedRateInner />
+      </GazeTrackingProvider>
+    </CalibrationGate>
   );
 }

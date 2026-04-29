@@ -103,7 +103,6 @@ export default function DashboardExport({ allSessions }) {
       { key: "rankedSessions", mode: "ranked" },
       { key: "bestWorstSessions", mode: "bestWorst" },
       { key: "selectionSessions", mode: "selection" },
-      { key: "pressureCookerSessions", mode: "pressureCooker" },
     ];
 
     const allRows = [];
@@ -149,7 +148,6 @@ export default function DashboardExport({ allSessions }) {
     { key: "rankedSessions", label: "Ranked", mode: "ranked" },
     { key: "bestWorstSessions", label: "Best-Worst", mode: "bestWorst" },
     { key: "selectionSessions", label: "Selection", mode: "selection" },
-    { key: "pressureCookerSessions", label: "Pressure Cooker", mode: "pressureCooker" },
   ];
 
   // Only show modes that have data
