@@ -6,7 +6,7 @@ import {
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import UsernameEntry from "../components/UsernameEntry";
 import { GRID_DEFINITIONS } from "../data/gridConstants";
-import { useMemImages } from "../data/UseMemImages";
+import { useMemImages } from "../data/useMemImages";
 
 // Non-grid rating types
 const RATING_TYPES = ["individual", "pairwise", "ranked", "selection", "video_pairwise"];

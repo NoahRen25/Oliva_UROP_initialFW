@@ -8,7 +8,7 @@ import InstructionScreen from "../components/InstructionScreen";
 import GridRatingStep from "../components/GridRatingStep";
 import useGridRating from "../utils/useGridRating";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
-import { useMemImages } from "../data/UseMemImages";
+import { useMemImages } from "../data/useMemImages";
 import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
 import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
 import CalibrationGate from "../components/CalibrationGate";

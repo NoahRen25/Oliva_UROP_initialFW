@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Container, Box, CircularProgress } from "@mui/material";
 import { useResults } from "../Results";
-import { useMemImages } from "../data/UseMemImages";
+import { useMemImages } from "../data/useMemImages";
 import { getGridConfig } from "../data/gridConstants";
 import UsernameEntry from "./UsernameEntry";
 import InstructionScreen from "./InstructionScreen";
