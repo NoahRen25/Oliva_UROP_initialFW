@@ -70,9 +70,9 @@ export default function IndividualResult() {
                     <TableCell align="right">{score.timeSpent}</TableCell>
                     <TableCell align="right">{score.interactionCount || 0}</TableCell>
                     <RecordingCell
-                      pageKey={score.imageId === 0 || score.imageId === "0" ? "benchmark" : idx}
+                      pageKey={idx + 1}
                       audioUrls={session.pageAudioUrls}
-                      label={score.imageId === 0 || score.imageId === "0" ? "Benchmark" : `Image_${idx}`}
+                      label={`Image_${idx + 1}`}
                     />
                   </TableRow>
                 ))}

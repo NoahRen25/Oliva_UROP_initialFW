@@ -128,7 +128,7 @@ function buildImageStats(sessions, mode) {
         });
 
         // Audio entries
-        const pageKey = score.imageId === 0 || score.imageId === "0" ? "benchmark" : score.pageKey;
+        const pageKey = score.pageKey;
         if (session.pageAudioUrls) {
           Object.keys(session.pageAudioUrls).forEach((pk) => {
             entry.audioEntries.push({
