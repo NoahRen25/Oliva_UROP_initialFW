@@ -11,8 +11,6 @@ const INSTRUCTIONS = {
 
 Rate each image on a scale of 1–5 based on how well it matches the prompt and its overall quality.
 
-The first image is a benchmark to familiarize you with the task. Your benchmark rating is still recorded.
-
 Use the READ PROMPT button in the top bar at any time to hear the current prompt read aloud.`,
   },
   pairwise: {
@@ -74,7 +72,7 @@ const Placeholder = ({ height = "14vh", label }) => (
 const IndividualPreview = () => (
   <Card sx={{ maxWidth: 360, mx: "auto", pointerEvents: "none" }}>
     <Box sx={{ p: 1.5, bgcolor: "#fff3e0", textAlign: "center" }}>
-      <Typography variant="subtitle2">Benchmark</Typography>
+      <Typography variant="subtitle2">Image 1 of 10</Typography>
       <Typography variant="caption" color="text.secondary" sx={{ fontStyle: "italic" }}>
         "A row of world flags waving..."
       </Typography>
