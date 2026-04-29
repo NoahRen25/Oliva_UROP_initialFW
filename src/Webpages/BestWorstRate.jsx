@@ -18,6 +18,7 @@ import { preloadImages } from "../utils/preloadImages";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
 import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
 import GazeTrackedImage from "../components/GazeTrackedImage";
+import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
 
@@ -74,6 +75,7 @@ function BestWorstRateInner() {
   const [startTime, setStartTime] = useState(null);
 
   useGazePage(step === 1 ? `trial-${currentTrialIndex + 1}` : null, "best-worst-4");
+  useAutoVoiceRecording(step === 1);
 
   useEffect(() => {
     if (step !== 1) return;

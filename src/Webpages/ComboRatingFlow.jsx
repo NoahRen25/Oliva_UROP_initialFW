@@ -10,6 +10,7 @@ import useGridRating from "../utils/useGridRating";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
 import { useMemImages } from "../data/UseMemImages";
 import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
+import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
 import CalibrationGate from "../components/CalibrationGate";
 import { saveGazeSession } from "../utils/gazeStorage";
 
@@ -37,6 +38,7 @@ function ComboRatingFlowInner() {
     step === 2 ? `combo-page-${currentPage + 1}` : null,
     `combo-${currentPage === 3 ? "3x3" : "3x3-no-center"}`
   );
+  useAutoVoiceRecording(step === 2);
 
   // --- 33-image selection logic (unchanged, just uses grid hook) ---
   const fixedImageSequence = useMemo(() => {
