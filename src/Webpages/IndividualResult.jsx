@@ -5,7 +5,7 @@ import {
 } from "@mui/material";
 import ResultsPageShell from "../components/ResultsPageShell";
 import SessionMetadata from "../components/SessionMetadata";
-import { RecordingCell, RecordingHeader } from "../components/PageTranscriptCell";
+import { RecordingCell, RecordingHeader } from "../components/pageTranscriptCell";
 
 function SessionAvgRow({ scores }) {
   const main = scores.filter((s) => s.imageId !== 0 && s.imageId !== "0");

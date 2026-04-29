@@ -7,7 +7,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import ResultsPageShell from "../components/ResultsPageShell";
 import ExportCSVButton from "../components/ExportCSVButton";
-import { RecordingCell, RecordingHeader } from "../components/PageTranscriptCell";
+import { RecordingCell, RecordingHeader } from "../components/pageTranscriptCell";
 
 export default function SelectionResult() {
   const { selectionSessions, deleteSelectionSession, clearSelection } = useResults();

@@ -6,7 +6,7 @@ import {
 import ResultsPageShell from "../components/ResultsPageShell";
 import SessionMetadata from "../components/SessionMetadata";
 import ExportCSVButton from "../components/ExportCSVButton";
-import { RecordingCell, RecordingHeader } from "../components/PageTranscriptCell";
+import { RecordingCell, RecordingHeader } from "../components/pageTranscriptCell";
 
 const prepareData = (sessions) => {
   const flat = [];

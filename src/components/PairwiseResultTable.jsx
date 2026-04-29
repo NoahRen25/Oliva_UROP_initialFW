@@ -4,7 +4,7 @@ import {
 } from "@mui/material";
 import ExportCSVButton from "./ExportCSVButton";
 import SessionMetadata from "./SessionMetadata";
-import { RecordingCell, RecordingHeader } from "./PageTranscriptCell";
+import { RecordingCell, RecordingHeader } from "./pageTranscriptCell";
 
 export default function PairwiseResultTable({ sessions, prepareData, filenamePrefix = "Pairwise" }) {
   return (

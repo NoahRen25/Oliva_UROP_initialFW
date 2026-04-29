@@ -5,7 +5,7 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ExportCSVButton from "./ExportCSVButton";
-import { RecordingCell, RecordingHeader } from "./PageTranscriptCell";
+import { RecordingCell, RecordingHeader } from "./pageTranscriptCell";
 
 const COLOR_A = "#1976d2";
 const COLOR_B = "#9c27b0";

@@ -3,7 +3,7 @@ import { useResults } from "../Results";
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import ResultsPageShell from "../components/ResultsPageShell";
 import ExportCSVButton from "../components/ExportCSVButton";
-import { RecordingCell, RecordingHeader } from "../components/PageTranscriptCell";
+import { RecordingCell, RecordingHeader } from "../components/pageTranscriptCell";
 
 const prepareData = (sessions) =>
   sessions.flatMap((s) =>

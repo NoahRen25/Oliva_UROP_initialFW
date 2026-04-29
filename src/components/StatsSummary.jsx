@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Box, Typography, Paper, Grid, Divider, Tooltip } from "@mui/material";
-import { calculateStats } from "../utils/StatsUtils"; // Adjust path as needed
+import { calculateStats } from "../utils/statsUtils"; // Adjust path as needed
 
 const HistogramBar = ({ label, count, maxCount, color }) => {
   const heightPercent = maxCount > 0 ? (count / maxCount) * 100 : 0;
