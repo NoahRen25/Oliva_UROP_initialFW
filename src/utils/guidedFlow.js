@@ -1,39 +1,31 @@
 /**
- * guidedFlow — Defines the chained "Start Rating" experience that walks
- * a participant through every rating format back-to-back.
+ * guidedFlow — chained "Start Rating" experience.
  *
- * Flow (after the welcome screen + calibration):
- *   1. Individual Rate      — 10 images
- *   2. Pairwise Rate        — 10 pairs
- *   3. Ranked Rate          — 10 groups (swap mode)
- *   4. Group Grid Rate      — 2 pages of 3x3-no-center (16 images)
- *   ─ Thank-you screen
+ * uploadConfig.guided — true while inside a guided run.
+ * uploadConfig.flow   — array of step descriptors *remaining after this one*.
  *
- * Each rate page already accepts `uploadConfig` via location.state. We
- * piggy-back on that channel by adding two extra fields:
- *
- *   uploadConfig.guided  — true while the participant is inside a guided run
- *   uploadConfig.flow    — array of step descriptors *remaining after this one*
- *
- * When a rate page finishes, it calls `nextGuidedNavigation(uploadConfig)`
- * to learn where to go next instead of routing to its own results page.
+ * Step descriptors may set `validateBefore: true` to insert a brief
+ * gaze-accuracy check before the step.
  */
 
-export const GUIDED_STEPS = [
+export const DEFAULT_GUIDED_STEPS = [
   { kind: "individual",  route: "/individual-rate", count: 10 },
-  { kind: "pairwise",    route: "/pairwise-rate",   count: 10 },
-  { kind: "ranked",      route: "/ranked-rate",     count: 10, rankMode: "swap" },
-  { kind: "group-grid",  route: "/group-grid-rate", pageCount: 2, layoutId: "3x3-no-center" },
+  { kind: "pairwise",    route: "/pairwise-rate",   count: 10, validateBefore: true },
+  { kind: "ranked",      route: "/ranked-rate",     count: 10, rankMode: "swap", validateBefore: true },
+  { kind: "group-grid",  route: "/group-grid-rate", pageCount: 2, layoutId: "3x3-no-center", validateBefore: true },
 ];
 
+export const GUIDED_STEPS = DEFAULT_GUIDED_STEPS;
+
 /** Initial uploadConfig used to enter the guided flow (the first step). */
-export function buildGuidedUploadConfig(username) {
-  const [first, ...rest] = GUIDED_STEPS;
+export function buildGuidedUploadConfig(username, steps = DEFAULT_GUIDED_STEPS) {
+  const [first, ...rest] = steps;
   return {
     ...first,
     username,
     guided: true,
     flow: rest,
+    totalSteps: steps.length,
   };
 }
 
@@ -41,6 +33,10 @@ export function buildGuidedUploadConfig(username) {
  * Compute where to go after a guided step finishes. Returns
  *   { route, uploadConfig }
  * where uploadConfig is null when the chain is done.
+ *
+ * If the next step has `validateBefore: true`, the navigation is
+ * detoured through `/calibration-check` first; the upload config still
+ * carries the next step so the check screen can advance afterwards.
  */
 export function nextGuidedNavigation(currentUploadConfig) {
   if (!currentUploadConfig?.guided) return null;
@@ -49,13 +45,20 @@ export function nextGuidedNavigation(currentUploadConfig) {
     return { route: "/thank-you", uploadConfig: null };
   }
   const [next, ...rest] = flow;
-  return {
-    route: next.route,
-    uploadConfig: {
-      ...next,
-      username: currentUploadConfig.username,
-      guided: true,
-      flow: rest,
-    },
+  const nextUploadConfig = {
+    ...next,
+    username: currentUploadConfig.username,
+    guided: true,
+    flow: rest,
+    totalSteps: currentUploadConfig.totalSteps ?? DEFAULT_GUIDED_STEPS.length,
   };
+  if (next.validateBefore) {
+    return { route: "/calibration-check", uploadConfig: nextUploadConfig };
+  }
+  return { route: next.route, uploadConfig: nextUploadConfig };
+}
+
+/** Total step count for progress indicators. */
+export function totalGuidedSteps(steps = DEFAULT_GUIDED_STEPS) {
+  return steps.length;
 }

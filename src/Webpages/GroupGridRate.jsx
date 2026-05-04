@@ -10,6 +10,7 @@ import GazeTrackingProvider, {
   useGazeTracking, useGazePage,
 } from "../components/GazeTrackingProvider";
 import CalibrationGate from "../components/CalibrationGate";
+import GuidedProgress from "../components/GuidedProgress";
 import { saveGazeSession } from "../utils/gazeStorage";
 import GridRatingStep from "../components/GridRatingStep";
 import UsernameEntry from "../components/UsernameEntry";
@@ -176,10 +177,13 @@ function GroupGridRateInner() {
 
 export default function GroupGridRate() {
   return (
-    <CalibrationGate>
-      <GazeTrackingProvider>
-        <GroupGridRateInner />
-      </GazeTrackingProvider>
-    </CalibrationGate>
+    <>
+      <GuidedProgress />
+      <CalibrationGate>
+        <GazeTrackingProvider>
+          <GroupGridRateInner />
+        </GazeTrackingProvider>
+      </CalibrationGate>
+    </>
   );
 }

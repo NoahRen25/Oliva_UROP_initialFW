@@ -20,6 +20,7 @@ import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../component
 import GazeTrackedImage from "../components/GazeTrackedImage";
 import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
 import CalibrationGate from "../components/CalibrationGate";
+import GuidedProgress from "../components/GuidedProgress";
 import { saveGazeSession } from "../utils/gazeStorage";
 
 const demoImg = (filename) => getImageUrl("demo-images", filename);
@@ -297,10 +298,13 @@ function BestWorstRateInner() {
 
 export default function BestWorstRate() {
   return (
-    <CalibrationGate>
-      <GazeTrackingProvider>
-        <BestWorstRateInner />
-      </GazeTrackingProvider>
-    </CalibrationGate>
+    <>
+      <GuidedProgress />
+      <CalibrationGate>
+        <GazeTrackingProvider>
+          <BestWorstRateInner />
+        </GazeTrackingProvider>
+      </CalibrationGate>
+    </>
   );
 }

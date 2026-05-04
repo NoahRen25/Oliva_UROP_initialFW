@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useResults } from "../Results";
-import collectPageTranscripts from "./collectPageTranscripts";
+import { useVoiceRecorder } from "../components/VoiceRecorderContext";
 
 /**
  * useRatingFlow — Shared hook for all rating flows.
@@ -15,6 +15,7 @@ export default function useRatingFlow({ mode, usernameRegex = /^\d+$/ } = {}) {
   const uploadConfig = location.state?.uploadConfig || null;
 
   const { setActivePrompt, setCurrentRatingPage } = useResults();
+  const voiceRecorder = useVoiceRecorder();
 
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
@@ -22,28 +23,20 @@ export default function useRatingFlow({ mode, usernameRegex = /^\d+$/ } = {}) {
   const configPrompt = uploadConfig?.prompt || null;
   const count = uploadConfig?.count || 5;
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       window.speechSynthesis.cancel();
       setActivePrompt(null);
       setCurrentRatingPage(null);
-      // Stop recording if component unmounts mid-session
-      const vr = window.__voiceRecorder;
-      if (vr && vr.isRecording) vr.stop();
+      if (voiceRecorder.isRecordingRef.current) voiceRecorder.stop();
     };
-  }, [setActivePrompt, setCurrentRatingPage]);
+  }, [setActivePrompt, setCurrentRatingPage, voiceRecorder]);
 
-  // Auto-start recording when entering the rating step (step 2)
   useEffect(() => {
-    if (step === 2) {
-      const timer = setTimeout(() => {
-        const vr = window.__voiceRecorder;
-        if (vr && !vr.isRecording) vr.start();
-      }, 300);
-      return () => clearTimeout(timer);
+    if (step === 2 && !voiceRecorder.isRecordingRef.current) {
+      voiceRecorder.start();
     }
-  }, [step]);
+  }, [step, voiceRecorder]);
 
   const updatePromptAndPage = useCallback(
     (promptText, pageKey) => {
@@ -63,11 +56,9 @@ export default function useRatingFlow({ mode, usernameRegex = /^\d+$/ } = {}) {
    */
   const finishSession = useCallback(() => {
     window.speechSynthesis.cancel();
-    // Stop recording so final page data gets flushed to global refs
-    const vr = window.__voiceRecorder;
-    if (vr && vr.isRecording) vr.stop();
-    return collectPageTranscripts();
-  }, []);
+    if (voiceRecorder.isRecordingRef.current) voiceRecorder.stop();
+    return voiceRecorder.collectPageAudio();
+  }, [voiceRecorder]);
 
   return {
     navigate, location, uploadConfig,
