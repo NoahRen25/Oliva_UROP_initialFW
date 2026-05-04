@@ -20,6 +20,7 @@ import GazeTrackedImage from "../components/GazeTrackedImage";
 import { nextGuidedNavigation } from "../utils/guidedFlow";
 import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
 import CalibrationGate from "../components/CalibrationGate";
+import GuidedProgress from "../components/GuidedProgress";
 import { saveGazeSession } from "../utils/gazeStorage";
 
 
@@ -484,10 +485,13 @@ function RankedRateInner() {
 
 export default function RankedRate() {
   return (
-    <CalibrationGate>
-      <GazeTrackingProvider>
-        <RankedRateInner />
-      </GazeTrackingProvider>
-    </CalibrationGate>
+    <>
+      <GuidedProgress />
+      <CalibrationGate>
+        <GazeTrackingProvider>
+          <RankedRateInner />
+        </GazeTrackingProvider>
+      </CalibrationGate>
+    </>
   );
 }

@@ -1,20 +1,15 @@
-/**
- * collectPageTranscripts()
- *
- * Reads per-page audio from global refs. Resets after reading.
- */
+let _collector = null;
+
+export function _registerCollector(fn) {
+  _collector = fn;
+  return () => {
+    if (_collector === fn) _collector = null;
+  };
+}
+
 export default function collectPageTranscripts() {
-  const textRef = window.__pendingPageTranscripts;
-  const audioRef = window.__pendingPageAudio;
-  const blobRef = window.__pendingPageAudioBlobs;
-
-  const transcripts = textRef?.current || {};
-  const audioUrls = audioRef?.current || {};
-  const audioBlobs = blobRef?.current || {};
-
-  if (textRef) textRef.current = {};
-  if (audioRef) audioRef.current = {};
-  if (blobRef) blobRef.current = {};
-
-  return { transcripts, audioUrls, audioBlobs };
+  if (!_collector) {
+    return { transcripts: {}, audioUrls: {}, audioBlobs: {} };
+  }
+  return _collector();
 }
