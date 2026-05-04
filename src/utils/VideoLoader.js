@@ -165,7 +165,8 @@ async function loadFromSupabase() {
 
 /**
  * loadVideoIndex() — Call once before getVideoPairwiseBatch().
- * Tries local manifest first; falls back to Supabase if configured.
+ * Prefers Supabase when VITE_SUPABASE_URL is configured; falls back to a
+ * local manifest at public/videos/manifest.json for dev without Supabase.
  */
 export async function loadVideoIndex() {
   if (_loaded) return;
@@ -174,7 +175,23 @@ export async function loadVideoIndex() {
   FOLDERS = [];
   PROMPTS = {};
 
-  // Try local first
+  // Prefer Supabase when configured
+  if (supabase && SUPABASE_URL) {
+    try {
+      await loadFromSupabase();
+      if (Object.keys(BY_FILENAME).length > 0) {
+        _loaded = true;
+        console.log(
+          `VideoLoader [supabase]: ${Object.keys(BY_FILENAME).length} videos across ${FOLDERS.length} folders`
+        );
+        return;
+      }
+    } catch (e) {
+      console.log("VideoLoader: Supabase load failed, trying local manifest...", e.message);
+    }
+  }
+
+  // Fall back to local manifest
   try {
     await loadFromLocal();
     if (Object.keys(BY_FILENAME).length > 0) {
@@ -185,20 +202,10 @@ export async function loadVideoIndex() {
       return;
     }
   } catch (e) {
-    console.log("VideoLoader: No local manifest, trying Supabase...", e.message);
+    console.error("VideoLoader: Both Supabase and local loading failed.", e.message);
   }
 
-  // Fallback to Supabase
-  try {
-    await loadFromSupabase();
-    _loaded = true;
-    console.log(
-      `VideoLoader [supabase]: ${Object.keys(BY_FILENAME).length} videos across ${FOLDERS.length} folders`
-    );
-  } catch (e) {
-    console.error("VideoLoader: Both local and Supabase loading failed.", e.message);
-    _loaded = true; // mark loaded so we don't retry forever
-  }
+  _loaded = true; // mark loaded so we don't retry forever
 }
 
 /**
@@ -248,6 +255,91 @@ export function getVideoPairwiseBatch(count = 5) {
   }
 
   return batch;
+}
+
+/** Flat list of every indexed video variant. */
+function allVideoVariants() {
+  const list = [];
+  for (const fname of Object.keys(BY_FILENAME)) {
+    for (const folder of Object.keys(BY_FILENAME[fname])) {
+      list.push({
+        filename: fname,
+        folder,
+        src: BY_FILENAME[fname][folder].src,
+        prompt: PROMPTS[fname] || "",
+      });
+    }
+  }
+  return list;
+}
+
+/**
+ * getVideoIndividualBatch(count) — Pick `count` individual videos at random
+ * across all folders. Mirrors `getIndividualBatch` for images.
+ */
+export function getVideoIndividualBatch(count = 5) {
+  const all = allVideoVariants();
+  if (all.length === 0) return [];
+
+  const batch = [];
+  for (let i = 0; i < count; i++) {
+    const item = getRandomItem(all);
+    batch.push({
+      id: `vi_${i}`,
+      src: item.src,
+      prompt: item.prompt,
+      filename: `${item.folder}/${item.filename}`,
+      alt: `${item.folder} – ${item.filename}`,
+      folder: item.folder,
+    });
+  }
+  return batch;
+}
+
+/**
+ * getVideoRankedBatch(count) — `count` groups of N variants of the same
+ * filename across different folders (up to 3). Mirrors `getRankedBatch`.
+ */
+export function getVideoRankedBatch(count = 3) {
+  const filenames = Object.keys(BY_FILENAME).filter(
+    (fname) => Object.keys(BY_FILENAME[fname]).length >= 2
+  );
+  if (filenames.length === 0) return [];
+
+  const batch = [];
+  const used = new Set();
+  for (let i = 0; i < count; i++) {
+    let fname;
+    let attempts = 0;
+    do {
+      fname = getRandomItem(filenames);
+      attempts++;
+    } while (used.has(fname) && attempts < filenames.length * 3);
+    used.add(fname);
+
+    const variants = BY_FILENAME[fname];
+    const folders = Object.keys(variants).slice(0, 3);
+    batch.push({
+      groupId: i,
+      prompt: PROMPTS[fname] || "",
+      images: folders.map((folder, idx) => ({
+        id: `vr${i}_${idx}`,
+        src: variants[folder].src,
+        filename: `${folder}/${fname}`,
+        alt: `${folder} – ${fname}`,
+        folder,
+      })),
+    });
+  }
+  return batch;
+}
+
+/**
+ * getVideoGroupBatch(count) — Flat list of `count` random video variants for
+ * grid-style rating. Mirrors `getIndividualBatch` shape.
+ */
+export function getVideoGroupBatch(count = 8) {
+  return getVideoIndividualBatch(count);
 }
 
 /** Number of unique video filenames indexed. */

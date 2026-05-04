@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Container, Paper, Typography, Box, Button, Divider,
@@ -8,9 +8,54 @@ import LooksOneIcon from "@mui/icons-material/LooksOne";
 import LooksTwoIcon from "@mui/icons-material/LooksTwo";
 import Looks3Icon from "@mui/icons-material/Looks3";
 import Looks4Icon from "@mui/icons-material/Looks4";
+import Looks5Icon from "@mui/icons-material/Looks5";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { buildGuidedUploadConfig } from "../utils/guidedFlow";
+import { loadModeConfig } from "../services/modeConfig";
+import { getGridConfig } from "../data/gridConstants";
+
+const STEP_ICONS = [LooksOneIcon, LooksTwoIcon, Looks3Icon, Looks4Icon, Looks5Icon];
+
+function describeStep(step, mediaMode) {
+  const isVideo = mediaMode === "video";
+  const noun = isVideo ? "video" : "image";
+  const nounPlural = isVideo ? "videos" : "images";
+  switch (step.kind) {
+    case "individual":
+      return {
+        title: `Individual Rating — ${step.count} ${nounPlural}`,
+        body: isVideo
+          ? "You'll watch one video at a time and rate each on a 1–5 scale once it finishes."
+          : "You'll see one image at a time and rate each one on a 1–5 scale.",
+      };
+    case "pairwise":
+      return {
+        title: `Pairwise Comparison — ${step.count} pairs`,
+        body: isVideo
+          ? "Two videos play side-by-side; pick the one that better matches the prompt."
+          : "Two images appear side-by-side; you pick the one that better matches the prompt.",
+      };
+    case "ranked":
+      return {
+        title: `Ranked Comparison — ${step.count} groups`,
+        body: isVideo
+          ? `Three ${nounPlural} per group — watch each, then drag them into order from best to worst.`
+          : "Three images per group — drag them into order from best to worst.",
+      };
+    case "group-grid": {
+      const cfg = getGridConfig(step.layoutId);
+      return {
+        title: `Group Rating — ${step.pageCount} grids of ${cfg.pageSize} ${nounPlural}`,
+        body: isVideo
+          ? `Each page shows a ${step.layoutId} layout of videos; rate every ${noun} on a 1–5 scale.`
+          : `Each page shows a ${step.layoutId} layout; rate every image on a 1–5 scale.`,
+      };
+    }
+    default:
+      return null;
+  }
+}
 
 function FormatRow({ icon, title, body }) {
   return (
@@ -34,13 +79,38 @@ export default function GuidedSessionWelcome() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
+  const [starting, setStarting] = useState(false);
+  const [config, setConfig] = useState(null);
 
-  const handleBegin = () => {
+  useEffect(() => {
+    let cancelled = false;
+    loadModeConfig().then((cfg) => {
+      if (!cancelled) setConfig(cfg);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const steps = config?.steps || [];
+  const mediaMode = config?.mediaMode || "image";
+  const activeSteps = steps.filter((s) => s.enabled !== false);
+
+  const handleBegin = async () => {
     if (!/^\d+$/.test(username.trim())) {
       setError("Please enter a numeric participant ID.");
       return;
     }
-    const uploadConfig = buildGuidedUploadConfig(username.trim());
+    setStarting(true);
+    const latest = config ?? (await loadModeConfig());
+    const uploadConfig = buildGuidedUploadConfig(
+      username.trim(),
+      latest.steps,
+      latest.mediaMode,
+    );
+    if (!uploadConfig) {
+      setStarting(false);
+      setError("No rating modes are enabled. Ask an admin to enable at least one mode.");
+      return;
+    }
     navigate("/webgazer-calibration", {
       state: { uploadConfig, returnTo: uploadConfig.route },
     });
@@ -53,7 +123,7 @@ export default function GuidedSessionWelcome() {
           Thank you for participating!
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-          You'll be rating images in a variety of formats. The whole session
+          You'll be rating {mediaMode === "video" ? "videos" : "images"} in a variety of formats. The whole session
           takes about <strong>15–20 minutes</strong>. Please find a quiet spot
           where you can sit comfortably without interruption.
         </Typography>
@@ -64,26 +134,19 @@ export default function GuidedSessionWelcome() {
           What you'll do
         </Typography>
 
-        <FormatRow
-          icon={<LooksOneIcon />}
-          title="Individual Rating — 10 images"
-          body="You'll see one image at a time and rate each one on a 1–5 scale."
-        />
-        <FormatRow
-          icon={<LooksTwoIcon />}
-          title="Pairwise Comparison — 10 pairs"
-          body="Two images appear side-by-side; you pick the one that better matches the prompt."
-        />
-        <FormatRow
-          icon={<Looks3Icon />}
-          title="Ranked Comparison — 10 groups"
-          body="Three images per group — drag them into order from best to worst."
-        />
-        <FormatRow
-          icon={<Looks4Icon />}
-          title="Group Rating — 2 grids of 3×3"
-          body="Two pages of 8 images (3×3 grid with the center cell removed); rate each one on a 1–5 scale."
-        />
+        {activeSteps.map((step, i) => {
+          const info = describeStep(step, mediaMode);
+          if (!info) return null;
+          const Icon = STEP_ICONS[i] || LooksOneIcon;
+          return (
+            <FormatRow
+              key={`${step.kind}-${i}`}
+              icon={<Icon />}
+              title={info.title}
+              body={info.body}
+            />
+          );
+        })}
 
         <Divider sx={{ my: 3 }} />
 
@@ -124,9 +187,10 @@ export default function GuidedSessionWelcome() {
           fullWidth
           startIcon={<PlayArrowIcon />}
           onClick={handleBegin}
+          disabled={starting}
           sx={{ py: 1.5, fontSize: "1.1rem", borderRadius: 2, bgcolor: "#1a237e" }}
         >
-          Start Calibration
+          {starting ? "Loading…" : "Start Calibration"}
         </Button>
       </Paper>
     </Container>
