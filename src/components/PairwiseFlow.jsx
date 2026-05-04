@@ -29,6 +29,7 @@ export default function PairwiseFlow({
   title,
   headerContent,
   canProceed = true,
+  canProceedFor,
   onPairChange,
   gazeFormat = "pairwise-2",
 }) {
@@ -177,7 +178,11 @@ export default function PairwiseFlow({
             <Button
               variant="contained"
               size="large"
-              disabled={!selectedSide || !canProceed}
+              disabled={
+                !selectedSide ||
+                !canProceed ||
+                (typeof canProceedFor === "function" && !canProceedFor(currentPairIndex))
+              }
               onClick={handleNext}
             >
               {currentPairIndex === pairs.length - 1 ? "Submit All" : "Next Pair"}

@@ -13,6 +13,7 @@ import ScienceIcon from "@mui/icons-material/Science";
 import HistoryEduIcon from "@mui/icons-material/HistoryEdu";
 import PrivacyTipIcon from "@mui/icons-material/PrivacyTip";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import TuneIcon from "@mui/icons-material/Tune";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../utils/AuthContext";
 
@@ -61,6 +62,15 @@ export default function AdminMenu() {
         ))}
         {isAdmin && [
           <Divider key="divider" />,
+          <MenuItem
+            key="control-panel"
+            component={Link}
+            to="/admin/control-panel"
+            onClick={() => setAnchor(null)}
+          >
+            <ListItemIcon><TuneIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Control Panel</ListItemText>
+          </MenuItem>,
           <MenuItem
             key="invite"
             onClick={() => { setAnchor(null); setInviteOpen(true); }}

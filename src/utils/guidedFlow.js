@@ -2,37 +2,59 @@
  * guidedFlow — Defines the chained "Start Rating" experience that walks
  * a participant through every rating format back-to-back.
  *
- * Flow (after the welcome screen + calibration):
- *   1. Individual Rate      — 10 images
- *   2. Pairwise Rate        — 10 pairs
- *   3. Ranked Rate          — 10 groups (swap mode)
- *   4. Group Grid Rate      — 2 pages of 3x3-no-center (16 images)
- *   ─ Thank-you screen
+ * The order, counts, and layouts are driven by `mode_config` in Supabase
+ * (see src/services/modeConfig.js). When that table is unreachable, the
+ * defaults below are used.
  *
- * Each rate page already accepts `uploadConfig` via location.state. We
- * piggy-back on that channel by adding two extra fields:
+ * `mode_config` also stores a top-level `mediaMode` ("image" | "video")
+ * which decides whether each step routes to its image or video page.
  *
- *   uploadConfig.guided  — true while the participant is inside a guided run
- *   uploadConfig.flow    — array of step descriptors *remaining after this one*
+ * Each rate page accepts `uploadConfig` via location.state. We piggy-back
+ * on that channel by adding extra fields:
+ *
+ *   uploadConfig.guided     — true while the participant is inside a guided run
+ *   uploadConfig.flow       — array of step descriptors *remaining after this one*
+ *   uploadConfig.mediaMode  — "image" or "video"
  *
  * When a rate page finishes, it calls `nextGuidedNavigation(uploadConfig)`
  * to learn where to go next instead of routing to its own results page.
  */
 
-export const GUIDED_STEPS = [
-  { kind: "individual",  route: "/individual-rate", count: 10 },
-  { kind: "pairwise",    route: "/pairwise-rate",   count: 10 },
-  { kind: "ranked",      route: "/ranked-rate",     count: 10, rankMode: "swap" },
-  { kind: "group-grid",  route: "/group-grid-rate", pageCount: 2, layoutId: "3x3-no-center" },
-];
+import {
+  DEFAULT_STEPS,
+  DEFAULT_MEDIA_MODE,
+  normalizeSteps,
+} from "../services/modeConfig";
+
+function stripEnabled(step) {
+  const copy = { ...step };
+  delete copy.enabled;
+  return copy;
+}
+
+/** Default chain — used as a fallback when Supabase is unreachable. */
+export const GUIDED_STEPS = normalizeSteps(DEFAULT_STEPS, DEFAULT_MEDIA_MODE)
+  .filter((s) => s.enabled !== false)
+  .map(stripEnabled);
+
+function activeSteps(steps, mediaMode) {
+  const list = Array.isArray(steps)
+    ? normalizeSteps(steps, mediaMode)
+    : GUIDED_STEPS;
+  return list.filter((s) => s.enabled !== false).map(stripEnabled);
+}
 
 /** Initial uploadConfig used to enter the guided flow (the first step). */
-export function buildGuidedUploadConfig(username) {
-  const [first, ...rest] = GUIDED_STEPS;
+export function buildGuidedUploadConfig(username, steps, mediaMode = DEFAULT_MEDIA_MODE) {
+  const mode = mediaMode === "video" ? "video" : "image";
+  const chain = activeSteps(steps, mode);
+  if (chain.length === 0) return null;
+  const [first, ...rest] = chain;
   return {
     ...first,
     username,
     guided: true,
+    mediaMode: mode,
     flow: rest,
   };
 }
@@ -55,6 +77,7 @@ export function nextGuidedNavigation(currentUploadConfig) {
       ...next,
       username: currentUploadConfig.username,
       guided: true,
+      mediaMode: currentUploadConfig.mediaMode || DEFAULT_MEDIA_MODE,
       flow: rest,
     },
   };
