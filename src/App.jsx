@@ -19,7 +19,6 @@ import Home from "./Webpages/Home";
 import IndividualRate from "./Webpages/IndividualRate";
 import PairwiseRate from "./Webpages/PairwiseRate";
 import RankedRate from "./Webpages/RankedRate";
-import BestWorstRate from "./Webpages/BestWorstRate";
 import SelectionRate from "./Webpages/SelectionRate";
 import VideoPairwiseRate from "./Webpages/VideoPairwiseRate";
 import VideoIndividualRate from "./Webpages/VideoIndividualRate";
@@ -35,6 +34,7 @@ import ComboRatingFlow from "./Webpages/ComboRatingFlow";
 import ComboResultsPage from "./Webpages/ComboResultsPage";
 import PrivacySettings from "./Webpages/PrivacySettings";
 import ConsentModal from "./components/ConsentModal";
+import SpeedWarning from "./components/SpeedWarning";
 import SimulatedSession from "./Webpages/SimulatedSession";
 import SetPassword from "./Webpages/SetPassword";
 import GuidedSessionWelcome from "./Webpages/GuidedSessionWelcome";
@@ -62,6 +62,7 @@ function NavigationWrapper() {
   return (
     <Router>
       <ConsentModal open={!consentGiven} onAccept={acceptConsent} />
+      <SpeedWarning />
       <WebGazerAutoStop />
       <WebGazerVideoToggle />
       <FloatingVoiceRecorder onSave={(text, dur) => addTranscript(text, dur)} />
@@ -109,7 +110,6 @@ function NavigationWrapper() {
           <Route path="/video-group-grid-rate" element={<VideoGroupGridRate />} />
           <Route path="/selection-rate" element={<SelectionRate />} />
           <Route path="/ranked-rate" element={<RankedRate />} />
-          <Route path="/best-worst-rate" element={<BestWorstRate />} />
           <Route path="/combo-rate" element={<ComboRatingFlow />} />
 
           {/* Tools */}
@@ -133,7 +133,6 @@ const KEEP_WEBGAZER_ROUTES = [
   '/individual-rate',
   '/pairwise-rate',
   '/ranked-rate',
-  '/best-worst-rate',
   '/selection-rate',
   '/rate',
   '/combo-rate',

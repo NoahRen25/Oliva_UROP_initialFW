@@ -240,7 +240,10 @@ function RankedRateInner() {
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
 
-  const { addRankedSession, setActivePrompt, setCurrentRatingPage } = useResults();
+  const {
+    addRankedSession, setActivePrompt, setCurrentRatingPage,
+    checkEngagement, resetEngagement,
+  } = useResults();
   const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
 
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
@@ -251,6 +254,8 @@ function RankedRateInner() {
   const [currentRanks, setCurrentRanks] = useState({ img0: "", img1: "", img2: "" });
   const [allRankings, setAllRankings] = useState([]);
   const [isFinished, setIsFinished] = useState(false);
+  const [groupTimes, setGroupTimes] = useState([]);
+  const groupStartTimeRef = useRef(0);
 
   // Swap mode: order[i] = index into images array
   const [swapOrder, setSwapOrder] = useState([0, 1, 2]);
@@ -264,7 +269,14 @@ function RankedRateInner() {
     const batch = getRankedBatch(groupCount);
     setRankGroups(batch);
     preloadImages(batch.flatMap((g) => g.images.map((img) => img.src)));
+    resetEngagement();
   }, []);
+
+  useEffect(() => {
+    if (step === 2 && !isFinished) {
+      groupStartTimeRef.current = performance.now();
+    }
+  }, [step, currentGroupIndex, isFinished]);
 
   useEffect(() => {
     return () => {
@@ -344,6 +356,14 @@ function RankedRateInner() {
       }));
     }
 
+    const elapsed = groupStartTimeRef.current
+      ? (performance.now() - groupStartTimeRef.current) / 1000
+      : 0;
+    const newTimes = [...groupTimes, Number(elapsed.toFixed(2))];
+    const isSafe = checkEngagement(newTimes, 3);
+    if (!isSafe) return;
+    setGroupTimes(newTimes);
+
     const updated = [...allRankings, ...groupResults];
 
     if (currentGroupIndex < rankGroups.length - 1) {
@@ -354,7 +374,11 @@ function RankedRateInner() {
       setIsFinished(true);
       window.speechSynthesis.cancel();
       const { transcripts: pageTranscripts, audioUrls: pageAudioUrls } = collectPageTranscripts();
-      addRankedSession(username, updated, { pageTranscripts, pageAudioUrls });
+      addRankedSession(username, updated, {
+        pageTranscripts,
+        pageAudioUrls,
+        groupTimes: newTimes,
+      });
       saveGazeSession(Date.now().toString(), "ranked", username, getGazeData());
       if (uploadConfig?.guided) {
         const next = nextGuidedNavigation(uploadConfig);
@@ -399,6 +423,7 @@ function RankedRateInner() {
     }
 
     setAllRankings(remaining);
+    setGroupTimes((prev) => (prev.length === 0 ? prev : prev.slice(0, -1)));
     setCurrentGroupIndex((i) => Math.max(0, i - 1));
     setError("");
   };
@@ -470,7 +495,12 @@ function RankedRateInner() {
           )}
 
           <Box sx={{ maxWidth: 400, mx: "auto", mt: 4, pb: 5 }}>
-            <Button variant="contained" size="large" fullWidth onClick={handleNextGroup}>
+            <Button
+              variant="contained"
+              size="large"
+              fullWidth
+              onClick={handleNextGroup}
+            >
               {currentGroupIndex === rankGroups.length - 1
                 ? "Submit All Rankings"
                 : "Next Group"}

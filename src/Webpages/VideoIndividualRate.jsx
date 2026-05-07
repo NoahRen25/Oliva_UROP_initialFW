@@ -28,6 +28,7 @@ function VideoIndividualRateInner() {
 
   const {
     addIndividualSession, setActivePrompt, setCurrentRatingPage,
+    checkEngagement, resetEngagement,
   } = useResults();
   const { startSession, getGazeData } = useGazeTracking();
 
@@ -97,7 +98,12 @@ function VideoIndividualRateInner() {
 
   const currentVideo = videosToRate[currentIndex] || null;
   const videoIdForCurrent = currentVideo ? `vi_${currentIndex}` : null;
-  const canProceed = videoIdForCurrent ? fleet.allEnded([videoIdForCurrent]) : false;
+  const idsForCurrent = videoIdForCurrent ? [videoIdForCurrent] : [];
+  const canProceed = videoIdForCurrent ? fleet.allWatched(idsForCurrent) : false;
+  const allEndedNow = videoIdForCurrent ? fleet.allEnded(idsForCurrent) : false;
+  const secsRemaining = videoIdForCurrent
+    ? Math.ceil(fleet.remainingRuntime(idsForCurrent))
+    : 0;
 
   const pageKey = activeStep === 2 && currentVideo ? `video-${currentIndex + 1}` : null;
   useGazePage(pageKey, "video-individual-1");
@@ -116,6 +122,10 @@ function VideoIndividualRateInner() {
     };
 
     const updatedScores = [...scores, newScore];
+    const times = updatedScores.map((s) => s.timeSpent);
+    const isSafe = checkEngagement(times, 1);
+    if (!isSafe) return;
+
     setScores(updatedScores);
     setCurrentRating(3);
 
@@ -197,7 +207,12 @@ function VideoIndividualRateInner() {
         <ModeInstructionScreen
           mode="video_individual"
           prompt={configPrompt || "Per-video prompts will be shown"}
-          onNext={() => { setActiveStep(2); startTimer(); startSession(); }}
+          onNext={() => {
+            setActiveStep(2);
+            startTimer();
+            startSession();
+            resetEngagement();
+          }}
         />
       )}
 
@@ -253,7 +268,9 @@ function VideoIndividualRateInner() {
                 }}
               >
                 {!canProceed
-                  ? "Watch the video to continue"
+                  ? allEndedNow && secsRemaining > 0
+                    ? `Please wait ${secsRemaining}s…`
+                    : "Watch the video to continue"
                   : currentIndex === videosToRate.length - 1
                   ? "Finish"
                   : "Next"}

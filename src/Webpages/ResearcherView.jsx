@@ -28,6 +28,7 @@ import AudioModal from "../components/AudioModal";
 import StatsModal from "../components/StatsModal";
 import ImageComparisonModal from "../components/ImageComparisonModal";
 import ImageActionMenu from "../components/ImageActionMenu";
+import VideoThumbnail from "../components/VideoThumbnail";
 import GazeAnalyticsSection from "./GazeAnalyticsSection";
 import SelectedImagesHeatmapModal from "../components/analytics/SelectedImagesHeatmapModal";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -435,36 +436,52 @@ function ResearcherImageCard({ imageData, mode, onViewAudio, onViewStats, onComp
 
       {imageData.src && !imgError ? (
         isVideo ? (
-          <Box sx={{ height: 140, bgcolor: "#000", position: "relative" }}>
-            <Box
-              component="video"
-              src={imageData.src}
-              preload="metadata"
-              muted
-              playsInline
-              onError={() => setImgError(true)}
-              sx={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
-            />
+          <Box
+            sx={{
+              height: 140,
+              bgcolor: "#f5f5f5",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              p: 1,
+            }}
+          >
             <Box
               sx={{
-                position: "absolute",
-                bottom: 4,
-                left: 4,
-                px: 0.75,
-                py: 0.25,
-                bgcolor: "rgba(0,0,0,0.65)",
-                color: "white",
-                borderRadius: 0.5,
-                fontSize: "0.65rem",
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                gap: 0.5,
-                pointerEvents: "none",
+                width: 120,
+                height: 120,
+                bgcolor: "#000",
+                position: "relative",
+                borderRadius: 1,
+                overflow: "hidden",
+                flexShrink: 0,
               }}
             >
-              <PlayCircleOutlineIcon sx={{ fontSize: 12 }} />
-              VIDEO
+              <VideoThumbnail
+                src={imageData.src}
+                onError={() => setImgError(true)}
+              />
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: 4,
+                  left: 4,
+                  px: 0.75,
+                  py: 0.25,
+                  bgcolor: "rgba(0,0,0,0.65)",
+                  color: "white",
+                  borderRadius: 0.5,
+                  fontSize: "0.65rem",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  pointerEvents: "none",
+                }}
+              >
+                <PlayCircleOutlineIcon sx={{ fontSize: 12 }} />
+                VIDEO
+              </Box>
             </Box>
           </Box>
         ) : (
@@ -594,21 +611,18 @@ function ImageTableView({ imageStats, mode, onViewAudio, onViewStats }) {
                   {img.src ? (
                     rowIsVideo ? (
                       <Box
-                        component="video"
-                        src={img.src}
-                        preload="metadata"
-                        muted
-                        playsInline
                         sx={{
                           width: 44,
                           height: 44,
-                          objectFit: "cover",
                           borderRadius: 1,
+                          overflow: "hidden",
                           bgcolor: "#000",
                           border: "1px solid #e0e0e0",
                           flexShrink: 0,
                         }}
-                      />
+                      >
+                        <VideoThumbnail src={img.src} />
+                      </Box>
                     ) : (
                       <Box
                         component="img"

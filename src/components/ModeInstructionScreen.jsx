@@ -9,9 +9,7 @@ const INSTRUCTIONS = {
     title: "Individual Rating",
     body: `You will see images one at a time. For each image, a prompt describing the intended scene is shown above.
 
-Rate each image on a scale of 1–5 based on how well it matches the prompt and its overall quality.
-
-Use the READ PROMPT button in the top bar at any time to hear the current prompt read aloud.`,
+Rate each image on a scale of 1–5 based on how well it matches the prompt and its overall quality.`,
   },
   pairwise: {
     title: "Pairwise Comparison",
@@ -19,7 +17,7 @@ Use the READ PROMPT button in the top bar at any time to hear the current prompt
 
 Your task is to select which image better represents the prompt. Click on the image you prefer – the chosen image gets a blue border.
 
-The prompt is displayed above each pair. Use the READ PROMPT button in the top bar to hear it read aloud.`,
+The prompt is displayed above each pair.`,
   },
   video_pairwise: {
     title: "Video Pairwise Comparison",

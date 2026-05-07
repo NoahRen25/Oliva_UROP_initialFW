@@ -10,7 +10,6 @@ import ProgressBar from "../components/ProgressBar";
 import ModeInstructionScreen from "../components/ModeInstructionScreen";
 import PromptDisplay from "../components/PromptDisplay";
 import { getIndividualBatch } from "../utils/ImageLoader";
-import SpeedWarning from "../components/SpeedWarning";
 import { preloadImages } from "../utils/preloadImages";
 import collectPageTranscripts from "../utils/collectPageTranscripts";
 import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
@@ -27,7 +26,7 @@ function IndividualRateInner() {
   const uploadConfig = location.state?.uploadConfig || null;
 
   const {
-    addIndividualSession, checkEngagement, setShowSpeedWarning,
+    addIndividualSession, checkEngagement,
     resetEngagement, setActivePrompt, setCurrentRatingPage,
   } = useResults();
   const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
@@ -42,7 +41,6 @@ function IndividualRateInner() {
   const [scores, setScores] = useState([]);
   const [startTime, setStartTime] = useState(null);
   const [interactionCount, setInteractionCount] = useState(0);
-  const [isLocked, setIsLocked] = useState(false);
 
   const imageCount = uploadConfig?.count || 10;
   const configPrompt = uploadConfig?.prompt || null;
@@ -84,8 +82,6 @@ function IndividualRateInner() {
   }, [activeStep, currentImageIndex, imagesToRate, configPrompt, setActivePrompt, setCurrentRatingPage]);
 
   const handleNext = () => {
-    if (isLocked) return;
-
     const timeSpent = (performance.now() - startTime) / 1000;
     const img = imagesToRate[currentImageIndex];
 
@@ -99,18 +95,13 @@ function IndividualRateInner() {
     };
 
     const updatedScores = [...scores, newScore];
+    const currentTimes = updatedScores.map((s) => s.timeSpent);
+    const isSafeToProceed = checkEngagement(currentTimes);
+
+    if (!isSafeToProceed) return;
+
     setScores(updatedScores);
     setCurrentRating(3);
-
-    const stepIndex = currentImageIndex + 1;
-    const currentTimes = updatedScores.map((s) => s.timeSpent);
-    const isSafeToProceed = checkEngagement(currentTimes, stepIndex);
-
-    if (!isSafeToProceed) {
-      setIsLocked(true);
-      setTimeout(() => { setIsLocked(false); setShowSpeedWarning(false); }, 2000);
-      return;
-    }
 
     if (currentImageIndex < imagesToRate.length - 1) {
       setCurrentImageIndex(currentImageIndex + 1);
@@ -189,7 +180,6 @@ function IndividualRateInner() {
               Back
             </Button>
           )}
-          <SpeedWarning />
           <ProgressBar
             current={progressValue}
             total={totalImages}
@@ -221,20 +211,9 @@ function IndividualRateInner() {
               <Button
                 variant="contained"
                 fullWidth
-                disabled={isLocked}
                 onClick={handleNext}
-                sx={{
-                  "&.Mui-disabled": {
-                    backgroundColor: "rgba(0,0,0,0.12)",
-                    color: "rgba(0,0,0,0.26)",
-                  },
-                }}
               >
-                {isLocked
-                  ? "Please Slow Down..."
-                  : currentImageIndex === imagesToRate.length - 1
-                  ? "Finish"
-                  : "Next"}
+                {currentImageIndex === imagesToRate.length - 1 ? "Finish" : "Next"}
               </Button>
             </CardContent>
           </Card>

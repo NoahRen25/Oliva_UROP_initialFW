@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Container, Paper, Typography, Button } from "@mui/material";
 import { useResults } from "../Results";
@@ -31,7 +31,11 @@ function GroupGridRateInner() {
   const uploadConfig = location.state?.uploadConfig || null;
   const guided = !!uploadConfig?.guided;
 
-  const { addFixedSession } = useResults();
+  const {
+    addFixedSession,
+    checkEngagement,
+    resetEngagement,
+  } = useResults();
   const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
 
   const layoutId = uploadConfig?.layoutId || "3x3-no-center";
@@ -47,6 +51,8 @@ function GroupGridRateInner() {
   const [currentPage, setCurrentPage] = useState(0);
   const [ratings, setRatings] = useState({});
   const [moves, setMoves] = useState({});
+  const [pageTimes, setPageTimes] = useState([]);
+  const pageStartTimeRef = useRef(0);
 
   useEffect(() => {
     const batch = getIndividualBatch(totalImages);
@@ -80,10 +86,28 @@ function GroupGridRateInner() {
     for (const img of pageImages) tagImageOnPage(img.id, img.filename || img.alt);
   }, [step, pageImages, tagImageOnPage]);
 
+  useEffect(() => {
+    if (step === 2) {
+      pageStartTimeRef.current = performance.now();
+    }
+  }, [step, currentPage]);
+
+  useEffect(() => {
+    if (step === 2) resetEngagement();
+  }, [step, resetEngagement]);
+
   const handleInteraction = (id) =>
     setMoves((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
 
   const handleNext = () => {
+    const elapsed = pageStartTimeRef.current
+      ? (performance.now() - pageStartTimeRef.current) / 1000
+      : 0;
+    const newTimes = [...pageTimes, Number(elapsed.toFixed(2))];
+    const isSafe = checkEngagement(newTimes, pageSize);
+    if (!isSafe) return;
+    setPageTimes(newTimes);
+
     if (currentPage < pageCount - 1) {
       setCurrentPage((p) => p + 1);
       window.scrollTo(0, 0);

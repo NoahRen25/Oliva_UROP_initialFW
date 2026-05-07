@@ -101,7 +101,6 @@ export default function DashboardExport({ allSessions }) {
       { key: "fixedSessions", mode: "fixed" },
       { key: "pairwiseSessions", mode: "pairwise" },
       { key: "rankedSessions", mode: "ranked" },
-      { key: "bestWorstSessions", mode: "bestWorst" },
       { key: "selectionSessions", mode: "selection" },
     ];
 
@@ -146,7 +145,6 @@ export default function DashboardExport({ allSessions }) {
     { key: "fixedSessions", label: "Fixed", mode: "fixed" },
     { key: "pairwiseSessions", label: "Pairwise", mode: "pairwise" },
     { key: "rankedSessions", label: "Ranked", mode: "ranked" },
-    { key: "bestWorstSessions", label: "Best-Worst", mode: "bestWorst" },
     { key: "selectionSessions", label: "Selection", mode: "selection" },
   ];
 

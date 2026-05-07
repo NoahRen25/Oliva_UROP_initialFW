@@ -85,24 +85,6 @@ export async function insertRankedResults(sessionId, rankings) {
   if (error) console.error("insertRankedResults:", error.message);
 }
 
-// ─── Best-Worst Trials ─────────────────────────────────────────
-
-export async function insertBestWorstTrials(sessionId, trials) {
-  if (!trials?.length) return;
-  const rows = trials.map((t, i) => ({
-    session_id: sessionId,
-    trial_index: t.trialIndex ?? i,
-    best_name: t.bestName,
-    worst_name: t.worstName,
-    best_src: t.bestSrc,
-    worst_src: t.worstSrc,
-    options: t.options || [],
-    reaction_time: t.reactionTime,
-  }));
-  const { error } = await supabase.from("best_worst_trials").insert(rows);
-  if (error) console.error("insertBestWorstTrials:", error.message);
-}
-
 // ─── Transcripts ────────────────────────────────────────────────
 
 export async function insertTranscript(entry) {
@@ -220,18 +202,6 @@ function shapeRanking(raw) {
   };
 }
 
-function shapeBestWorst(raw) {
-  return {
-    trialIndex: raw.trial_index,
-    bestName: raw.best_name,
-    worstName: raw.worst_name,
-    bestSrc: raw.best_src,
-    worstSrc: raw.worst_src,
-    options: raw.options,
-    reactionTime: raw.reaction_time,
-  };
-}
-
 export async function fetchSessionsWithScores(type) {
   const { data: sessions, error } = await supabase
     .from("sessions")
@@ -327,33 +297,3 @@ export async function fetchSessionsWithRankings() {
   }));
 }
 
-export async function fetchSessionsWithBestWorst() {
-  const { data: sessions, error } = await supabase
-    .from("sessions")
-    .select("*")
-    .eq("type", "best_worst")
-    .order("timestamp", { ascending: true });
-  if (error || !sessions?.length) return [];
-
-  const ids = sessions.map((s) => s.id);
-  const { data: trials } = await supabase
-    .from("best_worst_trials")
-    .select("*")
-    .in("session_id", ids);
-
-  const trialMap = {};
-  (trials || []).forEach((t) => {
-    if (!trialMap[t.session_id]) trialMap[t.session_id] = [];
-    trialMap[t.session_id].push(shapeBestWorst(t));
-  });
-
-  return sessions.map((s) => ({
-    id: s.id,
-    username: s.username,
-    timestamp: s.timestamp,
-    meta: s.meta,
-    pageTranscripts: s.meta?.pageTranscripts || {},
-    pageAudioUrls: s.meta?.pageAudioUrls || {},
-    trials: trialMap[s.id] || [],
-  }));
-}

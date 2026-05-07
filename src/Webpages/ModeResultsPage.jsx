@@ -6,7 +6,6 @@ import IndividualResult from "./IndividualResult";
 import PairwiseResult from "./PairwiseResult";
 import VideoPairwiseResult from "./VideoPairwiseResult";
 import RankedResult from "./RankedResult";
-import BestWorstResult from "./BestWorstResult";
 import SelectionResult from "./SelectionResult";
 
 const MODES = [
@@ -14,7 +13,6 @@ const MODES = [
   { id: "pairwise",       label: "Pairwise" },
   { id: "video-pairwise", label: "Video Pairwise" },
   { id: "ranked",     label: "Ranked" },
-  { id: "best-worst", label: "Best-Worst" },
   { id: "selection",  label: "Selection" },
 ];
 
@@ -27,7 +25,6 @@ export default function ModeResultsPage() {
       case "pairwise":       return <PairwiseResult />;
       case "video-pairwise": return <VideoPairwiseResult />;
       case "ranked":     return <RankedResult />;
-      case "best-worst": return <BestWorstResult />;
       case "selection":  return <SelectionResult />;
       default:           return <IndividualResult />;
     }

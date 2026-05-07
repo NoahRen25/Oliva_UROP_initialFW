@@ -176,7 +176,10 @@ function VideoRankedRateInner() {
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
 
-  const { addRankedSession, setActivePrompt, setCurrentRatingPage } = useResults();
+  const {
+    addRankedSession, setActivePrompt, setCurrentRatingPage,
+    checkEngagement, resetEngagement,
+  } = useResults();
   const { startSession, getGazeData } = useGazeTracking();
 
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
@@ -188,6 +191,8 @@ function VideoRankedRateInner() {
   const [allRankings, setAllRankings] = useState([]);
   const [isFinished, setIsFinished] = useState(false);
   const [swapOrder, setSwapOrder] = useState([0, 1, 2]);
+  const [groupTimes, setGroupTimes] = useState([]);
+  const groupStartTimeRef = useRef(0);
   const fleet = useVideoFleet();
   const fleetReset = fleet.reset;
 
@@ -242,6 +247,12 @@ function VideoRankedRateInner() {
     fleetReset();
   }, [currentGroupIndex, groups, fleetReset]);
 
+  useEffect(() => {
+    if (step === 2 && !isFinished) {
+      groupStartTimeRef.current = performance.now();
+    }
+  }, [step, currentGroupIndex, isFinished]);
+
   useGazePage(
     step === 2 && groups.length > 0 && !isFinished
       ? `group-${currentGroupIndex + 1}`
@@ -252,11 +263,20 @@ function VideoRankedRateInner() {
   useAutoVoiceRecording(step === 2 && !isFinished);
 
   const activeGroup = groups[currentGroupIndex];
-  const allWatched = activeGroup
-    ? fleet.allEnded(activeGroup.images.map((v) => v.id))
-    : false;
+  const groupIds = activeGroup ? activeGroup.images.map((v) => v.id) : [];
+  const allWatched = activeGroup ? fleet.allWatched(groupIds) : false;
+  const allEndedNow = activeGroup ? fleet.allEnded(groupIds) : false;
+  const secsRemaining = activeGroup ? Math.ceil(fleet.remainingRuntime(groupIds)) : 0;
 
   const handleNext = () => {
+    const elapsed = groupStartTimeRef.current
+      ? (performance.now() - groupStartTimeRef.current) / 1000
+      : 0;
+    const newTimes = [...groupTimes, Number(elapsed.toFixed(2))];
+    const isSafe = checkEngagement(newTimes, 3);
+    if (!isSafe) return;
+    setGroupTimes(newTimes);
+
     const ranks = swapOrder.map((idx, slot) => ({
       groupId: currentGroupIndex + 1,
       groupPrompt: configPrompt || activeGroup.prompt,
@@ -338,7 +358,7 @@ function VideoRankedRateInner() {
         <ModeInstructionScreen
           mode="video_ranked"
           prompt={configPrompt || "Per-group prompts will be shown"}
-          onNext={() => { setStep(2); startSession(); }}
+          onNext={() => { setStep(2); startSession(); resetEngagement(); }}
         />
       )}
 
@@ -382,7 +402,9 @@ function VideoRankedRateInner() {
               onClick={handleNext}
             >
               {!allWatched
-                ? "Watch every video to continue"
+                ? allEndedNow && secsRemaining > 0
+                  ? `Please wait ${secsRemaining}s…`
+                  : "Watch every video to continue"
                 : currentGroupIndex === groups.length - 1
                 ? "Submit All Rankings"
                 : "Next Group"}

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Container, Paper, Typography, Button, Box, Slider, Card, CardContent,
@@ -27,7 +27,10 @@ function VideoGroupGridRateInner() {
   const uploadConfig = location.state?.uploadConfig || null;
   const guided = !!uploadConfig?.guided;
 
-  const { addFixedSession, setCurrentRatingPage } = useResults();
+  const {
+    addFixedSession, setCurrentRatingPage,
+    checkEngagement, resetEngagement,
+  } = useResults();
   const { startSession, getGazeData } = useGazeTracking();
   const fleet = useVideoFleet();
   const fleetReset = fleet.reset;
@@ -46,6 +49,8 @@ function VideoGroupGridRateInner() {
   const [currentPage, setCurrentPage] = useState(0);
   const [ratings, setRatings] = useState({});
   const [moves, setMoves] = useState({});
+  const [pageTimes, setPageTimes] = useState([]);
+  const pageStartTimeRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,14 +97,31 @@ function VideoGroupGridRateInner() {
     fleetReset();
   }, [currentPage, fleetReset]);
 
+  useEffect(() => {
+    if (step === 2) {
+      pageStartTimeRef.current = performance.now();
+    }
+  }, [step, currentPage]);
+
   const handleSliderChange = (id, value) =>
     setRatings((prev) => ({ ...prev, [id]: value }));
   const handleSliderCommit = (id) =>
     setMoves((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
 
-  const allWatched = pageVideos.length > 0 && fleet.allEnded(pageVideos.map((v) => v.id));
+  const pageIds = pageVideos.map((v) => v.id);
+  const allWatched = pageVideos.length > 0 && fleet.allWatched(pageIds);
+  const allEndedNow = pageVideos.length > 0 && fleet.allEnded(pageIds);
+  const secsRemaining = pageVideos.length > 0 ? Math.ceil(fleet.remainingRuntime(pageIds)) : 0;
 
   const handleNext = () => {
+    const elapsed = pageStartTimeRef.current
+      ? (performance.now() - pageStartTimeRef.current) / 1000
+      : 0;
+    const newTimes = [...pageTimes, Number(elapsed.toFixed(2))];
+    const isSafe = checkEngagement(newTimes, pageSize);
+    if (!isSafe) return;
+    setPageTimes(newTimes);
+
     if (currentPage < pageCount - 1) {
       setCurrentPage((p) => p + 1);
       window.scrollTo(0, 0);
@@ -170,7 +192,7 @@ function VideoGroupGridRateInner() {
         <ModeInstructionScreen
           mode="video_group"
           prompt={`Watch each video, then rate it on a 1–${10} scale. ${pageCount} pages of ${pageSize} videos each.`}
-          onNext={() => { setStep(2); startSession(); }}
+          onNext={() => { setStep(2); startSession(); resetEngagement(); }}
         />
       </Container>
     );
@@ -288,7 +310,9 @@ function VideoGroupGridRateInner() {
           onClick={handleNext}
         >
           {!allWatched
-            ? "Watch every video to continue"
+            ? allEndedNow && secsRemaining > 0
+              ? `Please wait ${secsRemaining}s…`
+              : "Watch every video to continue"
             : currentPage === pageCount - 1
             ? "Finish & View Results"
             : "Next Page"}

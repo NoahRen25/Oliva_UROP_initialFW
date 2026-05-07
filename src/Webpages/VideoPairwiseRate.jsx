@@ -88,10 +88,27 @@ export default function VideoPairwiseRate() {
     </Box>
   );
 
-  // Has the participant watched both halves of the *current* pair?
+  const idsForPair = (pairIndex) => {
+    if (pairIndex == null || !pairs[pairIndex]) return [];
+    return [`pair${pairs[pairIndex].id}_left`, `pair${pairs[pairIndex].id}_right`];
+  };
+
+  // Has the participant watched both halves of the *current* pair, AND
+  // spent at least the sum of both video durations on the page?
   const currentPairBothEnded = (pairIndex) => {
-    if (pairIndex == null || !pairs[pairIndex]) return false;
-    return fleet.allEnded([`pair${pairs[pairIndex].id}_left`, `pair${pairs[pairIndex].id}_right`]);
+    const ids = idsForPair(pairIndex);
+    if (ids.length === 0) return false;
+    return fleet.allWatched(ids);
+  };
+
+  const labelForBlockedPair = (pairIndex) => {
+    const ids = idsForPair(pairIndex);
+    if (ids.length === 0) return null;
+    if (fleet.allEnded(ids)) {
+      const remaining = Math.ceil(fleet.remainingRuntime(ids));
+      if (remaining > 0) return `Please wait ${remaining}s…`;
+    }
+    return "Watch both videos to continue";
   };
 
   return (
@@ -103,6 +120,7 @@ export default function VideoPairwiseRate() {
       title="Video Pairwise Rating"
       headerContent={headerContent}
       canProceedFor={currentPairBothEnded}
+      disabledLabelFor={labelForBlockedPair}
       onPairChange={() => fleet.reset()}
     />
   );

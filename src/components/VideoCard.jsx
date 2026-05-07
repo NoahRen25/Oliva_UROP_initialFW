@@ -50,6 +50,12 @@ export default function VideoCard({
     if (coordinator && videoId) coordinator.handleEnded(videoId);
   };
 
+  const handleLoadedMetadata = (e) => {
+    if (coordinator && videoId && coordinator.setDuration) {
+      coordinator.setDuration(videoId, e.target.duration || 0);
+    }
+  };
+
   const borderStyle = !showBorder
     ? "none"
     : selected
@@ -88,6 +94,7 @@ export default function VideoCard({
           }}
           onPlay={handlePlay}
           onEnded={handleEnded}
+          onLoadedMetadata={handleLoadedMetadata}
         >
           <source src={src} type="video/mp4" />
           Your browser does not support the video tag.

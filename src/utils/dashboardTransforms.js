@@ -24,7 +24,6 @@ function countRatings(session) {
   if (session.scores) return session.scores.length;
   if (session.choices) return session.choices.length;
   if (session.rankings) return session.rankings.length;
-  if (session.trials) return session.trials.length;
   if (session.selections) return session.selections.length;
   return 0;
 }
@@ -39,7 +38,6 @@ export function computeOverviewMetrics({
   fixedSessions = [],
   pairwiseSessions = [],
   rankedSessions = [],
-  bestWorstSessions = [],
   selectionSessions = [],
 }) {
   const byMode = {
@@ -48,7 +46,6 @@ export function computeOverviewMetrics({
     fixed: fixedSessions.length,
     pairwise: pairwiseSessions.length,
     ranked: rankedSessions.length,
-    bestWorst: bestWorstSessions.length,
     selection: selectionSessions.length,
   };
 
@@ -60,7 +57,6 @@ export function computeOverviewMetrics({
     ...fixedSessions,
     ...pairwiseSessions,
     ...rankedSessions,
-    ...bestWorstSessions,
     ...selectionSessions,
   ];
 
@@ -94,7 +90,6 @@ export function buildSessionTimeline({
   fixedSessions = [],
   pairwiseSessions = [],
   rankedSessions = [],
-  bestWorstSessions = [],
   selectionSessions = [],
 }) {
   const modeMap = {
@@ -103,7 +98,6 @@ export function buildSessionTimeline({
     fixed: fixedSessions,
     pairwise: pairwiseSessions,
     ranked: rankedSessions,
-    bestWorst: bestWorstSessions,
     selection: selectionSessions,
   };
 
@@ -122,7 +116,7 @@ export function buildSessionTimeline({
   const dateMap = {};
   for (const { date, mode } of entries) {
     if (!dateMap[date]) {
-      dateMap[date] = { date, individual: 0, group: 0, fixed: 0, pairwise: 0, ranked: 0, bestWorst: 0, selection: 0, total: 0 };
+      dateMap[date] = { date, individual: 0, group: 0, fixed: 0, pairwise: 0, ranked: 0, selection: 0, total: 0 };
     }
     dateMap[date][mode]++;
     dateMap[date].total++;
@@ -140,7 +134,7 @@ export function buildSessionTimeline({
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const key = toDateKey(d);
     filled.push(
-      dateMap[key] || { date: key, individual: 0, group: 0, fixed: 0, pairwise: 0, ranked: 0, bestWorst: 0, selection: 0, total: 0 }
+      dateMap[key] || { date: key, individual: 0, group: 0, fixed: 0, pairwise: 0, ranked: 0, selection: 0, total: 0 }
     );
   }
 
@@ -157,7 +151,6 @@ export function buildModeBreakdown({
   fixedSessions = [],
   pairwiseSessions = [],
   rankedSessions = [],
-  bestWorstSessions = [],
   selectionSessions = [],
 }) {
   const modes = [
@@ -166,7 +159,6 @@ export function buildModeBreakdown({
     { key: "fixed", label: "Fixed", sessions: fixedSessions, hasScores: true },
     { key: "pairwise", label: "Pairwise", sessions: pairwiseSessions, hasScores: false },
     { key: "ranked", label: "Ranked", sessions: rankedSessions, hasScores: false },
-    { key: "bestWorst", label: "Best-Worst", sessions: bestWorstSessions, hasScores: false },
     { key: "selection", label: "Selection", sessions: selectionSessions, hasScores: false },
   ];
 

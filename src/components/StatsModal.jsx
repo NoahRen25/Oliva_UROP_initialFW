@@ -11,6 +11,10 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TimerIcon from "@mui/icons-material/Timer";
 import TouchAppIcon from "@mui/icons-material/TouchApp";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import VideoThumbnail from "./VideoThumbnail";
+
+const VIDEO_EXT_RE = /\.(mp4|webm|mov|ogg)$/i;
+const isVideoSrc = (s) => typeof s === "string" && VIDEO_EXT_RE.test(s);
 
 /**
  * StatsModal — Shows aggregated statistics for a specific image.
@@ -201,6 +205,21 @@ export default function StatsModal({ open, onClose, imageName, imageSrc, stats, 
         {/* Image preview + memorability */}
         <Box sx={{ display: "flex", gap: 3, mb: 3 }}>
           {imageSrc ? (
+            isVideoSrc(imageSrc) || isVideoSrc(imageName) ? (
+              <Box
+                sx={{
+                  width: 160,
+                  height: 120,
+                  borderRadius: 2,
+                  bgcolor: "#000",
+                  border: "1px solid #e0e0e0",
+                  overflow: "hidden",
+                  flexShrink: 0,
+                }}
+              >
+                <VideoThumbnail src={imageSrc} objectFit="contain" />
+              </Box>
+            ) : (
             <Box
               component="img"
               src={imageSrc}
@@ -216,6 +235,7 @@ export default function StatsModal({ open, onClose, imageName, imageSrc, stats, 
                 flexShrink: 0,
               }}
             />
+            )
           ) : (
             <Box
               sx={{
@@ -447,6 +467,21 @@ export default function StatsModal({ open, onClose, imageName, imageSrc, stats, 
                         <TableCell>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                             {opponentSrc ? (
+                              isVideoSrc(opponentSrc) || isVideoSrc(opponentName) ? (
+                                <Box
+                                  sx={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: 1,
+                                    bgcolor: "#000",
+                                    border: "1px solid #e0e0e0",
+                                    overflow: "hidden",
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  <VideoThumbnail src={opponentSrc} />
+                                </Box>
+                              ) : (
                               <Box
                                 component="img"
                                 src={opponentSrc}
@@ -462,6 +497,7 @@ export default function StatsModal({ open, onClose, imageName, imageSrc, stats, 
                                   flexShrink: 0,
                                 }}
                               />
+                              )
                             ) : (
                               <Box
                                 sx={{

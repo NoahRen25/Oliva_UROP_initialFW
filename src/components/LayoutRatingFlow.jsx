@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Container, Box, CircularProgress } from "@mui/material";
 import { useResults } from "../Results";
@@ -15,7 +15,10 @@ export default function LayoutRatingFlow({ mode = "upload" }) {
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
 
-  const { addGroupSessionForLayout, setTaskPrompt, setActivePrompt, setCurrentRatingPage } = useResults();
+  const {
+    addGroupSessionForLayout, setTaskPrompt, setActivePrompt, setCurrentRatingPage,
+    checkEngagement, resetEngagement,
+  } = useResults();
   const { ready, sampleInRange } = useMemImages();
   const grid = useGridRating();
 
@@ -26,6 +29,18 @@ export default function LayoutRatingFlow({ mode = "upload" }) {
   const [username, setUsername] = useState(uploadConfig?.username || "");
   const [images, setImages] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
+  const [pageTimes, setPageTimes] = useState([]);
+  const pageStartTimeRef = useRef(0);
+
+  useEffect(() => {
+    if (step === 2) {
+      pageStartTimeRef.current = performance.now();
+    }
+  }, [step, currentPage]);
+
+  useEffect(() => {
+    if (step === 2) resetEngagement();
+  }, [step, resetEngagement]);
 
   const imageCount = uploadConfig?.count || gridConfig.pageSize;
   const minScore = uploadConfig?.minScore || 0;
@@ -58,6 +73,14 @@ export default function LayoutRatingFlow({ mode = "upload" }) {
   const isLastPage = currentPage === totalPages - 1;
 
   const handleNext = () => {
+    const elapsed = pageStartTimeRef.current
+      ? (performance.now() - pageStartTimeRef.current) / 1000
+      : 0;
+    const newTimes = [...pageTimes, Number(elapsed.toFixed(2))];
+    const isSafe = checkEngagement(newTimes, currentImages.length || gridConfig.pageSize);
+    if (!isSafe) return;
+    setPageTimes(newTimes);
+
     if (isLastPage) {
       const scores = images.map((img, index) => {
         const pageIndex = Math.floor(index / gridConfig.pageSize);
