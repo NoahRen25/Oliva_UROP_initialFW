@@ -16,6 +16,7 @@ import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../component
 import GazeTrackedImage from "../components/GazeTrackedImage";
 import { nextGuidedNavigation } from "../utils/guidedFlow";
 import CalibrationGate from "../components/CalibrationGate";
+import GuidedProgress from "../components/GuidedProgress";
 import { saveGazeSession } from "../utils/gazeStorage";
 import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
 
@@ -239,10 +240,13 @@ function IndividualRateInner() {
 
 export default function IndividualRate() {
   return (
-    <CalibrationGate>
-      <GazeTrackingProvider>
-        <IndividualRateInner />
-      </GazeTrackingProvider>
-    </CalibrationGate>
+    <>
+      <GuidedProgress />
+      <CalibrationGate>
+        <GazeTrackingProvider>
+          <IndividualRateInner />
+        </GazeTrackingProvider>
+      </CalibrationGate>
+    </>
   );
 }

@@ -13,6 +13,7 @@ import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../component
 import GazeTrackedImage from "../components/GazeTrackedImage";
 import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
 import CalibrationGate from "../components/CalibrationGate";
+import GuidedProgress from "../components/GuidedProgress";
 import { saveGazeSession } from "../utils/gazeStorage";
 
 
@@ -220,10 +221,13 @@ function SelectionRateInner() {
 
 export default function SelectionRate() {
   return (
-    <CalibrationGate>
-      <GazeTrackingProvider>
-        <SelectionRateInner />
-      </GazeTrackingProvider>
-    </CalibrationGate>
+    <>
+      <GuidedProgress />
+      <CalibrationGate>
+        <GazeTrackingProvider>
+          <SelectionRateInner />
+        </GazeTrackingProvider>
+      </CalibrationGate>
+    </>
   );
 }

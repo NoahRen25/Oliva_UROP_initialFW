@@ -15,6 +15,7 @@ import GazeTrackingProvider, {
   useGazeTracking, useGazePage,
 } from "../components/GazeTrackingProvider";
 import CalibrationGate from "../components/CalibrationGate";
+import GuidedProgress from "../components/GuidedProgress";
 import { saveGazeSession } from "../utils/gazeStorage";
 import UsernameEntry from "../components/UsernameEntry";
 import ModeInstructionScreen from "../components/ModeInstructionScreen";
@@ -324,10 +325,13 @@ function VideoGroupGridRateInner() {
 
 export default function VideoGroupGridRate() {
   return (
-    <CalibrationGate>
-      <GazeTrackingProvider>
-        <VideoGroupGridRateInner />
-      </GazeTrackingProvider>
-    </CalibrationGate>
+    <>
+      <GuidedProgress />
+      <CalibrationGate>
+        <GazeTrackingProvider>
+          <VideoGroupGridRateInner />
+        </GazeTrackingProvider>
+      </CalibrationGate>
+    </>
   );
 }

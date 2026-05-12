@@ -15,6 +15,10 @@
  *   uploadConfig.guided     — true while the participant is inside a guided run
  *   uploadConfig.flow       — array of step descriptors *remaining after this one*
  *   uploadConfig.mediaMode  — "image" or "video"
+ *   uploadConfig.totalSteps — total guided step count (used by GuidedProgress)
+ *
+ * Step descriptors may set `validateBefore: true` to insert a brief
+ * gaze-accuracy check (CalibrationCheck) before the step.
  *
  * When a rate page finishes, it calls `nextGuidedNavigation(uploadConfig)`
  * to learn where to go next instead of routing to its own results page.
@@ -37,6 +41,9 @@ export const GUIDED_STEPS = normalizeSteps(DEFAULT_STEPS, DEFAULT_MEDIA_MODE)
   .filter((s) => s.enabled !== false)
   .map(stripEnabled);
 
+/** Alias retained for compatibility with components importing the main-branch name. */
+export const DEFAULT_GUIDED_STEPS = GUIDED_STEPS;
+
 function activeSteps(steps, mediaMode) {
   const list = Array.isArray(steps)
     ? normalizeSteps(steps, mediaMode)
@@ -56,6 +63,7 @@ export function buildGuidedUploadConfig(username, steps, mediaMode = DEFAULT_MED
     guided: true,
     mediaMode: mode,
     flow: rest,
+    totalSteps: chain.length,
   };
 }
 
@@ -63,6 +71,10 @@ export function buildGuidedUploadConfig(username, steps, mediaMode = DEFAULT_MED
  * Compute where to go after a guided step finishes. Returns
  *   { route, uploadConfig }
  * where uploadConfig is null when the chain is done.
+ *
+ * If the next step has `validateBefore: true`, the navigation is
+ * detoured through `/calibration-check` first; the upload config still
+ * carries the next step so the check screen can advance afterwards.
  */
 export function nextGuidedNavigation(currentUploadConfig) {
   if (!currentUploadConfig?.guided) return null;
@@ -71,14 +83,21 @@ export function nextGuidedNavigation(currentUploadConfig) {
     return { route: "/thank-you", uploadConfig: null };
   }
   const [next, ...rest] = flow;
-  return {
-    route: next.route,
-    uploadConfig: {
-      ...next,
-      username: currentUploadConfig.username,
-      guided: true,
-      mediaMode: currentUploadConfig.mediaMode || DEFAULT_MEDIA_MODE,
-      flow: rest,
-    },
+  const nextUploadConfig = {
+    ...next,
+    username: currentUploadConfig.username,
+    guided: true,
+    mediaMode: currentUploadConfig.mediaMode || DEFAULT_MEDIA_MODE,
+    flow: rest,
+    totalSteps: currentUploadConfig.totalSteps ?? GUIDED_STEPS.length,
   };
+  if (next.validateBefore) {
+    return { route: "/calibration-check", uploadConfig: nextUploadConfig };
+  }
+  return { route: next.route, uploadConfig: nextUploadConfig };
+}
+
+/** Total step count for progress indicators. */
+export function totalGuidedSteps(steps = GUIDED_STEPS) {
+  return steps.length;
 }

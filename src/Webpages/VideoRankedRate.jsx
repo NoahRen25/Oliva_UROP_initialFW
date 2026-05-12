@@ -20,6 +20,7 @@ import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../component
 import { nextGuidedNavigation } from "../utils/guidedFlow";
 import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
 import CalibrationGate from "../components/CalibrationGate";
+import GuidedProgress from "../components/GuidedProgress";
 import { saveGazeSession } from "../utils/gazeStorage";
 
 const RANK_LABELS = ["1st (Best)", "2nd", "3rd"];
@@ -418,10 +419,13 @@ function VideoRankedRateInner() {
 
 export default function VideoRankedRate() {
   return (
-    <CalibrationGate>
-      <GazeTrackingProvider>
-        <VideoRankedRateInner />
-      </GazeTrackingProvider>
-    </CalibrationGate>
+    <>
+      <GuidedProgress />
+      <CalibrationGate>
+        <GazeTrackingProvider>
+          <VideoRankedRateInner />
+        </GazeTrackingProvider>
+      </CalibrationGate>
+    </>
   );
 }

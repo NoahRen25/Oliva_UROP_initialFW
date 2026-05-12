@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import {
   BrowserRouter as Router, Routes, Route, Link, useLocation,
 } from "react-router-dom";
@@ -13,6 +13,7 @@ import { AuthProvider } from "./utils/AuthContext";
 import LoginButton from "./components/LoginButton";
 import AdminMenu from "./components/AdminMenu";
 import VoiceRecorder from "./components/VoiceRecorder";
+import { VoiceRecorderProvider } from "./components/VoiceRecorderContext";
 import TranscriptHistory from "./Webpages/TranscriptHistory";
 import ResearcherView from "./Webpages/ResearcherView";
 import Home from "./Webpages/Home";
@@ -41,6 +42,7 @@ import GuidedSessionWelcome from "./Webpages/GuidedSessionWelcome";
 import GroupGridRate from "./Webpages/GroupGridRate";
 import ThankYouPage from "./Webpages/ThankYouPage";
 import AdminControlPanel from "./Webpages/AdminControlPanel";
+import CalibrationCheck from "./components/CalibrationCheck";
 
 const lightTheme = createTheme({
   palette: { mode: "light", background: { default: "#f5f5f5" } },
@@ -48,16 +50,6 @@ const lightTheme = createTheme({
 
 function NavigationWrapper() {
   const { consentGiven, acceptConsent, addTranscript } = useResults();
-
-  const pendingPageTranscriptsRef = useRef({});
-  const pendingPageAudioRef = useRef({});
-  const pendingPageAudioBlobsRef = useRef({});
-
-  useEffect(() => {
-    window.__pendingPageTranscripts = pendingPageTranscriptsRef;
-    window.__pendingPageAudio = pendingPageAudioRef;
-    window.__pendingPageAudioBlobs = pendingPageAudioBlobsRef;
-  }, []);
 
   return (
     <Router>
@@ -115,6 +107,7 @@ function NavigationWrapper() {
           {/* Tools */}
           <Route path="/webgazer-calibration" element={<WebGazerCalibration />} />
           <Route path="/webgazer-gaze-test" element={<WebGazerGazeTest />} />
+          <Route path="/calibration-check" element={<CalibrationCheck />} />
           <Route path="/rate" element={<LayoutRatingFlow mode="manual" />} />
           <Route path="/results" element={<ResultsPage />} />
           <Route path="/combo-results" element={<ComboResultsPage />} />
@@ -210,9 +203,11 @@ export default function App() {
       <CssBaseline />
       <AuthProvider>
         <ResultsProvider>
-          <WebGazerProvider>
-            <NavigationWrapper />
-          </WebGazerProvider>
+          <VoiceRecorderProvider>
+            <WebGazerProvider>
+              <NavigationWrapper />
+            </WebGazerProvider>
+          </VoiceRecorderProvider>
         </ResultsProvider>
       </AuthProvider>
     </ThemeProvider>

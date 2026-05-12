@@ -18,6 +18,7 @@ import collectPageTranscripts from "../utils/collectPageTranscripts";
 import GazeTrackingProvider, { useGazeTracking, useGazePage } from "../components/GazeTrackingProvider";
 import { nextGuidedNavigation } from "../utils/guidedFlow";
 import CalibrationGate from "../components/CalibrationGate";
+import GuidedProgress from "../components/GuidedProgress";
 import { saveGazeSession } from "../utils/gazeStorage";
 import useAutoVoiceRecording from "../hooks/useAutoVoiceRecording";
 
@@ -298,10 +299,13 @@ function VideoIndividualRateInner() {
 
 export default function VideoIndividualRate() {
   return (
-    <CalibrationGate>
-      <GazeTrackingProvider>
-        <VideoIndividualRateInner />
-      </GazeTrackingProvider>
-    </CalibrationGate>
+    <>
+      <GuidedProgress />
+      <CalibrationGate>
+        <GazeTrackingProvider>
+          <VideoIndividualRateInner />
+        </GazeTrackingProvider>
+      </CalibrationGate>
+    </>
   );
 }

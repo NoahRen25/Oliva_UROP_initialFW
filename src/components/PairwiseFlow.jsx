@@ -8,6 +8,7 @@ import useRatingFlow from "../utils/useRatingFlow";
 import { useGazePage } from "./GazeTrackingProvider";
 import { nextGuidedNavigation } from "../utils/guidedFlow";
 import { useResults } from "../Results";
+import GuidedProgress from "./GuidedProgress";
 
 /**
  * PairwiseFlow — Generic pairwise comparison component.
@@ -134,6 +135,7 @@ export default function PairwiseFlow({
 
   return (
     <Container maxWidth="lg" sx={{ mt: 2 }}>
+      <GuidedProgress uploadConfig={flow.uploadConfig} />
       {/* Step 0: Username */}
       {flow.step === 0 && (
         <UsernameEntry
