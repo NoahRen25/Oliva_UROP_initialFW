@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Container, Typography, Box, Button } from "@mui/material";
 import UsernameEntry from "./UsernameEntry";
 import ProgressBar from "./ProgressBar";
@@ -7,6 +7,7 @@ import PromptDisplay from "./PromptDisplay";
 import useRatingFlow from "../utils/useRatingFlow";
 import { useGazePage } from "./GazeTrackingProvider";
 import { nextGuidedNavigation } from "../utils/guidedFlow";
+import { useResults } from "../Results";
 import GuidedProgress from "./GuidedProgress";
 
 /**
@@ -30,15 +31,30 @@ export default function PairwiseFlow({
   title,
   headerContent,
   canProceed = true,
+  canProceedFor,
   onPairChange,
   gazeFormat = "pairwise-2",
+  disabledLabelFor,
 }) {
   const flow = useRatingFlow({ mode });
+  const { checkEngagement, resetEngagement } = useResults();
 
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const [selectedSide, setSelectedSide] = useState(null);
   const [choices, setChoices] = useState([]);
   const [isFinished, setIsFinished] = useState(false);
+  const [pairTimes, setPairTimes] = useState([]);
+  const pairStartTimeRef = useRef(0);
+
+  useEffect(() => {
+    if (flow.step === 2 && !isFinished) {
+      pairStartTimeRef.current = performance.now();
+    }
+  }, [flow.step, currentPairIndex, isFinished]);
+
+  useEffect(() => {
+    if (flow.step === 2) resetEngagement();
+  }, [flow.step, resetEngagement]);
 
   const gazePageKey =
     flow.step === 2 && !isFinished && pairs.length > 0
@@ -58,16 +74,26 @@ export default function PairwiseFlow({
 
   const handleNext = () => {
     const currentPair = pairs[currentPairIndex];
+    const elapsed = pairStartTimeRef.current
+      ? (performance.now() - pairStartTimeRef.current) / 1000
+      : 0;
     const choiceData = {
       pairId: currentPairIndex + 1,
       prompt: flow.configPrompt || currentPair.prompt,
       winnerSide: selectedSide,
       winnerName: selectedSide === "left" ? currentPair.left.filename : currentPair.right.filename,
       loserName: selectedSide === "left" ? currentPair.right.filename : currentPair.left.filename,
+      timeSpent: Number(elapsed.toFixed(2)),
     };
 
     const newChoices = [...choices, choiceData];
+    const newTimes = [...pairTimes, Number(elapsed.toFixed(2))];
+
+    const isSafe = checkEngagement(newTimes, 2);
+    if (!isSafe) return;
+
     setChoices(newChoices);
+    setPairTimes(newTimes);
     setSelectedSide(null);
 
     if (currentPairIndex < pairs.length - 1) {
@@ -96,6 +122,7 @@ export default function PairwiseFlow({
       setSelectedSide(last.winnerSide || null);
       return prev.slice(0, -1);
     });
+    setPairTimes((prev) => (prev.length === 0 ? prev : prev.slice(0, -1)));
     setCurrentPairIndex((idx) => Math.max(0, idx - 1));
     if (onPairChange) onPairChange();
   };
@@ -176,14 +203,29 @@ export default function PairwiseFlow({
           </Box>
 
           <Box sx={{ mt: 4, textAlign: "center" }}>
-            <Button
-              variant="contained"
-              size="large"
-              disabled={!selectedSide || !canProceed}
-              onClick={handleNext}
-            >
-              {currentPairIndex === pairs.length - 1 ? "Submit All" : "Next Pair"}
-            </Button>
+            {(() => {
+              const blockedByCanProceed =
+                typeof canProceedFor === "function" && !canProceedFor(currentPairIndex);
+              const customLabel =
+                blockedByCanProceed && typeof disabledLabelFor === "function"
+                  ? disabledLabelFor(currentPairIndex)
+                  : null;
+              const buttonLabel = customLabel
+                ? customLabel
+                : currentPairIndex === pairs.length - 1
+                ? "Submit All"
+                : "Next Pair";
+              return (
+                <Button
+                  variant="contained"
+                  size="large"
+                  disabled={!selectedSide || !canProceed || blockedByCanProceed}
+                  onClick={handleNext}
+                >
+                  {buttonLabel}
+                </Button>
+              );
+            })()}
           </Box>
         </>
       )}

@@ -13,14 +13,12 @@ import {
   insertRatingScores,
   insertPairwiseChoices,
   insertRankedResults,
-  insertBestWorstTrials,
   insertTranscript as sbInsertTranscript,
   deleteTranscript as sbDeleteTranscript,
   deleteAllTranscripts as sbDeleteAllTranscripts,
   fetchSessionsWithScores,
   fetchSessionsWithChoices,
   fetchSessionsWithRankings,
-  fetchSessionsWithBestWorst,
   fetchTranscripts,
 } from "./services/supabaseResults";
 import { getSessionMetadata } from "./utils/getSessionMetadata";
@@ -37,7 +35,6 @@ export const useResults = () => {
       pairwiseSessions: [],
       videoPairwiseSessions: [],
       rankedSessions: [],
-      bestWorstSessions: [],
       selectionSessions: [],
       fixedSessions: [],
       groupSessionsByLayout: {},
@@ -46,6 +43,7 @@ export const useResults = () => {
       setActivePrompt: () => {},
       currentRatingPage: null,
       setCurrentRatingPage: () => {},
+      speedThresholdSec: 2,
     };
   }
   return context;
@@ -63,7 +61,6 @@ export const ResultsProvider = ({ children }) => {
   const [taskPrompt, setTaskPrompt] = useState(defaultPrompt);
   const [pairwiseSessions, setPairwiseSessions] = useState([]);
   const [rankedSessions, setRankedSessions] = useState([]);
-  const [bestWorstSessions, setBestWorstSessions] = useState([]);
   const [selectionSessions, setSelectionSessions] = useState([]);
   const [videoPairwiseSessions, setVideoPairwiseSessions] = useState([]);
 
@@ -73,7 +70,7 @@ export const ResultsProvider = ({ children }) => {
   const [consentGiven, setConsentGiven] = useState(false);
   const [consentTimestamp, setConsentTimestamp] = useState(null);
   const [showSpeedWarning, setShowSpeedWarning] = useState(false);
-  const [lastWarnedIndex, setLastWarnedIndex] = useState(0);
+  const [speedThresholdSec, setSpeedThresholdSec] = useState(2);
 
   // --- Loading state ---
   const [hydrated, setHydrated] = useState(false);
@@ -84,7 +81,7 @@ export const ResultsProvider = ({ children }) => {
 
     async function hydrate() {
       try {
-        const [indiv, group, fixed, pairwise, videoPw, ranked, bestWorst, trans] =
+        const [indiv, group, fixed, pairwise, videoPw, ranked, trans] =
           await Promise.all([
             fetchSessionsWithScores("individual"),
             fetchSessionsWithScores("group"),
@@ -92,7 +89,6 @@ export const ResultsProvider = ({ children }) => {
             fetchSessionsWithChoices("pairwise"),
             fetchSessionsWithChoices("video_pairwise"),
             fetchSessionsWithRankings(),
-            fetchSessionsWithBestWorst(),
             fetchTranscripts(),
           ]);
 
@@ -104,7 +100,6 @@ export const ResultsProvider = ({ children }) => {
         setPairwiseSessions(pairwise);
         setVideoPairwiseSessions(videoPw);
         setRankedSessions(ranked);
-        setBestWorstSessions(bestWorst);
         setTranscripts(trans);
 
         // Layout group sessions
@@ -147,22 +142,28 @@ export const ResultsProvider = ({ children }) => {
   }, []);
 
   // ─── Engagement logic ─────────────────────────────────────────
-  const resetEngagement = () => {
-    setLastWarnedIndex(-2);
+  // Memoized so that consumers can safely use these in useEffect deps without
+  // triggering re-runs on every Results re-render. Without this, calling
+  // setShowSpeedWarning(true) inside checkEngagement re-renders Results, which
+  // would re-run any `[step, resetEngagement]` effect and immediately close
+  // the modal.
+  const resetEngagement = useCallback(() => {
     setShowSpeedWarning(false);
-  };
+  }, []);
 
-  const checkEngagement = (timesArray, currentIndex) => {
-    if (currentIndex - lastWarnedIndex < 2) return true;
-    if (timesArray.length < 2) return true;
+  const checkEngagement = useCallback((timesArray, imagesPerPage = 1) => {
+    if (!timesArray || timesArray.length < 1) return true;
+    const last = timesArray[timesArray.length - 1];
     const avg = timesArray.reduce((a, c) => a + c, 0) / timesArray.length;
-    if (avg < 4.0) {
+    const threshold = 2.0 * Math.max(1, imagesPerPage);
+    const tooFast = last < threshold || (timesArray.length >= 2 && avg < threshold);
+    if (tooFast) {
+      setSpeedThresholdSec(threshold);
       setShowSpeedWarning(true);
-      setLastWarnedIndex(currentIndex);
       return false;
     }
     return true;
-  };
+  }, []);
 
   // ─── Transcripts ──────────────────────────────────────────────
   const addTranscript = (text, duration) => {
@@ -461,41 +462,6 @@ export const ResultsProvider = ({ children }) => {
     }
   };
 
-  // ─── Best-Worst Sessions ──────────────────────────────────────
-  const addBestWorstSession = (username, trials, meta = {}) => {
-    const session = {
-      id: Date.now(),
-      username,
-      trials,
-      timestamp: new Date().toISOString(),
-      pageTranscripts: meta.pageTranscripts || {},
-      pageAudioUrls: meta.pageAudioUrls || {},
-    };
-    setBestWorstSessions((p) => [...p, session]);
-    insertSession({
-      id: session.id,
-      type: "best_worst",
-      username,
-      timestamp: session.timestamp,
-      meta: { pageTranscripts: meta.pageTranscripts, pageAudioUrls: meta.pageAudioUrls },
-    });
-    insertBestWorstTrials(session.id, trials);
-  };
-
-  const deleteBestWorstSession = (id, username) => {
-    if (window.confirm(`Delete session by ${username}?`)) {
-      setBestWorstSessions((p) => p.filter((s) => s.id != id));
-      deleteSession(id);
-    }
-  };
-
-  const clearBestWorst = () => {
-    if (window.confirm("Delete ALL Best-Worst sessions?")) {
-      setBestWorstSessions([]);
-      deleteSessionsByType("best_worst");
-    }
-  };
-
   // ─── Selection Sessions ───────────────────────────────────────
   const addSelectionSession = (username, prompt, selections, meta = {}) => {
     const session = {
@@ -561,7 +527,6 @@ export const ResultsProvider = ({ children }) => {
       setGroupSessions([]);
       setPairwiseSessions([]);
       setRankedSessions([]);
-      setBestWorstSessions([]);
       setSelectionSessions([]);
       setVideoPairwiseSessions([]);
       setTranscripts([]);
@@ -643,13 +608,6 @@ export const ResultsProvider = ({ children }) => {
         deleteRankedSession,
         clearRanked,
 
-        // Best Worst
-        bestWorstSessions,
-        addBestWorstSession,
-        deleteBestWorstSession,
-        clearBestWorst,
-
-
         // Consent
         consentGiven,
         consentTimestamp,
@@ -666,6 +624,7 @@ export const ResultsProvider = ({ children }) => {
         // Engagement
         showSpeedWarning,
         setShowSpeedWarning,
+        speedThresholdSec,
         checkEngagement,
         resetEngagement,
       }}

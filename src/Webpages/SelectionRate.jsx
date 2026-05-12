@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useResults } from "../Results";
 import {
@@ -21,13 +21,17 @@ function SelectionRateInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const uploadConfig = location.state?.uploadConfig || null;
-  const { addSelectionSession, setActivePrompt, setCurrentRatingPage } = useResults();
+  const {
+    addSelectionSession, setActivePrompt, setCurrentRatingPage,
+    checkEngagement, resetEngagement,
+  } = useResults();
   const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
 
   const [step, setStep] = useState(uploadConfig ? 1 : 0);
   const [username, setUsername] = useState(uploadConfig?.username || "");
   const [images, setImages] = useState([]);
   const [selected, setSelected] = useState(new Set());
+  const pageStartTimeRef = useRef(0);
 
   const imageCount = uploadConfig?.count || 9;
   const taskPrompt = uploadConfig?.prompt || "Select all images that match the description";
@@ -52,6 +56,8 @@ function SelectionRateInner() {
     if (step === 2) {
       setActivePrompt(taskPrompt);
       setCurrentRatingPage(1);
+      pageStartTimeRef.current = performance.now();
+      resetEngagement();
     } else {
       setActivePrompt(null);
     }
@@ -59,7 +65,7 @@ function SelectionRateInner() {
       setActivePrompt(null);
       setCurrentRatingPage(null);
     };
-  }, [step, taskPrompt, setActivePrompt, setCurrentRatingPage]);
+  }, [step, taskPrompt, setActivePrompt, setCurrentRatingPage, resetEngagement]);
 
   const toggleSelect = (id) => {
     setSelected((prev) => {
@@ -71,6 +77,12 @@ function SelectionRateInner() {
   };
 
   const handleSubmit = () => {
+    const elapsed = pageStartTimeRef.current
+      ? (performance.now() - pageStartTimeRef.current) / 1000
+      : 0;
+    const isSafe = checkEngagement([Number(elapsed.toFixed(2))], imageCount);
+    if (!isSafe) return;
+
     const selections = images.map((img) => ({
       imageId: img.id,
       imageName: img.filename,

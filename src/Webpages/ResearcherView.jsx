@@ -19,6 +19,8 @@ import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import SelectAllIcon from "@mui/icons-material/SelectAll";
+import ImageIcon from "@mui/icons-material/Image";
+import VideocamIcon from "@mui/icons-material/Videocam";
 
 import { useResults } from "../Results";
 import { getImageUrl } from "../utils/supabaseImageUrl";
@@ -26,6 +28,7 @@ import AudioModal from "../components/AudioModal";
 import StatsModal from "../components/StatsModal";
 import ImageComparisonModal from "../components/ImageComparisonModal";
 import ImageActionMenu from "../components/ImageActionMenu";
+import VideoThumbnail from "../components/VideoThumbnail";
 import GazeAnalyticsSection from "./GazeAnalyticsSection";
 import SelectedImagesHeatmapModal from "../components/analytics/SelectedImagesHeatmapModal";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -47,6 +50,12 @@ const DEMO_IMAGE_LOOKUP = {
   "Nano Flag":  "NanoFlag.png",
 };
 
+const VIDEO_EXT_RE = /\.(mp4|webm|mov|ogg)$/i;
+
+function isVideoName(name) {
+  return typeof name === "string" && VIDEO_EXT_RE.test(name);
+}
+
 function resolveImageUrl(name) {
   if (!name) return null;
 
@@ -60,6 +69,11 @@ function resolveImageUrl(name) {
 
   // Pure numeric — this is an index, not a filename; can't resolve
   if (/^\d+$/.test(str)) return null;
+
+  // Video files: "folder/filename.mp4" → videos bucket
+  if (isVideoName(str)) {
+    return getImageUrl("videos", str);
+  }
 
   // Generated images: "folder/filename.ext" pattern
   // e.g. "flux_2_pro/generated_001.png", "gptimage15/img.png", "nano_banana_pro/gen.png"
@@ -283,6 +297,17 @@ function getSessionList(sessions) {
   }));
 }
 
+function sessionIsVideo(session) {
+  if (!session) return false;
+  if (session.scores?.length) return isVideoName(session.scores[0]?.imageName);
+  if (session.choices?.length) {
+    const c = session.choices[0];
+    return isVideoName(c?.winnerName) || isVideoName(c?.loserName);
+  }
+  if (session.rankings?.length) return isVideoName(session.rankings[0]?.imageName);
+  return false;
+}
+
 // ─── Aggregate Summary Panel ────────────────────────────────────────
 
 function AggregateSummary({ imageStats, mode }) {
@@ -345,6 +370,7 @@ function AggregateSummary({ imageStats, mode }) {
 function ResearcherImageCard({ imageData, mode, onViewAudio, onViewStats, onCompare, selectionMode, isSelected, onToggleSelect }) {
   const hasAudio = imageData.audioEntries?.some((e) => e.audioUrl);
   const [imgError, setImgError] = useState(false);
+  const isVideo = isVideoName(imageData.name) || isVideoName(imageData.src);
 
   const primaryStat = useMemo(() => {
     if (mode === "individual" || mode === "group") {
@@ -409,13 +435,64 @@ function ResearcherImageCard({ imageData, mode, onViewAudio, onViewStats, onComp
       )}
 
       {imageData.src && !imgError ? (
-        <CardMedia
-          component="img"
-          image={imageData.src}
-          alt={imageData.name}
-          onError={() => setImgError(true)}
-          sx={{ height: 140, objectFit: "contain", bgcolor: "#f5f5f5" }}
-        />
+        isVideo ? (
+          <Box
+            sx={{
+              height: 140,
+              bgcolor: "#f5f5f5",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              p: 1,
+            }}
+          >
+            <Box
+              sx={{
+                width: 120,
+                height: 120,
+                bgcolor: "#000",
+                position: "relative",
+                borderRadius: 1,
+                overflow: "hidden",
+                flexShrink: 0,
+              }}
+            >
+              <VideoThumbnail
+                src={imageData.src}
+                onError={() => setImgError(true)}
+              />
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: 4,
+                  left: 4,
+                  px: 0.75,
+                  py: 0.25,
+                  bgcolor: "rgba(0,0,0,0.65)",
+                  color: "white",
+                  borderRadius: 0.5,
+                  fontSize: "0.65rem",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  pointerEvents: "none",
+                }}
+              >
+                <PlayCircleOutlineIcon sx={{ fontSize: 12 }} />
+                VIDEO
+              </Box>
+            </Box>
+          </Box>
+        ) : (
+          <CardMedia
+            component="img"
+            image={imageData.src}
+            alt={imageData.name}
+            onError={() => setImgError(true)}
+            sx={{ height: 140, objectFit: "contain", bgcolor: "#f5f5f5" }}
+          />
+        )
       ) : (
         <Box
           sx={{
@@ -526,25 +603,42 @@ function ImageTableView({ imageStats, mode, onViewAudio, onViewStats }) {
       <TableBody>
         {sorted.map((img) => {
           const hasAudio = img.audioEntries?.some((e) => e.audioUrl);
+          const rowIsVideo = isVideoName(img.name) || isVideoName(img.src);
           return (
             <TableRow key={img.name} hover>
               <TableCell>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                   {img.src ? (
-                    <Box
-                      component="img"
-                      src={img.src}
-                      alt={img.name}
-                      sx={{
-                        width: 44,
-                        height: 44,
-                        objectFit: "contain",
-                        borderRadius: 1,
-                        bgcolor: "#f5f5f5",
-                        border: "1px solid #e0e0e0",
-                        flexShrink: 0,
-                      }}
-                    />
+                    rowIsVideo ? (
+                      <Box
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 1,
+                          overflow: "hidden",
+                          bgcolor: "#000",
+                          border: "1px solid #e0e0e0",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <VideoThumbnail src={img.src} />
+                      </Box>
+                    ) : (
+                      <Box
+                        component="img"
+                        src={img.src}
+                        alt={img.name}
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          objectFit: "contain",
+                          borderRadius: 1,
+                          bgcolor: "#f5f5f5",
+                          border: "1px solid #e0e0e0",
+                          flexShrink: 0,
+                        }}
+                      />
+                    )
                   ) : (
                     <Box
                       sx={{
@@ -699,6 +793,7 @@ export default function ResearcherView() {
 
   const [viewSection, setViewSection] = useState("ratings"); // "ratings" | "gaze"
   const [activeMode, setActiveMode] = useState("individual");
+  const [mediaFilter, setMediaFilter] = useState("image"); // "image" | "video"
   // Session filter
   const [selectedSession, setSelectedSession] = useState("all");
   // View mode
@@ -711,23 +806,26 @@ export default function ResearcherView() {
   // Modal state
   const [audioModal, setAudioModal] = useState({ open: false, imageName: "", entries: [] });
   const [statsModal, setStatsModal] = useState({ open: false, imageName: "", src: "", stats: null, mode: "", imagesLookup: {} });
-  const [comparisonModal, setComparisonModal] = useState({ open: false, images: [], leftIdx: 0, rightIdx: 1 });
+  const [comparisonModal, setComparisonModal] = useState({ open: false, images: [], indices: [0, 1] });
   const [heatmapModal, setHeatmapModal] = useState({ open: false, images: [] });
 
-  // Get sessions for active mode
+  const wantVideo = mediaFilter === "video";
+
+  // Get sessions for active mode, filtered by media type (images vs videos)
   const allSessions = useMemo(() => {
+    const filterByMedia = (list) => list.filter((s) => sessionIsVideo(s) === wantVideo);
     switch (activeMode) {
-      case "individual": return individualSessions;
-      case "pairwise": return [...pairwiseSessions, ...videoPairwiseSessions];
-      case "ranked": return rankedSessions;
-      case "selection": return selectionSessions;
+      case "individual": return filterByMedia(individualSessions);
+      case "pairwise": return wantVideo ? videoPairwiseSessions : pairwiseSessions;
+      case "ranked": return filterByMedia(rankedSessions);
+      case "selection": return filterByMedia(selectionSessions);
       case "group": {
         const layoutSessions = Object.values(groupSessionsByLayout || {}).flat();
-        return [...groupSessions, ...layoutSessions, ...fixedSessions];
+        return filterByMedia([...groupSessions, ...layoutSessions, ...fixedSessions]);
       }
       default: return [];
     }
-  }, [activeMode, individualSessions, pairwiseSessions, videoPairwiseSessions, rankedSessions, selectionSessions, groupSessions, groupSessionsByLayout, fixedSessions]);
+  }, [activeMode, wantVideo, individualSessions, pairwiseSessions, videoPairwiseSessions, rankedSessions, selectionSessions, groupSessions, groupSessionsByLayout, fixedSessions]);
 
   // Filter by selected session
   const filteredSessions = useMemo(() => {
@@ -776,11 +874,12 @@ export default function ResearcherView() {
       src: s.src || "",
       stats: s,
     }));
+    const first = idx >= 0 ? idx : 0;
+    const second = first === 0 && imageStats.length > 1 ? 1 : 0;
     setComparisonModal({
       open: true,
       images: compImages,
-      leftIdx: idx >= 0 ? idx : 0,
-      rightIdx: idx < imageStats.length - 1 ? idx + 1 : 0,
+      indices: imageStats.length >= 2 ? [first, second] : [first],
     });
   }, [imageStats]);
 
@@ -809,8 +908,7 @@ export default function ResearcherView() {
     setComparisonModal({
       open: true,
       images: compImages,
-      leftIdx: 0,
-      rightIdx: Math.min(1, compImages.length - 1),
+      indices: [0, 1],
     });
   }, [imageStats]);
 
@@ -956,6 +1054,34 @@ export default function ResearcherView() {
 
       {viewSection === "ratings" && (
       <>
+      {/* Media Toggle (Images / Videos) */}
+      <Paper sx={{ mb: 2, p: 1.5, borderRadius: 2, display: "flex", alignItems: "center", gap: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1a237e" }}>
+          Media:
+        </Typography>
+        <ToggleButtonGroup
+          value={mediaFilter}
+          exclusive
+          onChange={(_, v) => {
+            if (!v) return;
+            setMediaFilter(v);
+            setSelectedSession("all");
+            setSelectionMode(false);
+            setSelectedImages(new Set());
+          }}
+          size="small"
+        >
+          <ToggleButton value="image">
+            <ImageIcon fontSize="small" sx={{ mr: 0.75 }} />
+            Images
+          </ToggleButton>
+          <ToggleButton value="video">
+            <VideocamIcon fontSize="small" sx={{ mr: 0.75 }} />
+            Videos
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Paper>
+
       {/* Mode Tabs */}
       <Paper sx={{ mb: 3, borderRadius: 2, overflow: "hidden" }}>
         <Tabs
@@ -1141,10 +1267,9 @@ export default function ResearcherView() {
 
       <ImageComparisonModal
         open={comparisonModal.open}
-        onClose={() => setComparisonModal({ open: false, images: [], leftIdx: 0, rightIdx: 1 })}
+        onClose={() => setComparisonModal({ open: false, images: [], indices: [0, 1] })}
         images={comparisonModal.images}
-        initialLeft={comparisonModal.leftIdx}
-        initialRight={comparisonModal.rightIdx}
+        initialIndices={comparisonModal.indices}
         mode={activeMode}
       />
 

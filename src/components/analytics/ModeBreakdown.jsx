@@ -27,7 +27,6 @@ const MODE_COLORS = {
   fixed: "#84cc16",
   pairwise: "#34d399",
   ranked: "#fb923c",
-  bestWorst: "#a78bfa",
   selection: "#f472b6",
 };
 

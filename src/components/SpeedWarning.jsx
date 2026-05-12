@@ -10,35 +10,30 @@ import {
 import { useResults } from "../Results";
 
 export default function SpeedWarning() {
-  const { showSpeedWarning, setShowSpeedWarning } = useResults();
+  const { showSpeedWarning, setShowSpeedWarning, speedThresholdSec } = useResults();
+  const threshold = Number.isFinite(speedThresholdSec) ? speedThresholdSec : 2;
+  const thresholdLabel = Number.isInteger(threshold) ? threshold : threshold.toFixed(1);
+
+  const dismiss = () => setShowSpeedWarning(false);
 
   return (
     <Dialog
       open={showSpeedWarning}
-      onClose={() => setShowSpeedWarning(false)}
+      onClose={dismiss}
       aria-labelledby="speed-warning-title"
     >
       <DialogTitle id="speed-warning-title" sx={{ color: "error.main" }}>
-        too fast!
+        Slow down
       </DialogTitle>
       <DialogContent>
         <DialogContentText>
-          We noticed that you're moving through the images quite quickly (under 2
-          seconds on average).
-          <br />
-          <br />
-          Please carefully look at the prompt and the image
-          details before rating. High-quality data depends on your careful
-          attention!
+          Please spend at least <strong>{thresholdLabel} seconds</strong>{" "}
+          looking at the images on this page before continuing.
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button
-          variant="contained"
-          onClick={() => setShowSpeedWarning(false)}
-          autoFocus
-        >
-          I Understand
+        <Button variant="contained" onClick={dismiss} autoFocus>
+          OK
         </Button>
       </DialogActions>
     </Dialog>

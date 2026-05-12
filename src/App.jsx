@@ -20,9 +20,11 @@ import Home from "./Webpages/Home";
 import IndividualRate from "./Webpages/IndividualRate";
 import PairwiseRate from "./Webpages/PairwiseRate";
 import RankedRate from "./Webpages/RankedRate";
-import BestWorstRate from "./Webpages/BestWorstRate";
 import SelectionRate from "./Webpages/SelectionRate";
 import VideoPairwiseRate from "./Webpages/VideoPairwiseRate";
+import VideoIndividualRate from "./Webpages/VideoIndividualRate";
+import VideoRankedRate from "./Webpages/VideoRankedRate";
+import VideoGroupGridRate from "./Webpages/VideoGroupGridRate";
 import WebGazerCalibration from "./Webpages/WebGazerCalibration";
 import WebGazerGazeTest from "./Webpages/WebGazerGazeTest";
 import ResultsPage from "./Webpages/ResultsPage";
@@ -33,11 +35,13 @@ import ComboRatingFlow from "./Webpages/ComboRatingFlow";
 import ComboResultsPage from "./Webpages/ComboResultsPage";
 import PrivacySettings from "./Webpages/PrivacySettings";
 import ConsentModal from "./components/ConsentModal";
+import SpeedWarning from "./components/SpeedWarning";
 import SimulatedSession from "./Webpages/SimulatedSession";
 import SetPassword from "./Webpages/SetPassword";
 import GuidedSessionWelcome from "./Webpages/GuidedSessionWelcome";
 import GroupGridRate from "./Webpages/GroupGridRate";
 import ThankYouPage from "./Webpages/ThankYouPage";
+import AdminControlPanel from "./Webpages/AdminControlPanel";
 import CalibrationCheck from "./components/CalibrationCheck";
 
 const lightTheme = createTheme({
@@ -50,6 +54,7 @@ function NavigationWrapper() {
   return (
     <Router>
       <ConsentModal open={!consentGiven} onAccept={acceptConsent} />
+      <SpeedWarning />
       <WebGazerAutoStop />
       <WebGazerVideoToggle />
       <FloatingVoiceRecorder onSave={(text, dur) => addTranscript(text, dur)} />
@@ -92,9 +97,11 @@ function NavigationWrapper() {
           <Route path="/individual-rate" element={<IndividualRate />} />
           <Route path="/pairwise-rate" element={<PairwiseRate />} />
           <Route path="/video-pairwise-rate" element={<VideoPairwiseRate />} />
+          <Route path="/video-individual-rate" element={<VideoIndividualRate />} />
+          <Route path="/video-ranked-rate" element={<VideoRankedRate />} />
+          <Route path="/video-group-grid-rate" element={<VideoGroupGridRate />} />
           <Route path="/selection-rate" element={<SelectionRate />} />
           <Route path="/ranked-rate" element={<RankedRate />} />
-          <Route path="/best-worst-rate" element={<BestWorstRate />} />
           <Route path="/combo-rate" element={<ComboRatingFlow />} />
 
           {/* Tools */}
@@ -107,6 +114,7 @@ function NavigationWrapper() {
           <Route path="/privacy" element={<PrivacySettings />} />
           <Route path="/researcher" element={<ResearcherView />} />
           <Route path="/researcher/simulate" element={<SimulatedSession />} />
+          <Route path="/admin/control-panel" element={<AdminControlPanel />} />
         </Routes>
       </Box>
     </Router>
@@ -118,11 +126,14 @@ const KEEP_WEBGAZER_ROUTES = [
   '/individual-rate',
   '/pairwise-rate',
   '/ranked-rate',
-  '/best-worst-rate',
   '/selection-rate',
   '/rate',
   '/combo-rate',
   '/group-grid-rate',
+  '/video-individual-rate',
+  '/video-pairwise-rate',
+  '/video-ranked-rate',
+  '/video-group-grid-rate',
 ];
 
 function FloatingVoiceRecorder({ onSave }) {

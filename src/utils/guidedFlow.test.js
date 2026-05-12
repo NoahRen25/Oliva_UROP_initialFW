@@ -18,14 +18,16 @@ describe("buildGuidedUploadConfig", () => {
   });
 
   it("accepts a custom step list", () => {
+    // Custom steps still get normalized through modeConfig (kind must match a
+    // MODE_DEFINITIONS entry, route is filled in from mediaMode).
     const custom = [
-      { kind: "x", route: "/x", count: 1 },
-      { kind: "y", route: "/y", count: 2 },
+      { kind: "individual", count: 1, enabled: true },
+      { kind: "pairwise", count: 2, enabled: true },
     ];
     const cfg = buildGuidedUploadConfig("7", custom);
-    expect(cfg.kind).toBe("x");
+    expect(cfg.kind).toBe("individual");
     expect(cfg.flow).toHaveLength(1);
-    expect(cfg.flow[0].kind).toBe("y");
+    expect(cfg.flow[0].kind).toBe("pairwise");
     expect(cfg.totalSteps).toBe(2);
   });
 });

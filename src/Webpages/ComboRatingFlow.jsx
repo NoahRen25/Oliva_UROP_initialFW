@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Container, CircularProgress } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useResults } from "../Results";
@@ -25,7 +25,10 @@ const shuffleArray = (arr) => {
 
 function ComboRatingFlowInner() {
   const navigate = useNavigate();
-  const { addFixedSession, setCurrentRatingPage } = useResults();
+  const {
+    addFixedSession, setCurrentRatingPage,
+    checkEngagement, resetEngagement,
+  } = useResults();
   const { rows, ready } = useMemImages();
   const grid = useGridRating();
   const { startSession, getGazeData, tagImageOnPage } = useGazeTracking();
@@ -33,6 +36,18 @@ function ComboRatingFlowInner() {
   const [step, setStep] = useState(0);
   const [username, setUsername] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
+  const [pageTimes, setPageTimes] = useState([]);
+  const pageStartTimeRef = useRef(0);
+
+  useEffect(() => {
+    if (step === 2) {
+      pageStartTimeRef.current = performance.now();
+    }
+  }, [step, currentPage]);
+
+  useEffect(() => {
+    if (step === 2) resetEngagement();
+  }, [step, resetEngagement]);
 
   useGazePage(
     step === 2 ? `combo-page-${currentPage + 1}` : null,
@@ -115,6 +130,14 @@ function ComboRatingFlowInner() {
   }, [currentPage, displaySequence]);
 
   const handleNext = () => {
+    const elapsed = pageStartTimeRef.current
+      ? (performance.now() - pageStartTimeRef.current) / 1000
+      : 0;
+    const newTimes = [...pageTimes, Number(elapsed.toFixed(2))];
+    const isSafe = checkEngagement(newTimes, pageConfig.images.length || 8);
+    if (!isSafe) return;
+    setPageTimes(newTimes);
+
     if (pageConfig.isLastPage) {
       const scores = displaySequence.map((img, index) => {
         if (!img) return null;

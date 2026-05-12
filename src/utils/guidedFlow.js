@@ -1,31 +1,69 @@
 /**
- * guidedFlow — chained "Start Rating" experience.
+ * guidedFlow — Defines the chained "Start Rating" experience that walks
+ * a participant through every rating format back-to-back.
  *
- * uploadConfig.guided — true while inside a guided run.
- * uploadConfig.flow   — array of step descriptors *remaining after this one*.
+ * The order, counts, and layouts are driven by `mode_config` in Supabase
+ * (see src/services/modeConfig.js). When that table is unreachable, the
+ * defaults below are used.
+ *
+ * `mode_config` also stores a top-level `mediaMode` ("image" | "video")
+ * which decides whether each step routes to its image or video page.
+ *
+ * Each rate page accepts `uploadConfig` via location.state. We piggy-back
+ * on that channel by adding extra fields:
+ *
+ *   uploadConfig.guided     — true while the participant is inside a guided run
+ *   uploadConfig.flow       — array of step descriptors *remaining after this one*
+ *   uploadConfig.mediaMode  — "image" or "video"
+ *   uploadConfig.totalSteps — total guided step count (used by GuidedProgress)
  *
  * Step descriptors may set `validateBefore: true` to insert a brief
- * gaze-accuracy check before the step.
+ * gaze-accuracy check (CalibrationCheck) before the step.
+ *
+ * When a rate page finishes, it calls `nextGuidedNavigation(uploadConfig)`
+ * to learn where to go next instead of routing to its own results page.
  */
 
-export const DEFAULT_GUIDED_STEPS = [
-  { kind: "individual",  route: "/individual-rate", count: 10 },
-  { kind: "pairwise",    route: "/pairwise-rate",   count: 10, validateBefore: true },
-  { kind: "ranked",      route: "/ranked-rate",     count: 10, rankMode: "swap", validateBefore: true },
-  { kind: "group-grid",  route: "/group-grid-rate", pageCount: 2, layoutId: "3x3-no-center", validateBefore: true },
-];
+import {
+  DEFAULT_STEPS,
+  DEFAULT_MEDIA_MODE,
+  normalizeSteps,
+} from "../services/modeConfig";
 
-export const GUIDED_STEPS = DEFAULT_GUIDED_STEPS;
+function stripEnabled(step) {
+  const copy = { ...step };
+  delete copy.enabled;
+  return copy;
+}
+
+/** Default chain — used as a fallback when Supabase is unreachable. */
+export const GUIDED_STEPS = normalizeSteps(DEFAULT_STEPS, DEFAULT_MEDIA_MODE)
+  .filter((s) => s.enabled !== false)
+  .map(stripEnabled);
+
+/** Alias retained for compatibility with components importing the main-branch name. */
+export const DEFAULT_GUIDED_STEPS = GUIDED_STEPS;
+
+function activeSteps(steps, mediaMode) {
+  const list = Array.isArray(steps)
+    ? normalizeSteps(steps, mediaMode)
+    : GUIDED_STEPS;
+  return list.filter((s) => s.enabled !== false).map(stripEnabled);
+}
 
 /** Initial uploadConfig used to enter the guided flow (the first step). */
-export function buildGuidedUploadConfig(username, steps = DEFAULT_GUIDED_STEPS) {
-  const [first, ...rest] = steps;
+export function buildGuidedUploadConfig(username, steps, mediaMode = DEFAULT_MEDIA_MODE) {
+  const mode = mediaMode === "video" ? "video" : "image";
+  const chain = activeSteps(steps, mode);
+  if (chain.length === 0) return null;
+  const [first, ...rest] = chain;
   return {
     ...first,
     username,
     guided: true,
+    mediaMode: mode,
     flow: rest,
-    totalSteps: steps.length,
+    totalSteps: chain.length,
   };
 }
 
@@ -49,8 +87,9 @@ export function nextGuidedNavigation(currentUploadConfig) {
     ...next,
     username: currentUploadConfig.username,
     guided: true,
+    mediaMode: currentUploadConfig.mediaMode || DEFAULT_MEDIA_MODE,
     flow: rest,
-    totalSteps: currentUploadConfig.totalSteps ?? DEFAULT_GUIDED_STEPS.length,
+    totalSteps: currentUploadConfig.totalSteps ?? GUIDED_STEPS.length,
   };
   if (next.validateBefore) {
     return { route: "/calibration-check", uploadConfig: nextUploadConfig };
@@ -59,6 +98,6 @@ export function nextGuidedNavigation(currentUploadConfig) {
 }
 
 /** Total step count for progress indicators. */
-export function totalGuidedSteps(steps = DEFAULT_GUIDED_STEPS) {
+export function totalGuidedSteps(steps = GUIDED_STEPS) {
   return steps.length;
 }

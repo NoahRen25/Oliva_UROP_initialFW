@@ -1,71 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useResults } from "../Results";
 import {
-  Container, Typography, Box, Button, Card, CardActionArea,
-  Alert, CircularProgress, Chip,
+  Container, Typography, Box, Button, Alert, CircularProgress,
 } from "@mui/material";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import PairwiseFlow from "../components/PairwiseFlow";
+import VideoCard from "../components/VideoCard";
+import useVideoFleet from "../hooks/useVideoFleet";
 import { loadVideoIndex, getVideoPairwiseBatch, getVideoCount } from "../utils/VideoLoader";
-
-function VideoCard({ src, selected, onSelect, label, onEnded, videoRef, onPlay }) {
-  const internalRef = useRef(null);
-  const ref = videoRef || internalRef;
-
-  useEffect(() => {
-    if (ref.current) ref.current.load();
-  }, [src]);
-
-  return (
-    <Card
-      sx={{
-        border: selected ? "4px solid #1976d2" : "4px solid transparent",
-        transition: "border 0.2s, box-shadow 0.2s",
-        boxShadow: selected ? 8 : 2,
-        overflow: "hidden",
-        cursor: "pointer",
-        "&:hover": { boxShadow: 6 },
-      }}
-      onClick={onSelect}
-    >
-      <CardActionArea sx={{ position: "relative" }}>
-        <video
-          ref={ref}
-          controls
-          playsInline
-          preload="metadata"
-          style={{
-            width: "100%",
-            height: "55vh",
-            objectFit: "contain",
-            background: "#000",
-            display: "block",
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect();
-          }}
-          onEnded={onEnded}
-          onPlay={onPlay}
-        >
-          <source src={src} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-        {label && (
-          <Chip
-            label={label}
-            size="small"
-            sx={{
-              position: "absolute", top: 8, left: 8,
-              bgcolor: "rgba(0,0,0,0.6)", color: "white", fontWeight: "bold",
-            }}
-          />
-        )}
-      </CardActionArea>
-    </Card>
-  );
-}
 
 export default function VideoPairwiseRate() {
   const navigate = useNavigate();
@@ -76,10 +19,7 @@ export default function VideoPairwiseRate() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [pairs, setPairs] = useState([]);
-  const [endedLeft, setEndedLeft] = useState(false);
-  const [endedRight, setEndedRight] = useState(false);
-  const leftVideoRef = useRef(null);
-  const rightVideoRef = useRef(null);
+  const fleet = useVideoFleet();
   const pairCount = uploadConfig?.count || 5;
 
   useEffect(() => {
@@ -108,7 +48,6 @@ export default function VideoPairwiseRate() {
     return () => { cancelled = true; };
   }, [pairCount]);
 
-  // Loading / error states
   if (loading) {
     return (
       <Container maxWidth="md" sx={{ mt: 8, textAlign: "center" }}>
@@ -129,32 +68,48 @@ export default function VideoPairwiseRate() {
     );
   }
 
-  const renderMedia = (pair, side, selected, onSelect) => (
-    <VideoCard
-      src={pair[side].src}
-      selected={selected}
-      onSelect={onSelect}
-      label={side === "left" ? "A" : "B"}
-      videoRef={side === "left" ? leftVideoRef : rightVideoRef}
-      onEnded={() => {
-        if (side === "left") setEndedLeft(true);
-        else setEndedRight(true);
-      }}
-      onPlay={() => {
-        // Pause the other video when this one starts playing
-        const other = side === "left" ? rightVideoRef : leftVideoRef;
-        if (other.current && !other.current.paused) {
-          other.current.pause();
-        }
-      }}
-    />
-  );
+  const renderMedia = (pair, side, selected, onSelect) => {
+    const id = `pair${pair.id}_${side}`;
+    return (
+      <VideoCard
+        videoId={id}
+        coordinator={fleet}
+        src={pair[side].src}
+        selected={selected}
+        onSelect={onSelect}
+        label={side === "left" ? "A" : "B"}
+      />
+    );
+  };
 
   const headerContent = (
     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, mb: 1 }}>
       <VideocamIcon color="error" />
     </Box>
   );
+
+  const idsForPair = (pairIndex) => {
+    if (pairIndex == null || !pairs[pairIndex]) return [];
+    return [`pair${pairs[pairIndex].id}_left`, `pair${pairs[pairIndex].id}_right`];
+  };
+
+  // Has the participant watched both halves of the *current* pair, AND
+  // spent at least the sum of both video durations on the page?
+  const currentPairBothEnded = (pairIndex) => {
+    const ids = idsForPair(pairIndex);
+    if (ids.length === 0) return false;
+    return fleet.allWatched(ids);
+  };
+
+  const labelForBlockedPair = (pairIndex) => {
+    const ids = idsForPair(pairIndex);
+    if (ids.length === 0) return null;
+    if (fleet.allEnded(ids)) {
+      const remaining = Math.ceil(fleet.remainingRuntime(ids));
+      if (remaining > 0) return `Please wait ${remaining}s…`;
+    }
+    return "Watch both videos to continue";
+  };
 
   return (
     <PairwiseFlow
@@ -164,8 +119,9 @@ export default function VideoPairwiseRate() {
       mode="video_pairwise"
       title="Video Pairwise Rating"
       headerContent={headerContent}
-      canProceed={endedLeft && endedRight}
-      onPairChange={() => { setEndedLeft(false); setEndedRight(false); }}
+      canProceedFor={currentPairBothEnded}
+      disabledLabelFor={labelForBlockedPair}
+      onPairChange={() => fleet.reset()}
     />
   );
 }

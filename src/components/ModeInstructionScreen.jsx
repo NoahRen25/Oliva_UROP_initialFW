@@ -9,9 +9,7 @@ const INSTRUCTIONS = {
     title: "Individual Rating",
     body: `You will see images one at a time. For each image, a prompt describing the intended scene is shown above.
 
-Rate each image on a scale of 1–5 based on how well it matches the prompt and its overall quality.
-
-Use the READ PROMPT button in the top bar at any time to hear the current prompt read aloud.`,
+Rate each image on a scale of 1–5 based on how well it matches the prompt and its overall quality.`,
   },
   pairwise: {
     title: "Pairwise Comparison",
@@ -19,17 +17,41 @@ Use the READ PROMPT button in the top bar at any time to hear the current prompt
 
 Your task is to select which image better represents the prompt. Click on the image you prefer – the chosen image gets a blue border.
 
-The prompt is displayed above each pair. Use the READ PROMPT button in the top bar to hear it read aloud.`,
+The prompt is displayed above each pair.`,
   },
   video_pairwise: {
     title: "Video Pairwise Comparison",
-    body: `You will see two videos side by side, generated from the same prompt or scene description.
+    body: `You will see two videos side by side, generated from the same prompt.
 
-Watch both videos using the playback controls, then click on the video you think is better. The selected video gets a blue border.
+⚠ You must watch BOTH videos all the way to the end before you can submit your choice. The Next button stays locked until both have finished playing.
 
-You can replay, pause, and scrub through the videos as many times as you need before making your choice.
+Click on the video you think is better — the selected video gets a blue border. You can replay, pause, and scrub freely. Only one video plays at a time; starting one pauses the other.
 
-The prompt (if available) is displayed above each pair.`,
+The prompt is shown above each pair.`,
+  },
+  video_individual: {
+    title: "Individual Video Rating",
+    body: `You will see one video at a time, with its prompt shown above.
+
+⚠ You must watch the entire video to the end before you can rate it. The Next button stays locked until the video has finished playing.
+
+Then rate it on a 1–5 scale based on how well it matches the prompt and overall quality. You can replay, pause, and scrub freely.`,
+  },
+  video_ranked: {
+    title: "Ranked Video Comparison",
+    body: `You will see three videos generated from the same prompt.
+
+⚠ You must watch ALL THREE videos to the end before you can rank them. The Next button stays locked until every video has finished playing.
+
+Drag the videos into order from 1st (best) to 3rd. Only one video plays at a time — starting another pauses the current one.`,
+  },
+  video_group: {
+    title: "Group Video Rating",
+    body: `You will see a grid of videos. Each has its own prompt shown above it.
+
+⚠ You must watch every video on the page to the end before you can submit ratings. The Next/Finish button stays locked until they have all finished playing.
+
+Rate each video on a 1–10 scale. Only one video plays at a time.`,
   },
   ranked: {
     title: "Ranked Comparison",
@@ -66,6 +88,38 @@ const Placeholder = ({ height = "14vh", label }) => (
     }}
   >
     {label || "–"}
+  </Box>
+);
+
+const VideoPlaceholder = ({ height = "14vh", label = "Video" }) => (
+  <Box
+    sx={{
+      height,
+      width: "100%",
+      bgcolor: "#1f1f1f",
+      borderRadius: 1,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#888",
+      border: "2px dashed #333",
+      gap: 0.75,
+    }}
+  >
+    <Box
+      sx={{
+        width: 0,
+        height: 0,
+        borderTop: "11px solid transparent",
+        borderBottom: "11px solid transparent",
+        borderLeft: "18px solid #888",
+        ml: "4px",
+      }}
+    />
+    <Typography sx={{ fontSize: "0.8rem", fontWeight: "bold", letterSpacing: 0.5 }}>
+      {label}
+    </Typography>
   </Box>
 );
 
@@ -211,7 +265,7 @@ const VideoPairwisePreview = () => (
     <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
       <Card sx={{ border: "4px solid #1976d2", pointerEvents: "none" }}>
         <Box sx={{ p: 1 }}>
-          <Placeholder height="12vh" label="▶ Video A" />
+          <VideoPlaceholder height="14vh" label="Video A" />
         </Box>
         <Typography variant="caption" align="center" display="block" sx={{ pb: 1 }}>
           ← Selected
@@ -219,7 +273,7 @@ const VideoPairwisePreview = () => (
       </Card>
       <Card sx={{ border: "4px solid transparent", pointerEvents: "none" }}>
         <Box sx={{ p: 1 }}>
-          <Placeholder height="12vh" label="▶ Video B" />
+          <VideoPlaceholder height="14vh" label="Video B" />
         </Box>
         <Typography variant="caption" align="center" display="block" sx={{ pb: 1, color: "text.disabled" }}>
           Click to select
@@ -227,7 +281,77 @@ const VideoPairwisePreview = () => (
       </Card>
     </Box>
     <Box sx={{ textAlign: "center", mt: 1.5 }}>
-      <Button variant="contained" size="small" disabled>Next Pair</Button>
+      <Button variant="contained" size="small" disabled>Watch both videos to continue</Button>
+    </Box>
+  </Box>
+);
+
+const VideoIndividualPreview = () => (
+  <Card sx={{ maxWidth: 360, mx: "auto", pointerEvents: "none" }}>
+    <Box sx={{ p: 1.5, bgcolor: "#fff3e0", textAlign: "center" }}>
+      <Typography variant="subtitle2">Video 1 of 10</Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ fontStyle: "italic" }}>
+        "A cat sitting on a windowsill at sunset..."
+      </Typography>
+    </Box>
+    <Box sx={{ p: 1 }}>
+      <VideoPlaceholder height="20vh" />
+    </Box>
+    <CardContent sx={{ textAlign: "center", pt: 1 }}>
+      <Typography variant="caption">Rating: 3</Typography>
+      <Slider defaultValue={3} min={1} max={5} step={1} marks size="small" sx={{ mt: 0.5 }} disabled />
+      <Button variant="contained" size="small" fullWidth disabled sx={{ mt: 1 }}>
+        Watch the video to continue
+      </Button>
+    </CardContent>
+  </Card>
+);
+
+const VideoRankedPreview = () => (
+  <Box>
+    <Typography variant="body2" align="center" sx={{ mb: 1, fontStyle: "italic", color: "text.secondary" }}>
+      "Aerial drone shot of a coastal highway..."
+    </Typography>
+    <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1.5 }}>
+      {[
+        { rank: "1st (Best)", color: "#2e7d32", bg: "#e8f5e9" },
+        { rank: "2nd", color: "#1976d2", bg: "#e3f2fd" },
+        { rank: "3rd", color: "#ed6c02", bg: "#fff3e0" },
+      ].map((slot, n) => (
+        <Card key={n} sx={{ pointerEvents: "none", bgcolor: slot.bg }}>
+          <Box sx={{ p: 0.5 }}>
+            <VideoPlaceholder height="11vh" label={`Video ${n + 1}`} />
+          </Box>
+          <CardContent sx={{ py: 1, px: 0.5, "&:last-child": { pb: 1 }, textAlign: "center" }}>
+            <Typography variant="caption" sx={{ color: slot.color, fontWeight: "bold" }}>
+              {slot.rank}
+            </Typography>
+          </CardContent>
+        </Card>
+      ))}
+    </Box>
+    <Box sx={{ textAlign: "center", mt: 1.5 }}>
+      <Button variant="contained" size="small" disabled>Watch every video to continue</Button>
+    </Box>
+  </Box>
+);
+
+const VideoGroupPreview = () => (
+  <Box>
+    <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1 }}>
+      {[1, 2, 3, 4, 5, 6].map((n) => (
+        <Card key={n} sx={{ pointerEvents: "none" }}>
+          <Box sx={{ p: 0.5 }}>
+            <VideoPlaceholder height="8vh" label="Video" />
+          </Box>
+          <CardContent sx={{ py: 0.5, px: 0.5, "&:last-child": { pb: 0.5 } }}>
+            <Slider defaultValue={Math.min(10, n + 3)} min={1} max={10} step={1} size="small" disabled />
+          </CardContent>
+        </Card>
+      ))}
+    </Box>
+    <Box sx={{ textAlign: "center", mt: 1.5 }}>
+      <Button variant="contained" size="small" disabled>Watch every video to continue</Button>
     </Box>
   </Box>
 );
@@ -236,6 +360,9 @@ const PREVIEWS = {
   individual: IndividualPreview,
   pairwise: PairwisePreview,
   video_pairwise: VideoPairwisePreview,
+  video_individual: VideoIndividualPreview,
+  video_ranked: VideoRankedPreview,
+  video_group: VideoGroupPreview,
   ranked: RankedPreview,
   selection: SelectionPreview,
 };

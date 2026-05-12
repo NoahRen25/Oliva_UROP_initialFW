@@ -15,7 +15,6 @@ const MODE_COLORS = {
   individual: "#5b8ef0",
   pairwise: "#34d399",
   ranked: "#fb923c",
-  "best-worst": "#a78bfa",
   selection: "#f472b6",
   combo: "#84cc16",
   grid: "#06b6d4",
