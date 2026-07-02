@@ -1,3 +1,8 @@
+/**
+ * GazeDwellChart.jsx — Recharts bar chart of per-image dwell time (with
+ * entries/exits in the tooltip) for the selected gaze session or the
+ * aggregate, i.e. "which images drew the most attention".
+ */
 import React from "react";
 import { Paper, Typography } from "@mui/material";
 import {

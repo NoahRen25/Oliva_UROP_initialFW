@@ -1,3 +1,7 @@
+/**
+ * Home.jsx — Landing page ("/"). Just the title and the big "Start Rating"
+ * button that sends participants into the guided session at /start.
+ */
 import React from "react";
 import { Link } from "react-router-dom";
 import { Box, Button, Container, Typography } from "@mui/material";

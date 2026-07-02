@@ -1,3 +1,8 @@
+/**
+ * SessionsTimeline.jsx — Stacked recharts area chart of sessions per day,
+ * colored by rating mode — the "activity over time" view of the analytics
+ * dashboard (data from dashboardTransforms.buildSessionsTimeline).
+ */
 import React from "react";
 import { Paper, Typography, Box } from "@mui/material";
 import { useTheme } from "@mui/material/styles";

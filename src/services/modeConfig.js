@@ -1,3 +1,14 @@
+/**
+ * modeConfig.js — Load/save the guided-session configuration.
+ *
+ * The `mode_config` table (single row, id = "active") defines which rating
+ * modes run in the guided flow, in what order, with what counts/layouts, and
+ * whether media is "image" or "video". MODE_DEFINITIONS maps each mode kind
+ * to its image/video routes and default fields; normalizeSteps() fills in
+ * defaults and appends any missing modes as disabled. The Admin Control Panel
+ * calls saveModeConfig(); GuidedSessionWelcome calls loadModeConfig().
+ * Falls back to DEFAULT_STEPS when Supabase is unreachable.
+ */
 import { supabase } from "../supabaseClient";
 
 export const MODE_DEFINITIONS = {

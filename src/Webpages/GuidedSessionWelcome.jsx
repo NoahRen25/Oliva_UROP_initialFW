@@ -1,3 +1,10 @@
+/**
+ * GuidedSessionWelcome.jsx — "/start": the participant's entry into a
+ * guided session. Loads the active mode_config, describes each upcoming
+ * step in plain language, collects the participant ID, then routes to
+ * WebGazer calibration with the guided uploadConfig chain
+ * (buildGuidedUploadConfig) in location.state.
+ */
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {

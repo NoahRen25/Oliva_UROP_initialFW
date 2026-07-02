@@ -1,3 +1,10 @@
+/**
+ * GazeAnalyticsSection.jsx — The gaze-analytics dashboard (embedded as a
+ * tab of the researcher/results views, not its own route). Fetches all
+ * gaze_sessions rows, offers mode/session filtering (GazeSessionPicker),
+ * and lays out the KPI cards, dwell chart, per-session timeline, in-image
+ * heatmaps, page-format explorer, and CSV export panels.
+ */
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
 

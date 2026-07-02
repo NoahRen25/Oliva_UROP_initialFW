@@ -1,3 +1,7 @@
+/**
+ * ResultsHeader.jsx — Title row for results pages: page title on the left,
+ * a destructive "Clear History" button on the right when data exists.
+ */
 import React from "react";
 import { Box, Typography, Button } from "@mui/material";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";

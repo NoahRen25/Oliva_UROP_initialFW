@@ -1,3 +1,10 @@
+/**
+ * ReadPromptButton.jsx — Text-to-speech button that reads the current
+ * rating prompt aloud (browser speechSynthesis). The prompt comes from
+ * Results context `activePrompt`, which rating pages set as the participant
+ * moves through items; speech cancels automatically when the prompt
+ * changes.
+ */
 import React, { useState, useEffect, useCallback } from "react";
 import { IconButton, Tooltip } from "@mui/material";
 import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";

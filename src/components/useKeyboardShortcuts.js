@@ -1,3 +1,9 @@
+/**
+ * useKeyboardShortcuts.js — Keyboard controls for rating flows: number keys
+ * 1–5 set a rating, Enter/Space advances, arrow keys select left/right in
+ * pairwise, and undo is supported. Ignores keystrokes while an input field
+ * is focused; pass enabled=false to switch off (e.g. on instruction steps).
+ */
 import { useEffect, useCallback } from "react";
 
 export default function useKeyboardShortcuts({

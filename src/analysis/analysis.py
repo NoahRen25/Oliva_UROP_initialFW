@@ -1,3 +1,13 @@
+"""
+analysis.py — Offline analysis of combo-protocol results.
+
+Reads the CSV exported from the Combo Results page (combo_results_all-2.csv,
+expected in this directory) and produces the matplotlib/seaborn charts saved
+alongside it (chart1_images_score_click.png, plots_a/b/c.png): per-image mean
+score vs. mean click order, position effects by page/row/col, and related
+breakdowns. Not part of the web app — run with plain Python
+(pandas/numpy/matplotlib/seaborn/scipy required).
+"""
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt

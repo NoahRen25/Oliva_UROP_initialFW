@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+"""
+transcribe_recordings.py — Batch speech-to-text for downloaded session
+audio. Points OpenAI Whisper at a folder of .webm recordings (e.g. pulled
+from the session-audio Supabase bucket), transcribes each, and writes a CSV
+of (recording label, duration, transcript). Run:
+    python transcribe_recordings.py <folder> [--model base] [--out out.csv]
+Requires: pip install openai-whisper (plus ffmpeg on PATH).
+"""
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 

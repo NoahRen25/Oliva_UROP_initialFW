@@ -1,3 +1,8 @@
+/**
+ * TranscriptHistory.jsx — "/transcripts": searchable list of all saved
+ * voice transcripts with duration/timestamp, per-item delete, clear-all,
+ * and CSV export. Data comes from the transcripts state in Results context.
+ */
 import React, { useState } from "react";
 import {
   Container,

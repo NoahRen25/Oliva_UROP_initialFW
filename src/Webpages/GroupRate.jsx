@@ -1,3 +1,9 @@
+/**
+ * GroupRate.jsx — LEGACY group-rating page (benchmark image + a batch of
+ * generated images with sliders). Not routed in App.jsx and not imported
+ * anywhere; superseded by GroupGridRate / LayoutRatingFlow. Kept for
+ * reference.
+ */
 import React, { useState, useEffect } from "react";
 import { useResults } from "../Results";
 import { useNavigate } from "react-router-dom";

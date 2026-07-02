@@ -1,3 +1,14 @@
+/**
+ * IndividualRate.jsx — "/individual-rate": rate AI-generated images one at
+ * a time on a 1–5 slider.
+ *
+ * Steps: username (skipped when guided) → instructions → rating → done.
+ * Samples N images via ImageLoader, records per-image score, time spent,
+ * and slider interactions, tracks gaze (CalibrationGate +
+ * GazeTrackingProvider + GazeTrackedImage), auto-records voice per image,
+ * and enforces the speed check. Saves with addIndividualSession +
+ * saveGazeSession, then follows nextGuidedNavigation when guided.
+ */
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useResults } from "../Results";

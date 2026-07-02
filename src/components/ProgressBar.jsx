@@ -1,3 +1,8 @@
+/**
+ * ProgressBar.jsx — Simple determinate progress bar with an optional label
+ * and percentage, used inside rating flows ("image 3 of 10"). Distinct from
+ * GuidedProgress, which tracks whole-session steps.
+ */
 import React from "react";
 import { Box, LinearProgress, Typography } from "@mui/material";
 

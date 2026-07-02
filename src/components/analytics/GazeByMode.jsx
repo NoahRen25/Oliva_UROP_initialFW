@@ -1,3 +1,8 @@
+/**
+ * GazeByMode.jsx — Recharts bar chart comparing gaze behavior across rating
+ * modes (individual/pairwise/ranked/…): session counts and average dwell
+ * per mode, using the byMode data from gazeTransforms.buildGazeOverview.
+ */
 import React from "react";
 import { Paper, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";

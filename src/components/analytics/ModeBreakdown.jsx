@@ -1,3 +1,8 @@
+/**
+ * ModeBreakdown.jsx — Dashboard card breaking sessions down by rating mode:
+ * a recharts bar chart of session counts plus a table with per-mode ratings
+ * and user counts.
+ */
 import React from "react";
 import {
   Paper,

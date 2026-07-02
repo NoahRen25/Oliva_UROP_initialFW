@@ -1,3 +1,10 @@
+/**
+ * RankedRate.jsx — "/ranked-rate": order groups of 3 same-prompt images
+ * from best to worst. Two UI variants chosen by uploadConfig.rankMode:
+ * "swap" (drag to reorder) and "select" (click 1st/2nd/3rd in order).
+ * Gaze-tracked, voice-recorded, speed-checked; saves via addRankedSession
+ * and follows the guided chain. VideoRankedRate is the video twin.
+ */
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useResults } from "../Results";

@@ -1,3 +1,8 @@
+/**
+ * GazeExport.jsx — CSV download buttons for gaze data at three
+ * granularities (session summary, per-image, raw coordinates), using
+ * gazeTransforms.flattenForExport + papaparse.
+ */
 import React from "react";
 import { Paper, Typography, Box, Button } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";

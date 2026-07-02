@@ -1,3 +1,10 @@
+/**
+ * ModeInstructionScreen.jsx — Instruction page shown before each non-grid
+ * rating mode. The INSTRUCTIONS map holds title + body text per mode key
+ * (individual, pairwise, ranked, selection, and the video_* variants);
+ * edit study wording here. Also renders small illustrative UI previews for
+ * some modes.
+ */
 import React from "react";
 import {
   Box, Typography, Button, Paper, Card, CardContent,

@@ -1,3 +1,9 @@
+/**
+ * GuidedProgress.jsx — "Step X of Y" progress bar shown at the top of each
+ * rating page during a guided session. Derives progress from the
+ * uploadConfig chain (totalSteps minus remaining flow entries) and renders
+ * nothing outside guided mode.
+ */
 import React from "react";
 import { useLocation } from "react-router-dom";
 import { Box, LinearProgress, Typography } from "@mui/material";

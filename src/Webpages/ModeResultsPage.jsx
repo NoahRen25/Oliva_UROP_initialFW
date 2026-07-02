@@ -1,3 +1,8 @@
+/**
+ * ModeResultsPage.jsx — "/mode-results": dropdown-switched container for
+ * the per-mode results tables (IndividualResult, PairwiseResult,
+ * VideoPairwiseResult, RankedResult, SelectionResult).
+ */
 import React, { useState } from "react";
 import {
   Container, FormControl, Select, MenuItem, Box, Typography, Paper

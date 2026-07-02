@@ -1,3 +1,10 @@
+/**
+ * VideoRankedRate.jsx — "/video-ranked-rate": order groups of 3
+ * same-prompt videos best→worst (drag-to-swap panel). The video version of
+ * RankedRate: all videos in a group must be watched before ranking counts,
+ * playback is coordinated by useVideoFleet, and sessions save via
+ * addRankedSession with gaze + voice capture.
+ */
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useResults } from "../Results";

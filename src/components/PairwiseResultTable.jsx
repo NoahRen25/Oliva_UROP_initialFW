@@ -1,3 +1,9 @@
+/**
+ * PairwiseResultTable.jsx — Shared results table for pairwise sessions
+ * (image and video variants): one row per choice showing winner/loser,
+ * per-page recording playback, per-session CSV export and delete. Used by
+ * PairwiseResult / VideoPairwiseResult / ModeResultsPage.
+ */
 import React from "react";
 import {
   Table, TableBody, TableCell, TableHead, TableRow, Box, Paper,

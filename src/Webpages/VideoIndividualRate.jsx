@@ -1,3 +1,10 @@
+/**
+ * VideoIndividualRate.jsx — "/video-individual-rate": watch one video at a
+ * time and rate it 1–5. The video version of IndividualRate: videos come
+ * from VideoLoader, the Next button stays locked until the video has been
+ * watched to the end (useVideoFleet), and sessions save via
+ * addIndividualSession with gaze + voice capture.
+ */
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useResults } from "../Results";

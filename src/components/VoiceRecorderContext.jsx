@@ -1,3 +1,15 @@
+/**
+ * VoiceRecorderContext.jsx — Owns the microphone for the whole app
+ * (VoiceRecorderProvider / useVoiceRecorder).
+ *
+ * Holds one persistent getUserMedia stream and runs a MediaRecorder that is
+ * segmented per rating page: whenever `currentRatingPage` (from Results
+ * context) changes, the current recorder is flushed into a per-page
+ * audio/webm blob and a new one starts. Exposes start/stop/isRecording and
+ * registers the collector used by utils/collectPageTranscripts so rating
+ * pages can grab { transcripts, audioUrls, audioBlobs } keyed by page on
+ * submit (blobs are then uploaded via services/supabaseAudioStorage).
+ */
 import React, {
   createContext, useContext, useState, useEffect, useRef, useCallback,
 } from "react";

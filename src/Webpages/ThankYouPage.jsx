@@ -1,3 +1,8 @@
+/**
+ * ThankYouPage.jsx — "/thank-you": end-of-guided-session confirmation
+ * screen with a Return Home button. nextGuidedNavigation routes here after
+ * the last step.
+ */
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Container, Paper, Typography, Button, Box } from "@mui/material";

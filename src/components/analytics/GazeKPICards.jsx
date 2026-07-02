@@ -1,3 +1,9 @@
+/**
+ * GazeKPICards.jsx — Row of headline gaze stats (avg dwell, avg entries,
+ * most-viewed image, tracked-image count). Aggregates across all gaze
+ * sessions, or shows a single session's numbers when one is selected in
+ * GazeSessionPicker.
+ */
 import React, { useMemo } from "react";
 import { Box, Paper, Typography } from "@mui/material";
 

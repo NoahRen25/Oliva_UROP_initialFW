@@ -1,3 +1,9 @@
+/**
+ * GazeHeatmap.jsx — Canvas heatmap of where participants looked *within*
+ * each image: bins the relative gaze coordinates (buildHeatmapData from
+ * gazeTransforms) into a grid and paints blue→green→yellow→red by density,
+ * with a zoomed dialog view per image.
+ */
 import React, { useEffect, useRef, useState } from "react";
 import {
   Paper,

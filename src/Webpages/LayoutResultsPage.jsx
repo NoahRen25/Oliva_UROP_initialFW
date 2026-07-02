@@ -1,3 +1,9 @@
+/**
+ * LayoutResultsPage.jsx — Results table for one grid layout's sessions
+ * (layout_group type, keyed by layoutId prop). Reused by ResultsPage for
+ * each layout tab; supports per-session delete, clear-layout, and CSV
+ * export.
+ */
 import React from "react";
 import { useResults } from "../Results";
 import ResultsPageShell from "../components/ResultsPageShell";

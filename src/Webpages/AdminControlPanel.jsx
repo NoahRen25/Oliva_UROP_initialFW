@@ -1,3 +1,13 @@
+/**
+ * AdminControlPanel.jsx — "/admin/control-panel" (admins only; others are
+ * redirected home).
+ *
+ * UI for editing the guided-session configuration stored in `mode_config`:
+ * enable/disable/reorder rating modes, set item counts and grid layouts,
+ * and switch the whole study between image and video media. Saves through
+ * services/modeConfig.saveModeConfig, which takes effect for the next
+ * participant who presses Start Rating.
+ */
 import React, { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import {

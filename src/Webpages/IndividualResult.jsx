@@ -1,3 +1,9 @@
+/**
+ * IndividualResult.jsx — Results table for individual-rating sessions:
+ * per-image score/time/interactions with session averages (benchmark
+ * excluded), recordings, and CSV export. Shown as the "Individual" tab of
+ * ModeResultsPage.
+ */
 import React from "react";
 import { useResults } from "../Results";
 import {

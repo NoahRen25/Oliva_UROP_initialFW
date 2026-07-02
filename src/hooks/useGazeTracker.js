@@ -1,3 +1,17 @@
+/**
+ * useGazeTracker.js — Core gaze-analytics hook.
+ *
+ * Subscribes to the throttled gaze point from WebGazerContext and hit-tests
+ * it against every registered image element (registration happens through
+ * GazeTrackingProvider / GazeTrackedImage). Accumulates, per image: first
+ * gaze time, total dwell time, entry/exit counts, fixations, and gaze
+ * coordinates relative to the image (heatmap input). Also records
+ * page-level data: viewport-fraction gaze trails plus a snapshot of image
+ * layout per "page" (one screen of a rating flow), so layouts can be
+ * reconstructed later. Element rects are cached and only recomputed on
+ * scroll/resize for performance. `getGazeData()` returns everything in the
+ * shape saved by utils/gazeStorage.js.
+ */
 import { useRef, useCallback, useEffect } from 'react';
 import { useWebGazer } from '../utils/WebGazerContext';
 

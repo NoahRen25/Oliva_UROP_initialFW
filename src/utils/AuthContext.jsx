@@ -1,3 +1,11 @@
+/**
+ * AuthContext.jsx — Supabase auth state + role lookup (AuthProvider/useAuth).
+ *
+ * Tracks the Supabase auth session and resolves the signed-in user's role
+ * from the `user_roles` table (email → "admin" | "researcher"), exposing
+ * convenience flags isAdmin / isResearcher used to gate the researcher and
+ * admin pages. Participants never sign in, so for them everything is null.
+ */
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 

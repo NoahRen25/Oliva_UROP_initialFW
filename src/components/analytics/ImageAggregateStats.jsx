@@ -1,3 +1,8 @@
+/**
+ * ImageAggregateStats.jsx — Sortable, searchable table of per-image
+ * statistics across all sessions (rating count, mean/median/std dev, which
+ * modes the image appeared in). Data comes from dashboardTransforms.
+ */
 import React, { useState, useMemo } from "react";
 import {
   Paper,

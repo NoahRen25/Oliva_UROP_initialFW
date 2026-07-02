@@ -1,3 +1,7 @@
+/**
+ * ComboResultsPage.jsx — "/combo-results": table + CSV export of all combo
+ * protocol ("fixed") sessions, built from ResultsPageShell/GridResultTable.
+ */
 import React from "react";
 import { useResults } from "../Results";
 import ResultsPageShell from "../components/ResultsPageShell";

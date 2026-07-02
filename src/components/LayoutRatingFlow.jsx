@@ -1,3 +1,14 @@
+/**
+ * LayoutRatingFlow.jsx — Full grid-rating session for a single layout
+ * (routes "/rate" and "/rate/grid").
+ *
+ * Steps: username entry → instructions → N pages of ImageGrid rating.
+ * Samples memorability images in the config's score range (useMemImages),
+ * tracks per-page timing with the speed check, and saves via
+ * addGroupSessionForLayout keyed by layout id (2x2, 3x3, …). The `mode`
+ * prop distinguishes config-upload ("upload", from /rate/upload) from
+ * manual entry ("manual").
+ */
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Container, Box, CircularProgress } from "@mui/material";

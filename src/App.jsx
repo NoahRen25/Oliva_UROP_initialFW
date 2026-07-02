@@ -1,3 +1,17 @@
+/**
+ * App.jsx — Application shell and single source of routing truth.
+ *
+ * Stacks every global provider (Auth → Results → VoiceRecorder → WebGazer),
+ * applies the MUI light theme, renders the top app bar (admin menu + login),
+ * and defines ALL routes: rating pages, results dashboards, admin tools, and
+ * WebGazer calibration utilities.
+ *
+ * Also hosts three route-aware helpers:
+ *  - WebGazerAutoStop: shuts the eye tracker down when leaving rating routes
+ *    (see KEEP_WEBGAZER_ROUTES).
+ *  - WebGazerVideoToggle: shows the webcam preview only on calibration pages.
+ *  - FloatingVoiceRecorder: the mic widget shown on rating routes.
+ */
 import React, { useEffect } from "react";
 import {
   BrowserRouter as Router, Routes, Route, Link, useLocation,

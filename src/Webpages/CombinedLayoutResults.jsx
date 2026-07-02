@@ -1,3 +1,9 @@
+/**
+ * CombinedLayoutResults.jsx — Side-by-side comparison of all grid layouts:
+ * one card per layout (2x2, 4x1, 3x3, …) with per-session average score,
+ * time, and slider moves (benchmark images excluded). Rendered as the
+ * "Combined" tab inside ResultsPage.
+ */
 import React from "react";
 import { useResults } from "../Results";
 import {

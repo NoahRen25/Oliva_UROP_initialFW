@@ -1,3 +1,13 @@
+/**
+ * CalibrationGate.jsx — Wrapper that blocks a rating page until eye
+ * tracking is ready.
+ *
+ * Renders children only when the participant is calibrated AND WebGazer is
+ * actively tracking. If calibrated but not started, it auto-initializes the
+ * tracker and shows a spinner; if never calibrated, it prompts to visit
+ * /webgazer-calibration. Every gaze-enabled rating page wraps itself in
+ * CalibrationGate > GazeTrackingProvider > <PageInner>.
+ */
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWebGazer } from '../utils/WebGazerContext';

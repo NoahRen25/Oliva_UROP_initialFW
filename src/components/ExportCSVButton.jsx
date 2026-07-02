@@ -1,3 +1,9 @@
+/**
+ * ExportCSVButton.jsx — Generic "download as CSV" button used across the
+ * results tables/dashboards. Serializes an array of row objects (optionally
+ * with an explicit header order), quotes/escapes values, and triggers a
+ * client-side file download. No backend involved.
+ */
 import React from "react";
 import { Button, IconButton, Tooltip } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";

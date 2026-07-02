@@ -1,3 +1,9 @@
+/**
+ * SelectionRate.jsx — "/selection-rate": show a grid of images and have the
+ * participant click every image matching the task prompt. Gaze-tracked and
+ * voice-recorded; selections are saved as 1/0 scores via
+ * addSelectionSession. Reviewed in the Selection tab of ModeResultsPage.
+ */
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useResults } from "../Results";

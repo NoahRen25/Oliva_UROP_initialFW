@@ -1,3 +1,9 @@
+/**
+ * StatsSummary.jsx — Aggregate stats panel shown under results tables
+ * (via ResultsPageShell): per-image mean/median/std-dev plus a small score
+ * histogram, computed with statsUtils from whatever `dataExtractor` pulls
+ * out of each session.
+ */
 import React, { useMemo } from "react";
 import { Box, Typography, Paper, Grid, Divider, Tooltip } from "@mui/material";
 import { calculateStats } from "../utils/statsUtils"; // Adjust path as needed

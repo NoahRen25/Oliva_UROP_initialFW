@@ -1,3 +1,9 @@
+/**
+ * ResultsPage.jsx — "/grid-results" (and legacy "/results"):
+ * dropdown-switched container for grid-session results — the combined
+ * layout overview, one tab per grid layout (LayoutResultsPage), and the
+ * combo protocol table.
+ */
 import React, { useState } from "react";
 import {
   Container, FormControl, Select, MenuItem, Box, Typography, Paper

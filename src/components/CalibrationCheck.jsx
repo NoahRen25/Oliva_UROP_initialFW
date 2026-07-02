@@ -1,3 +1,14 @@
+/**
+ * CalibrationCheck.jsx — Quick mid-session gaze accuracy check
+ * ("/calibration-check").
+ *
+ * Shows 5 targets (center + corners) for 1.5s each, samples the live gaze
+ * point, and computes mean pixel error. Under ERROR_THRESHOLD_PX the
+ * participant continues automatically to the next guided step (carried in
+ * location.state.uploadConfig); over it they're offered a recalibration
+ * detour. Guided steps opt in via `validateBefore: true` (see
+ * utils/guidedFlow.js). Skips itself if tracking isn't running.
+ */
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {

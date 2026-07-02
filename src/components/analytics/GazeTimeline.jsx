@@ -1,3 +1,8 @@
+/**
+ * GazeTimeline.jsx — Horizontal timeline strip of a single gaze session:
+ * consecutive gaze samples are merged into colored segments per image, so
+ * you can read the order and duration of what the participant looked at.
+ */
 import React, { useMemo } from "react";
 import { Paper, Typography, Box } from "@mui/material";
 

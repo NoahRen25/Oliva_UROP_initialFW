@@ -1,3 +1,14 @@
+/**
+ * WebGazerContext.jsx — Global eye-tracking provider (WebGazerProvider /
+ * useWebGazer).
+ *
+ * Owns the entire WebGazer.js lifecycle: lazily injects the vendored script
+ * from public/webgazer/, starts/stops the tracker, throttles gaze updates to
+ * ~30 FPS (currentGaze), toggles the webcam preview, and persists/restores
+ * calibration data in localStorage so participants don't recalibrate on
+ * every page load. Everything gaze-related (useGazeTracker, calibration
+ * pages, CalibrationGate) builds on this context.
+ */
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
 
 // Storage keys for manual calibration persistence

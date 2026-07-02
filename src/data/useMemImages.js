@@ -1,3 +1,12 @@
+/**
+ * useMemImages.js — Hook exposing the memorability image dataset.
+ *
+ * Parses src/data/memorability_scores.csv (bundled at build time) into rows
+ * of { path, score, ... }, rewriting each path to a Supabase `mem-images`
+ * bucket URL (or local /mem_images/ fallback). Grid rating modes use
+ * countInRange/sampleInRange to pick N random images within a target
+ * memorability-score band (e.g. 0.4–0.8).
+ */
 import { useState, useEffect, useCallback } from "react";
 import Papa from "papaparse";
 import { getImageUrl } from "../utils/supabaseImageUrl";

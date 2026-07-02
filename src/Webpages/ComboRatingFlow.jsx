@@ -1,3 +1,11 @@
+/**
+ * ComboRatingFlow.jsx — "/combo-rate": the fixed "combo protocol" session.
+ *
+ * A predetermined multi-page grid sequence (mixing 3x3 and 3x3-no-center
+ * pages) over shuffled memorability images, with gaze tracking, auto voice
+ * recording, and the speed check. Results are saved as "fixed" sessions
+ * (addFixedSession) and reviewed on /combo-results.
+ */
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Container, CircularProgress } from "@mui/material";
 import { useNavigate } from "react-router-dom";

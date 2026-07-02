@@ -1,3 +1,9 @@
+/**
+ * pageTranscriptCell.jsx — Table-cell helpers for per-page voice
+ * recordings in results tables: RecordingCell plays/downloads one page's
+ * audio (from the session's pageAudioUrls), RecordingHeader is the matching
+ * column header. Used by GridResultTable and the results pages.
+ */
 import React, { useState, useRef, useCallback } from "react";
 import {
   IconButton, Tooltip, TableCell, Box,

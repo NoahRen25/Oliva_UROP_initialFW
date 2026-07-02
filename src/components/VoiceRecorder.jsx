@@ -1,3 +1,9 @@
+/**
+ * VoiceRecorder.jsx — The floating mic button UI (mounted in App.jsx on
+ * rating routes). Purely presentational: shows recording state + elapsed
+ * time and toggles the shared recorder in VoiceRecorderContext, which owns
+ * the actual MediaRecorder/transcription logic.
+ */
 import React, { useCallback, useEffect, useRef } from "react";
 import { IconButton, Tooltip, Badge, Typography, Box } from "@mui/material";
 import MicIcon from "@mui/icons-material/Mic";

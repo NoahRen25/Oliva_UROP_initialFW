@@ -1,3 +1,9 @@
+/**
+ * PrivacySettings.jsx — "/privacy": participant-facing data controls.
+ * Shows consent status and stored-data counts per category, with buttons to
+ * delete each category, revoke consent, or wipe everything (clearAllData in
+ * Results context, which also deletes from Supabase).
+ */
 import React from "react";
 import { useResults } from "../Results";
 import {

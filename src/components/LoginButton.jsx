@@ -1,3 +1,9 @@
+/**
+ * LoginButton.jsx — App-bar auth control. Signed out: opens an
+ * email/password Supabase sign-in dialog (researcher/admin accounts only —
+ * participants never log in). Signed in: shows the user's email + role and
+ * a log-out button.
+ */
 import React, { useState } from "react";
 import {
   Button, Dialog, DialogTitle, DialogContent, DialogActions,

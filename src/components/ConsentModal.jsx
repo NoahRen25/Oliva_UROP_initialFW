@@ -1,3 +1,9 @@
+/**
+ * ConsentModal.jsx — Blocking privacy/consent dialog shown on first load
+ * (open while ResultsProvider's consentGiven is false). Lists exactly what
+ * the study records (ratings, timing, gaze, audio, device info). Accepting
+ * calls acceptConsent(); consent can later be revoked on /privacy.
+ */
 import React from "react";
 import {
   Dialog,

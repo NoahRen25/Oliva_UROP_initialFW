@@ -1,3 +1,9 @@
+/**
+ * getSessionMetadata.js — Capture device/browser info for a session
+ * (browser name+version, platform, window/screen size, pixel ratio,
+ * mobile flag). Stored with sessions so researchers can control for
+ * display differences during analysis.
+ */
 function getBrowserName(ua) {
   if (ua.includes("Firefox/")) {
     const match = ua.match(/Firefox\/(\d+)/);

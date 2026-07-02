@@ -1,3 +1,8 @@
+/**
+ * GazeOverviewMetrics.jsx — Metric tiles for the gaze dashboard overview
+ * (session count, avg dwell time, avg gaze entries, unique images), fed by
+ * gazeTransforms.buildGazeOverview.
+ */
 import React from "react";
 import { Box, Paper, Typography } from "@mui/material";
 

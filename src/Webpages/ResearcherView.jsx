@@ -1,3 +1,12 @@
+/**
+ * ResearcherView.jsx — "/researcher": the main researcher workbench.
+ *
+ * Aggregates every session type into a per-image explorer (grid or list)
+ * with per-image stats modals, audio recordings, side-by-side comparisons,
+ * gaze heatmaps for selected images, CSV export, and an embedded
+ * GazeAnalyticsSection tab. Also links to /researcher/simulate for demoing
+ * flows without collecting data.
+ */
 import React, { useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {

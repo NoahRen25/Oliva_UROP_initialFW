@@ -1,3 +1,9 @@
+/**
+ * DashboardExport.jsx — Export panel on the analytics dashboard: flattens
+ * every rating session (scores/choices/rankings/selections) into rows and
+ * downloads a per-mode or combined CSV via papaparse. Gaze data has its own
+ * exporter (GazeExport.jsx).
+ */
 import React from "react";
 import { Paper, Typography, Box, Button } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";

@@ -1,3 +1,9 @@
+/**
+ * SimulatedSession.jsx — "/researcher/simulate": read-only replicas of the
+ * rating UIs (individual, pairwise, ranked, grid, …) populated with
+ * existing study images and their aggregated stats/audio. Lets researchers
+ * demo or inspect what participants see without recording any data.
+ */
 import React, { useState, useMemo, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {

@@ -1,3 +1,9 @@
+/**
+ * DataQualityPanel.jsx — Dashboard card summarizing a data-quality report
+ * (built in utils/dashboardTransforms): fast-completion / outlier rates per
+ * mode with green/orange/red status chips, so researchers can spot
+ * low-effort sessions.
+ */
 import React from "react";
 import { Paper, Typography, Box, Chip } from "@mui/material";
 

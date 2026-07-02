@@ -1,3 +1,9 @@
+/**
+ * SetPassword.jsx — "/set-password": landing page for the Supabase invite
+ * email. The invite link signs the user in; this page lets them choose a
+ * password (supabase.auth.updateUser) and then redirects home. Part of the
+ * admin "Invite User" flow.
+ */
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {

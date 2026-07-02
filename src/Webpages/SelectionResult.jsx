@@ -1,3 +1,8 @@
+/**
+ * SelectionResult.jsx — Results view for selection sessions: which images
+ * each participant selected per task prompt, with CSV export. Shown as the
+ * "Selection" tab of ModeResultsPage.
+ */
 import React from "react";
 import { useResults } from "../Results";
 import {

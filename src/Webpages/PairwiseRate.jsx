@@ -1,3 +1,11 @@
+/**
+ * PairwiseRate.jsx — "/pairwise-rate": pick the better of two images
+ * generated from the same prompt. Thin wrapper around the shared
+ * PairwiseFlow component: supplies image pairs from
+ * ImageLoader.getPairwiseBatch, gaze-tracked image cards, and saves via
+ * addPairwiseSession + saveGazeSession. VideoPairwiseRate is the video
+ * twin.
+ */
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useResults } from "../Results";

@@ -1,3 +1,10 @@
+/**
+ * InstructionScreen.jsx — Pre-task instructions for grid-based flows.
+ * Shows the task prompt plus a miniature preview of the grid layout the
+ * participant is about to see (built from gridConstants). The "combo"
+ * variant previews multiple layouts. ModeInstructionScreen.jsx is the
+ * equivalent for the non-grid modes.
+ */
 import React, { useMemo } from "react";
 import { Box, Typography, Button, Card, Slider, Grid } from "@mui/material";
 import { getGridConfig, LAYOUT_OPTIONS } from "../data/gridConstants"; 

@@ -1,3 +1,14 @@
+/**
+ * ImageLoader.js — Catalog of AI-generated study images.
+ *
+ * Parses the three prompt CSVs in src/data (flux_2_pro, gpt-image-1.5,
+ * nano_banana_pro) at build time into one list of
+ * { category, prompt, filename, folderId, src } entries, with URLs resolved
+ * through the `generated-images` Supabase bucket (or local /images/
+ * fallback). Same filename across model folders = same prompt rendered by
+ * different models, which is what the pairwise/ranked builders exploit via
+ * the BY_FILENAME index. Image-mode rating pages sample from these exports.
+ */
 import Papa from "papaparse";
 import csv1Text from "../data/prompts_flux_2_pro.csv?raw";
 import csv2Text from "../data/prompts_gpt-image-1.5.csv?raw";

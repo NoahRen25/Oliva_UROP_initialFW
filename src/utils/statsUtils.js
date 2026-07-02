@@ -1,3 +1,8 @@
+/**
+ * statsUtils.js — Small pure-math helpers (median, standard deviation,
+ * histograms, outlier detection) used by the analytics dashboards and
+ * dashboardTransforms.js.
+ */
 export function median(arr) {
   if (!arr.length) return 0;
   const sorted = [...arr].sort((a, b) => a - b);

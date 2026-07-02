@@ -1,3 +1,10 @@
+/**
+ * VideoGroupGridRate.jsx — "/video-group-grid-rate": the video version of
+ * GroupGridRate. Pages of videos in a grid layout, each rated 1–5; the
+ * VideoLoader supplies videos and useVideoFleet enforces one-at-a-time
+ * playback and watch-completion gating before the page can advance. Saves
+ * as "fixed" sessions and follows the guided chain.
+ */
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {

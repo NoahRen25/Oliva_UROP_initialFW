@@ -1,3 +1,10 @@
+/**
+ * WebGazerCalibration.jsx — "/webgazer-calibration": click-based 9-point
+ * eye-tracker calibration (5 clicks per point on a 3×3 grid). Initializes
+ * WebGazer, records calibration through WebGazerContext (persisted to
+ * localStorage), then continues to `returnTo`/the guided uploadConfig
+ * route — this is the first stop of every guided session.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {

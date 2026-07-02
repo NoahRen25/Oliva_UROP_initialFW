@@ -1,3 +1,10 @@
+/**
+ * ImageGrid.jsx — Presentational grid of image cards, each with an optional
+ * 0–100 rating slider. Used by the grid-based flows (LayoutRatingFlow /
+ * GridRatingStep). Supports the "3x3-no-center" layout by inserting an
+ * empty slot in the middle cell; slider commits are reported through
+ * `trackMove` for interaction-order tracking.
+ */
 import React from "react";
 import { Box, Card, CardMedia, Typography, Slider } from "@mui/material";
 

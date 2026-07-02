@@ -1,3 +1,8 @@
+/**
+ * RankedResult.jsx — Results view for ranked sessions: rankings grouped by
+ * image group with per-page recordings and CSV export. Shown as the
+ * "Ranked" tab of ModeResultsPage.
+ */
 import React from "react";
 import { useResults } from "../Results";
 import {

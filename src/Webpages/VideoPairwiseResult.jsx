@@ -1,3 +1,8 @@
+/**
+ * VideoPairwiseResult.jsx — Results view for video pairwise sessions
+ * (winner/loser + prompt per pair, CSV export). Shown as the "Video
+ * Pairwise" tab of ModeResultsPage.
+ */
 import React from "react";
 import { useResults } from "../Results";
 import ResultsPageShell from "../components/ResultsPageShell";

@@ -1,3 +1,10 @@
+/**
+ * VideoPairwiseRate.jsx — "/video-pairwise-rate": pick the better of two
+ * videos rendered from the same prompt by different models (same filename
+ * across bucket folders — see VideoLoader). Wraps the shared PairwiseFlow
+ * with VideoCards; both videos must finish playing before the choice can
+ * be submitted. Saves via addVideoPairwiseSession.
+ */
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useResults } from "../Results";

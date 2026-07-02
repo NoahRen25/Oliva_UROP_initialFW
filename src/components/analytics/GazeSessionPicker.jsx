@@ -1,3 +1,8 @@
+/**
+ * GazeSessionPicker.jsx — Two dropdowns (rating mode, then session) that
+ * filter the gaze dashboard; empty selection means "aggregate across all
+ * sessions". Controlled by GazeAnalyticsSection.
+ */
 import React, { useMemo } from "react";
 import { Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 

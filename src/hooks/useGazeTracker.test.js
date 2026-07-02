@@ -1,3 +1,9 @@
+/**
+ * useGazeTracker.test.js — Unit tests for the gaze-tracking hook. Mocks
+ * WebGazerContext so gaze coordinates can be injected directly, and uses
+ * fake DOM elements with stubbed bounding rects to verify dwell time,
+ * entry/exit counting, and per-image data accumulation.
+ */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 

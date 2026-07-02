@@ -1,3 +1,10 @@
+/**
+ * GazeTrackingProvider.jsx — Context that shares one useGazeTracker
+ * instance with all GazeTrackedImage children of a rating page. Exposes the
+ * tracker API (registerImage, startSession, getGazeData, startPage/endPage)
+ * via useGazeTracking, plus the declarative useGazePage helper for
+ * page-level tracking.
+ */
 import React, { createContext, useContext, useEffect } from 'react';
 import useGazeTracker from '../hooks/useGazeTracker';
 

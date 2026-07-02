@@ -1,3 +1,9 @@
+/**
+ * guidedFlow.test.js — Unit tests for the guided-session chaining logic:
+ * building the initial uploadConfig, advancing through the step queue with
+ * nextGuidedNavigation (including the /thank-you terminal case), and step
+ * counting.
+ */
 import { describe, it, expect } from "vitest";
 import {
   DEFAULT_GUIDED_STEPS,

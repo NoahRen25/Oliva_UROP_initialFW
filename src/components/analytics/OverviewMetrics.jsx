@@ -1,3 +1,8 @@
+/**
+ * OverviewMetrics.jsx — Top-of-dashboard KPI tiles (total sessions, total
+ * ratings, unique users, active modes, avg ratings/session), fed by
+ * dashboardTransforms.computeOverviewMetrics.
+ */
 import React from "react";
 import { Box, Paper, Typography } from "@mui/material";
 

@@ -1,3 +1,14 @@
+/**
+ * supabaseResults.js — All Supabase reads/writes for study results.
+ *
+ * CRUD helpers for the core tables: sessions, rating_scores,
+ * pairwise_choices, ranked_results, transcripts, and gaze_sessions.
+ * Insert helpers map the app's camelCase session/score objects to the
+ * snake_case table columns; fetch helpers reassemble full session objects
+ * (session row + child score/choice/ranking rows) for hydration in
+ * Results.jsx. Errors are logged to the console rather than thrown so a
+ * failed write never crashes a participant mid-session.
+ */
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

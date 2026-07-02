@@ -1,3 +1,16 @@
+/**
+ * Results.jsx — Global session store (ResultsProvider / useResults).
+ *
+ * Holds every kind of completed rating session in React state (individual,
+ * group, layout-group, fixed, pairwise, video-pairwise, ranked, selection)
+ * plus voice transcripts, consent state, and the anti-rushing "speed check"
+ * logic (checkEngagement / resetEngagement).
+ *
+ * On mount it hydrates all state from Supabase (services/supabaseResults.js);
+ * every add/delete helper writes through to Supabase so React state and the
+ * database stay in sync. Rating pages call the add*Session helpers on submit;
+ * results dashboards read the session arrays.
+ */
 import React, {
   createContext,
   useState,

@@ -1,3 +1,14 @@
+/**
+ * UnifiedUploadPage.jsx — "/rate/upload": start a standalone (non-guided)
+ * session from a JSON config file.
+ *
+ * The researcher enters a username, then uploads one of the configs from
+ * the repo's config/ folder (or a hand-written one). Valid `type` values are
+ * the rating modes plus any grid layout id from gridConstants. For grid
+ * types it validates that enough memorability images exist in the requested
+ * score range, then navigates to the matching rating route with the parsed
+ * config in location.state.
+ */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {

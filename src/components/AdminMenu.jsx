@@ -1,3 +1,11 @@
+/**
+ * AdminMenu.jsx — App-bar dropdown for signed-in researchers/admins.
+ *
+ * Hidden for participants (no role). Links to the results dashboards,
+ * researcher view, transcripts, and privacy settings; admins additionally
+ * get the Control Panel link and an "Invite User" dialog that calls the
+ * `invite-user` Supabase edge function to email a new researcher/admin.
+ */
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import {

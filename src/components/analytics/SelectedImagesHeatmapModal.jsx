@@ -1,3 +1,10 @@
+/**
+ * SelectedImagesHeatmapModal.jsx — Dialog that shows gaze heatmaps for a
+ * chosen set of images (opened from results tables/researcher view).
+ * Fetches gaze sessions itself and toggles between the in-image heatmap
+ * (buildHeatmapData) and the page-layout view (buildPageHeatmap /
+ * PageHeatmap) for formats where the image appeared.
+ */
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,

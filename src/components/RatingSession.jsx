@@ -1,3 +1,10 @@
+/**
+ * RatingSession.jsx — LEGACY minimal grid-rating widget: renders an
+ * ImageGrid, collects ratings, and submits an anonymous group session.
+ * Navigates to "/group-result", a route that no longer exists in App.jsx,
+ * and nothing currently imports this component — kept for reference; the
+ * live equivalents are LayoutRatingFlow / GroupGridRate.
+ */
 import { useState } from "react";
 import { Button } from "@mui/material";
 import ImageGrid from "./ImageGrid";

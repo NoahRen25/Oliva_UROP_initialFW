@@ -1,4 +1,10 @@
 // src/data/gridConstants.js
+//
+// Single source of truth for grid rating layouts. GRID_DEFINITIONS maps a
+// layout id (used in config JSONs, mode_config, and route state) to its
+// column count, tile height, and images-per-page; LAYOUT_OPTIONS feeds the
+// admin dropdowns. Add a new layout here and it becomes valid everywhere
+// (upload page validation, group-grid pages, admin panel).
 
 export const GRID_DEFINITIONS = {
     "2x2": { columns: 2, imageHeight: "25vh", pageSize: 4 },

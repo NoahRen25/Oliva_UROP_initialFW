@@ -1,3 +1,9 @@
+/**
+ * WebGazerGazeTest.jsx — "/webgazer-gaze-test": debugging/verification page
+ * for eye tracking. Shows the live gaze point over the screen with
+ * pause/resume, prediction-point toggle, and clear-calibration controls,
+ * so a researcher can judge tracking accuracy before running participants.
+ */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {

@@ -1,3 +1,9 @@
+/**
+ * UsernameEntry.jsx — First step of every standalone rating flow: collects
+ * a participant User ID (validated against a caller-supplied regex, usually
+ * digits only), shows an inline consent notice with a required checkbox,
+ * then calls onStart.
+ */
 import React, { useState } from "react";
 import {
   Paper,

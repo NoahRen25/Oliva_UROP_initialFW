@@ -1,3 +1,8 @@
+/**
+ * PairwiseResult.jsx — Results view for image pairwise sessions
+ * (winner/loser per pair + CSV export), shown as the "Pairwise" tab of
+ * ModeResultsPage.
+ */
 import React from "react";
 import { useResults } from "../Results";
 import ResultsPageShell from "../components/ResultsPageShell";
